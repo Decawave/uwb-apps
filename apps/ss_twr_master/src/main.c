@@ -17,6 +17,11 @@
  * under the License.
  */
 
+ /*
+ Copyright (c) 2017, Decawave Ltd.
+ All rights reserved.
+ */
+
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
@@ -38,30 +43,29 @@
 #include <dw1000/dw1000_lwip.h>
 #include "dw1000/dw1000_ftypes.h"
 
-static dwt_config_t config = {
-    .chan = 5,                          /* Channel number. */
-    .prf = DWT_PRF_64M,                 /* Pulse repetition frequency. */
-    .txPreambLength = DWT_PLEN_128,     /* Preamble length. Used in TX only. */
-    .rxPAC = DWT_PAC8,                  /* Preamble acquisition chunk size. Used in RX only. */
-    .txCode = 9,                        /* TX preamble code. Used in TX only. */
-    .rxCode = 8,                        /* RX preamble code. Used in RX only. */
-    .nsSFD = 0,                         /* 0 to use standard SFD, 1 to use non-standard SFD. */
-    .dataRate = DWT_BR_6M8,             /* Data rate. */
-    .phrMode = DWT_PHRMODE_STD,         /* PHY header mode. */
-    .sfdTO = (129 + 8 - 8)             /* SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. */
-};
-
-
-ss_twr_range_t ss_twr = {
-    .request = {
-        .fctrl = 0x8841,            // frame control (0x8841 to indicate a data frame using 16-bit addressing).
-        .PANID = 0xDECA            // PAN ID (0xDECA)
-    }
+static dwt_config_t mac_config = {
+    .chan = 5,                          // Channel number. 
+    .prf = DWT_PRF_64M,                 // Pulse repetition frequency. 
+    .txPreambLength = DWT_PLEN_128,     // Preamble length. Used in TX only. 
+    .rxPAC = DWT_PAC8,                  // Preamble acquisition chunk size. Used in RX only. 
+    .txCode = 9,                        // TX preamble code. Used in TX only. 
+    .rxCode = 8,                        // RX preamble code. Used in RX only. 
+    .nsSFD = 0,                         // 0 to use standard SFD, 1 to use non-standard SFD. 
+    .dataRate = DWT_BR_6M8,             // Data rate. 
+    .phrMode = DWT_PHRMODE_STD,         // PHY header mode. 
+    .sfdTO = (129 + 8 - 8)              // SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. 
 };
 
 static dw1000_rng_config_t rng_config = {
-    .wait4resp_delay = 0x80,           // Delayed Send or Receive Time in usec.
+    .wait4resp_delay = 0x80,            // Delayed Send or Receive Time in usec.
     .rx_timeout_period = 0x1000         // Receive response timeout, in usec.
+};
+
+static ss_twr_range_t ss_twr = {
+    .request = {
+        .fctrl = 0x8841,                // frame control (0x8841 to indicate a data frame using 16-bit addressing).
+        .PANID = 0xDECA                 // PAN ID (0xDECA)
+    }
 };
 
 /* The timer callout */
@@ -118,13 +122,8 @@ static void init_timer(void) {
 }
 
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv){
     int rc;
-
-#ifdef ARCH_sim
-    mcu_sim_parse_args(argc, argv);
-#endif
     
     sysinit();
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
@@ -149,7 +148,7 @@ int main(int argc, char **argv)
     printf("lotID =%lX\n",inst->lotID);
     printf("xtal_trim =%X\n",inst->xtal_trim);
 
-    dw1000_mac_init(inst, &config);
+    dw1000_mac_init(inst, &mac_config);
     dw1000_rng_init(inst, &rng_config);
     dw1000_rng_set_frames(inst, &ss_twr);
 

@@ -30,14 +30,14 @@ abstraction layers, low-level MAC, Ranging Services and a raw-lwip stack.
 This project is destined to be streamed into the mynewt repo early Q1 2018. The example contained herein will
 become part of the mynewt distribution and maintained within that distribution.
 
-DW1000 Device Driver (complete)
-DWM1001 Board Support Package (complete)
-DW1000 Ranging Services ss_twr (complete)
-DW1000 Ranging Services ds_twr (under development)
-CLI node_cfg (Pending)
-CLI autosurvey (Pending)
-CLI anchor (Pending)
-CLI mlat (pending)
+* DW1000 Device Driver (complete)
+* DWM1001 Board Support Package (complete)
+* DW1000 Ranging Services ss_twr (complete)
+* DW1000 Ranging Services ds_twr (under development)
+* CLI node_cfg (Pending)
+* CLI autosurvey (Pending)
+* CLI anchor (Pending)
+* CLI mlat (pending)
 
 ## Building
 
