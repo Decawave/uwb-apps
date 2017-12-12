@@ -23,9 +23,8 @@
 
 ## Overview
 
-This repo contains the device driver model for the DW1000 for the mynewt OS. The  
-diver support, hardware abstraction layers, low-level MAC, Ranging Services and a 
-rawlwip stack. 
+This repo contains the device driver model for the DW1000 for the mynewt OS. The diver support, hardware 
+abstraction layers, low-level MAC, Ranging Services and a raw-lwip stack. 
 
 ## Project Status
 This project is destined to be streamed into the mynewt repo early Q1 2018. The example contained herein will
@@ -44,17 +43,15 @@ CLI mlat (pending)
 
 1. Download and install Apache Newt.
 
-2. Download and install Apache Newt.
-
 You will need to download the Apache Newt tool, as documented in the [Getting Started Guide](http://mynewt.apache.org/os/get_started/introduction/).
 
-3. Download the Apache Mynewt Core package (executed from the blinky directory).
+2. Download the Apache Mynewt Core package (executed from the blinky directory).
 
 ```no-highlight
     $ newt install
 ```
 
-4. Build the Single Side Two Way Ranging (ss_twr) Applicaitons for the DWM1000 hardware platform using the "dwm1001" target
+3. Build the Single Side Two Way Ranging (ss_twr) Applicaitons for the DWM1000 hardware platform using the "dwm1001" target
 (executed from the mynewt-dw1000 directory).
 
 ```no-highlight
