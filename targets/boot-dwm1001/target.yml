@@ -1,0 +1,4 @@
+### Target: targets/boot-dwm1001
+target.app: "@apache-mynewt-core/apps/boot"
+target.bsp: "hw/bsp/dwm1001"
+target.build_profile: "debug"

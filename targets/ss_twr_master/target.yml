@@ -1,0 +1,4 @@
+### Target: targets/ss_twr_master
+target.app: "apps/ss_twr_master"
+target.bsp: "@mynewt-dw1000-core/hw/bsp/dwm1001"
+target.build_profile: "optimized"
