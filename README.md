@@ -56,14 +56,22 @@ Prerequisites: You should follow the generic tutorials at https://mynewt.apache.
 
 3. Download the Apache Mynewt Core and Mynewt DW1000 Core package.
 
+Currently mynewt-dw1000-core is a private repo and as such requires an extra step to provide authorization. See (https://mynewt.apache.org/latest/os/tutorials/repo/private_repo/) for a how to guide. Note with newt version 1.2, I have only had sucess with the project.yml approach to private repos. It is also necessary delete the ./repos director after an error has occured. Don't forget to save the .patch folder.
+
 ```no-highlight
     $ newt install
 ```
 Apply the C99 extendsion patch to the apache-mynewt-core distribution. This is contained in the file ./repos/.patches/apache-mynewt-core.patch
 
 ```no-highlight
-    cd ./repos/apache-mynewt-core
-    git apply ./repos/.patches/apache-mynewt-core.patch
+    cd ./repos/
+    git apply /.patches/apache-mynewt-core.patch
+```
+
+You all goies well the file ./repos/apache-mynewt-core/compiler/arm-none-eabi-m4/compiler.yml should not contain -fms-extensions -std=c11
+
+```no-highlight
+    compiler.flags.base: -mcpu=cortex-m4 -mthumb-interwork -mthumb -Wall -Werror -fno-exceptions -ffunction-sections -fdata-sections -fms-extensions -std=c11
 ```
 
 4. To ereae the default flash image that shipped with the DWM1001.
