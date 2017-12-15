@@ -1,0 +1,9 @@
+### Package: targets/ss_trw_tag
+
+syscfg.vals:
+    CONSOLE_RTT: "1"
+    CONSOLE_UART: "0"  
+    # Enable the shell task.
+    SHELL_TASK: 1
+    SHELL_PROMPT_MODULE: 1
+

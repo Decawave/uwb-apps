@@ -1,0 +1,7 @@
+### Package: targets/ss_twr_node
+
+syscfg.vals:
+    CONSOLE_RTT: "1"
+    CONSOLE_UART: "0"
+    SHELL_PROMPT_MODULE: "1"
+    SHELL_TASK: "1"
