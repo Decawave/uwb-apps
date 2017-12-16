@@ -54,8 +54,8 @@ static dwt_config_t mac_config = {
 };
 
 static dw1000_rng_config_t rng_config = {
-    .wait4resp_delay = 0x60,            // Delayed Send or Receive Time in usec.
-    .rx_timeout_period = 0x100         // Receive response timeout, in usec.
+    .wait4resp_delay = 0x80,            // Delayed Send or Receive Time in usec.
+    .rx_timeout_period = 0x1000             // Receive response timeout, in usec.
 };
 
 static ss_twr_frame_t ss_twr = {
@@ -143,6 +143,7 @@ int main(int argc, char **argv){
     
     printf("device_id=%lX\n",inst->device_id);
     printf("PANID=%X\n",inst->PANID);
+    printf("DeviceID =%X\n",inst->my_short_address);
     printf("partID =%lX\n",inst->partID);
     printf("lotID =%lX\n",inst->lotID);
     printf("xtal_trim =%X\n",inst->xtal_trim);
