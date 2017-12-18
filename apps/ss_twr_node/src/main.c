@@ -45,8 +45,8 @@ static dwt_config_t mac_config = {
     .prf = DWT_PRF_64M,                 // Pulse repetition frequency. 
     .txPreambLength = DWT_PLEN_128,     // Preamble length. Used in TX only. 
     .rxPAC = DWT_PAC8,                  // Preamble acquisition chunk size. Used in RX only. 
-    .txCode = 9,                        // TX preamble code. Used in TX only. 
-    .rxCode = 8,                        // RX preamble code. Used in RX only. 
+    .txCode = 8,                        // TX preamble code. Used in TX only. 
+    .rxCode = 9,                        // RX preamble code. Used in RX only. 
     .nsSFD = 0,                         // 0 to use standard SFD, 1 to use non-standard SFD. 
     .dataRate = DWT_BR_6M8,             // Data rate. 
     .phrMode = DWT_PHRMODE_STD,         // PHY header mode. 
@@ -54,8 +54,9 @@ static dwt_config_t mac_config = {
 };
 
 static dw1000_rng_config_t rng_config = {
-    .wait4resp_delay = 0x80,            // Delayed Send or Receive Time in usec.
-    .rx_timeout_period = 0x1000             // Receive response timeout, in usec.
+    .tx_holdoff_delay = 0x1000,       // Received on delay in usec.
+    .rx_holdoff_delay = 0x600,           // Send Time delay in usec.
+    .rx_timeout_period = 0x4000      // Receive response timeout in usec.
 };
 
 static ss_twr_frame_t ss_twr = {
@@ -88,7 +89,6 @@ static void timer_ev_cb(struct os_event *ev) {
         printf("timer_ev_cb:rng_request failed [range_request_timeout]\n");
         
     else if (ss_twr->response.code == DWT_SS_TWR_FINAL) {
-        
             printf("{\n\tfctrl:0x%04X,\n", ss_twr->response.fctrl);
             printf("\tseq_num:0x%02X,\n", ss_twr->response.seq_num);
             printf("\tPANID:0x%04X,\n", ss_twr->response.PANID);
@@ -135,11 +135,13 @@ int main(int argc, char **argv){
     init_timer();
     
     dw1000_softreset(inst);
-   
     inst->PANID = 0xDECA;
     inst->my_short_address = 0x1234;
+    dw1000_set_panid(inst,inst->PANID);
     
-    dw1000_write_reg(inst, PANADR_ID, PANADR_PAN_ID_OFFSET, inst->PANID, sizeof(inst->PANID));
+    dw1000_mac_init(inst, &mac_config);
+    dw1000_rng_init(inst, &rng_config);
+    dw1000_rng_set_frames(inst, &ss_twr);
     
     printf("device_id=%lX\n",inst->device_id);
     printf("PANID=%X\n",inst->PANID);
@@ -147,10 +149,6 @@ int main(int argc, char **argv){
     printf("partID =%lX\n",inst->partID);
     printf("lotID =%lX\n",inst->lotID);
     printf("xtal_trim =%X\n",inst->xtal_trim);
-
-    dw1000_mac_init(inst, &mac_config);
-    dw1000_rng_init(inst, &rng_config);
-    dw1000_rng_set_frames(inst, &ss_twr);
 
     while (1) {
         os_eventq_run(os_eventq_dflt_get());

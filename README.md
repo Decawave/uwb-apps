@@ -111,8 +111,9 @@ $
     newt target set dwm1001_boot app=@apache-mynewt-core/apps/boot
     newt target set dwm1001_boot bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
     newt target set dwm1001_boot build_profile=optimized
-    newt create-image dwm1001_blinky 1.0.0
-    newt load dwm101_boot
+    newt build dwm1001_boot
+    newt create-image dwm1001_boot 1.0.0
+    newt load dwm1001_boot
 
 ```
 

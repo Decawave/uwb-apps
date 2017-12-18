@@ -44,8 +44,8 @@ static dwt_config_t mac_config = {
     .prf = DWT_PRF_64M,                 // Pulse repetition frequency. 
     .txPreambLength = DWT_PLEN_128,     // Preamble length. Used in TX only. 
     .rxPAC = DWT_PAC8,                  // Preamble acquisition chunk size. Used in RX only. 
-    .txCode = 8,                        // TX preamble code. Used in TX only. 
-    .rxCode = 9,                        // RX preamble code. Used in RX only. 
+    .txCode = 9,                        // TX preamble code. Used in TX only. 
+    .rxCode = 8,                        // RX preamble code. Used in RX only. 
     .nsSFD = 0,                         // 0 to use standard SFD, 1 to use non-standard SFD. 
     .dataRate = DWT_BR_6M8,             // Data rate. 
     .phrMode = DWT_PHRMODE_STD,         // PHY header mode. 
@@ -53,11 +53,12 @@ static dwt_config_t mac_config = {
 };
 
 static dw1000_rng_config_t rng_config = {
-    .wait4resp_delay = 0x600,          // Delayed Send or Receive Time in usec.
-    .rx_timeout_period = 0x0           // Receive response timeout in usec.
+    .tx_holdoff_delay = 0x1000,       // Received on delay in usec.
+    .rx_holdoff_delay = 0x600,       // Send Time delay in usec.
+    .rx_timeout_period = 0x0         // Receive response timeout in usec.
 };
 
-static ss_twr_frame_t ss_twr_range = {
+static ss_twr_frame_t ss_twr = {
     .request = {
         .fctrl = 0x8841,                // frame control (0x8841 to indicate a data frame using 16-bit addressing).
         .PANID = 0xDECA                 // PAN ID (0xDECA)
@@ -84,11 +85,10 @@ static void timer_ev_cb(struct os_event *ev) {
             printf("timer_ev_cb:rng_request failed [rx_error]\n");
     if (inst->status.start_rx_error)
             printf("timer_ev_cb:rng_request failed [start_rx_error]\n");
-    if (inst->status.start_tx_error){
+    if (inst->status.start_tx_error)
             printf("timer_ev_cb:rng_request failed [start_tx_error]\n");
-            inst->status.start_tx_error = 0;
-            dw1000_start_rx(inst); 
-    }
+    if (inst->status.rx_timeout_error)
+            printf("timer_ev_cb:rng_request failed [rx_timeout_error]\n");
     if (inst->status.start_tx_error || inst->status.rx_error || inst->status.range_request_timeout ||  inst->status.rx_timeout_error)
         dw1000_start_rx(inst); 
 #endif
@@ -104,7 +104,14 @@ static void timer_ev_cb(struct os_event *ev) {
             printf("\ttransmission_timestamp:0x%08lX,\n", ss_twr->response.transmission_timestamp); 
             printf("\trequest_timestamp:0x%08lX,\n", ss_twr->request_timestamp); 
             printf("\tresponse_timestamp:0x%08lX\n}\n", ss_twr->response_timestamp);
+            ss_twr->response.code = DWT_SS_TWR_END;
+
+             int32_t ToF = ((ss_twr->response_timestamp - ss_twr->request_timestamp) 
+                -  (ss_twr->response.transmission_timestamp - ss_twr->response.reception_timestamp))/2;
+
+            printf("ToF=%lX, res_req=%lX rec_tra=%lX\n", ToF, (ss_twr->response_timestamp - ss_twr->request_timestamp), (ss_twr->response.transmission_timestamp - ss_twr->response.reception_timestamp));
     }
+    dw1000_start_rx(inst); 
     os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC);
 }
 
@@ -127,13 +134,15 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
 
-    inst->PANID = 0xDECA;
-    inst->my_short_address = 0x4321;
-
     init_timer();
     dw1000_softreset(inst);
-    dw1000_write_reg(inst, PANADR_ID, PANADR_PAN_ID_OFFSET, inst->PANID, sizeof(inst->PANID));
-    
+    inst->PANID = 0xDECA;
+    inst->my_short_address = 0x4321;
+    dw1000_set_panid(inst,inst->PANID);
+    dw1000_mac_init(inst, &mac_config);
+    dw1000_rng_init(inst, &rng_config);
+    dw1000_rng_set_frames(inst, &ss_twr);
+
     printf("device_id=%lX\n",inst->device_id);
     printf("PANID=%X\n",inst->PANID);
     printf("DeviceID =%X\n",inst->my_short_address);
@@ -141,9 +150,7 @@ int main(int argc, char **argv){
     printf("lotID =%lX\n",inst->lotID);
     printf("xtal_trim =%X\n",inst->xtal_trim);
 
-    dw1000_mac_init(inst, &mac_config);
-    dw1000_rng_init(inst, &rng_config);
-    dw1000_rng_set_frames(inst, &ss_twr_range);
+    dw1000_set_rx_timeout(inst, rng_config.rx_timeout_period);
     dw1000_start_rx(inst); 
 
     while (1) {
