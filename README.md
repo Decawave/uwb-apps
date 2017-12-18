@@ -117,7 +117,7 @@ $
 
 ```
 
-5. On the fist dwm1001-dev Build the Single Side Two Way Ranging (ss_twr_slave) Applicaitons for the DWM1000 hardware platform. The mynewt-dw1000-app is already configured for the dwm1001 target, however for completeness the first two command below assign and create the target platform. The load command compiled the project and loads the image on the target platform.
+5. On the first dwm1001-dev Build the Single Side Two Way Ranging (ss_twr_slave) Applicaitons for the DWM1000 hardware platform. The mynewt-dw1000-app is already configured for the dwm1001 target, however for completeness the first two command below assign and create the target platform. The load command compiled the project and loads the image on the target platform.
 
 (executed from the mynewt-dw1000-app directory).
 
