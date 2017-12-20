@@ -54,9 +54,8 @@ static dwt_config_t mac_config = {
 };
 
 static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x1000,       // Received on delay in usec.
-    .rx_holdoff_delay = 0x600,           // Send Time delay in usec.
-    .rx_timeout_period = 0x4000      // Receive response timeout in usec.
+    .tx_holdoff_delay = 0x800,          // Send Time delay in usec.
+    .rx_timeout_period = 0x4000         // Receive response timeout in usec.
 };
 
 static ss_twr_frame_t ss_twr = {
@@ -109,7 +108,7 @@ static void timer_ev_cb(struct os_event *ev) {
             printf("ToF=%lX, res_req=%lX rec_tra=%lX\n", ToF, (ss_twr->response_timestamp - ss_twr->request_timestamp), (ss_twr->response.transmission_timestamp - ss_twr->response.reception_timestamp));
     }
 
-    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC);
+    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/10);
 }
 
 static void init_timer(void) {

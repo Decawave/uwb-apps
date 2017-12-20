@@ -53,9 +53,8 @@ static dwt_config_t mac_config = {
 };
 
 static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x1000,       // Received on delay in usec.
-    .rx_holdoff_delay = 0x600,       // Send Time delay in usec.
-    .rx_timeout_period = 0x0         // Receive response timeout in usec.
+    .tx_holdoff_delay = 0x800,          // Send Time delay in usec.
+    .rx_timeout_period = 0x0            // Receive response timeout in usec.
 };
 
 static ss_twr_frame_t ss_twr = {
@@ -89,11 +88,16 @@ static void timer_ev_cb(struct os_event *ev) {
             printf("timer_ev_cb:rng_request failed [start_tx_error]\n");
     if (inst->status.rx_timeout_error)
             printf("timer_ev_cb:rng_request failed [rx_timeout_error]\n");
-    if (inst->status.start_tx_error || inst->status.rx_error || inst->status.range_request_timeout ||  inst->status.rx_timeout_error)
+    if (inst->status.start_tx_error || inst->status.rx_error || inst->status.range_request_timeout ||  inst->status.rx_timeout_error){
+        inst->status.start_tx_error = inst->status.rx_error = inst->status.range_request_timeout = inst->status.rx_timeout_error = 0;
+        dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst); 
+    }
+
 #endif
 
     if (ss_twr->response.code == DWT_SS_TWR_FINAL) {
+
             printf("{\n\tfctrl:0x%04X,\n", ss_twr->response.fctrl);
             printf("\tseq_num:0x%02X,\n", ss_twr->response.seq_num);
             printf("\tPANID:0x%04X,\n", ss_twr->response.PANID);
@@ -106,13 +110,16 @@ static void timer_ev_cb(struct os_event *ev) {
             printf("\tresponse_timestamp:0x%08lX\n}\n", ss_twr->response_timestamp);
             ss_twr->response.code = DWT_SS_TWR_END;
 
-             int32_t ToF = ((ss_twr->response_timestamp - ss_twr->request_timestamp) 
+            int32_t ToF = ((ss_twr->response_timestamp - ss_twr->request_timestamp) 
                 -  (ss_twr->response.transmission_timestamp - ss_twr->response.reception_timestamp))/2;
 
             printf("ToF=%lX, res_req=%lX rec_tra=%lX\n", ToF, (ss_twr->response_timestamp - ss_twr->request_timestamp), (ss_twr->response.transmission_timestamp - ss_twr->response.reception_timestamp));
+            dw1000_set_rx_timeout(inst, 0);
+            dw1000_start_rx(inst); 
+
     }
-    dw1000_start_rx(inst); 
-    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC);
+
+    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/10);
 }
 
 static void init_timer(void) {
@@ -150,7 +157,7 @@ int main(int argc, char **argv){
     printf("lotID =%lX\n",inst->lotID);
     printf("xtal_trim =%X\n",inst->xtal_trim);
 
-    dw1000_set_rx_timeout(inst, rng_config.rx_timeout_period);
+    dw1000_set_rx_timeout(inst, 0);
     dw1000_start_rx(inst); 
 
     while (1) {

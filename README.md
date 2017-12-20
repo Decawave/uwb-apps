@@ -32,11 +32,9 @@ Warning: The dwm1001 is flashed with a UWB Location Based Services stack. This d
 ## Project Status
 This project is destined to be up-streamed into the mynewt repo Q1 2018:
 
-* ss_twr_master (Complete, but robe replaced by a single example once cli configuration tools in place)
-* ss_twr_slave  (Complete)
-* ds_twr_master (Pending)
-* ds_twr_slave (Pending)
-
+* ss_twr_node (Complete)
+* ss_twr_tag  (Complete)
+* blinky  (Complete)
 
 ## Building
 
@@ -117,7 +115,7 @@ $
 
 ```
 
-5. On the first dwm1001-dev Build the Single Side Two Way Ranging (ss_twr_slave) Applicaitons for the DWM1000 hardware platform. The mynewt-dw1000-app is already configured for the dwm1001 target, however for completeness the first two command below assign and create the target platform. The load command compiled the project and loads the image on the target platform.
+5. On the first dwm1001-dev Build the Single Side Two Way Ranging (ss_twr_tag) Applicaitons for the DWM1000 hardware platform. The mynewt-dw1000-app is already configured for the dwm1001 target, however for completeness the first two command below assign and create the target platform. The load command compiled the project and loads the image on the target platform.
 
 (executed from the mynewt-dw1000-app directory).
 
@@ -129,7 +127,7 @@ $
 
 ```
 
-6. On a second dwm1001-dev build the master size of the Single Side Two Way Ranging (ss_twr_master) Applicaitons as follows. The run command compiled the project and loads the image on the target platform.
+6. On a second dwm1001-dev build the master size of the Single Side Two Way Ranging (ss_twr_node) Applicaitons as follows. The run command compiled the project and loads the image on the target platform.
 
 (executed from the mynewt-dw1000-app directory).
 
