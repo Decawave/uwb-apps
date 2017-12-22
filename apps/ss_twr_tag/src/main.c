@@ -54,15 +54,35 @@ static dwt_config_t mac_config = {
 
 static dw1000_rng_config_t rng_config = {
     .tx_holdoff_delay = 0x800,          // Send Time delay in usec.
-    .rx_timeout_period = 0x0            // Receive response timeout in usec.
+    .rx_timeout_period = 0xF000         // Receive response timeout in usec.
 };
 
-static ss_twr_frame_t ss_twr = {
-    .request = {
+static ss_twr_frame_t ss_twr[] = {
+    [0].request = {
         .fctrl = 0x8841,                // frame control (0x8841 to indicate a data frame using 16-bit addressing).
-        .PANID = 0xDECA                 // PAN ID (0xDECA)
+        .PANID = 0xDECA,                // PAN ID (0xDECA)
+        .code = DWT_TWR_INVALID
+    },
+    [1].request = {
+        .fctrl = 0x8841,                // frame control (0x8841 to indicate a data frame using 16-bit addressing).
+        .PANID = 0xDECA,                // PAN ID (0xDECA)
+        .code = DWT_TWR_INVALID
     }
 };
+
+void print_frame(const char * name, ss_twr_frame_t * ss_twr ){
+    printf("%s{\n\tfctrl:0x%04X,\n", name, ss_twr->response.fctrl);
+    printf("\tseq_num:0x%02X,\n", ss_twr->response.seq_num);
+    printf("\tPANID:0x%04X,\n", ss_twr->response.PANID);
+    printf("\tdst_address:0x%04X,\n", ss_twr->response.dst_address);
+    printf("\tsrc_address:0x%04X,\n", ss_twr->response.src_address);
+    printf("\tcode:0x%04X,\n", ss_twr->response.code);
+    printf("\treception_timestamp:0x%08lX,\n", ss_twr->response.reception_timestamp); 
+    printf("\ttransmission_timestamp:0x%08lX,\n", ss_twr->response.transmission_timestamp); 
+    printf("\trequest_timestamp:0x%08lX,\n", ss_twr->request_timestamp); 
+    printf("\tresponse_timestamp:0x%08lX\n}\n", ss_twr->response_timestamp); 
+    return;
+}
 
 /* The timer callout */
 static struct os_callout blinky_callout;
@@ -74,40 +94,36 @@ static void timer_ev_cb(struct os_event *ev) {
 
     hal_gpio_toggle(LED_BLINK_PIN);
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    ss_twr_frame_t * ss_twr  = inst->rng->ss_twr;  
+    
+    assert(inst->rng->nframes > 0);
 
 #if 0
     if (dw1000_rng_request(inst, NULL, NULL, DWT_SS_TWR).rx_error)
         printf("timer_ev_cb:rng_request failed [status.mac_error]\n");
 #else
-    if (inst->status.rx_error)
-            printf("timer_ev_cb:rng_request failed [rx_error]\n");
+
     if (inst->status.start_rx_error)
-            printf("timer_ev_cb:rng_request failed [start_rx_error]\n");
+        printf("timer_ev_cb:[start_rx_error]\n");
     if (inst->status.start_tx_error)
-            printf("timer_ev_cb:rng_request failed [start_tx_error]\n");
+        printf("timer_ev_cb:[start_tx_error]\n");
+    if (inst->status.rx_error)
+        printf("timer_ev_cb:[rx_error]\n");
+    if (inst->status.request_timeout)
+        printf("timer_ev_cb:[request_timeout]\n");
     if (inst->status.rx_timeout_error)
-            printf("timer_ev_cb:rng_request failed [rx_timeout_error]\n");
-    if (inst->status.start_tx_error || inst->status.rx_error || inst->status.range_request_timeout ||  inst->status.rx_timeout_error){
-        inst->status.start_tx_error = inst->status.rx_error = inst->status.range_request_timeout = inst->status.rx_timeout_error = 0;
+        printf("timer_ev_cb:[rx_timeout_error]\n");
+
+
+    if (inst->status.start_tx_error || inst->status.rx_error || inst->status.request_timeout ||  inst->status.rx_timeout_error){
+        inst->status.start_tx_error = inst->status.rx_error = inst->status.request_timeout = inst->status.rx_timeout_error = 0;
         dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst); 
     }
-
 #endif
 
-    if (ss_twr->response.code == DWT_SS_TWR_FINAL) {
-
-            printf("{\n\tfctrl:0x%04X,\n", ss_twr->response.fctrl);
-            printf("\tseq_num:0x%02X,\n", ss_twr->response.seq_num);
-            printf("\tPANID:0x%04X,\n", ss_twr->response.PANID);
-            printf("\tdst_address:0x%04X,\n", ss_twr->response.dst_address);
-            printf("\tsrc_address:0x%04X,\n", ss_twr->response.src_address);
-            printf("\tcode:0x%04X,\n", ss_twr->response.code);
-            printf("\treception_timestamp:0x%08lX,\n", ss_twr->response.reception_timestamp); 
-            printf("\ttransmission_timestamp:0x%08lX,\n", ss_twr->response.transmission_timestamp); 
-            printf("\trequest_timestamp:0x%08lX,\n", ss_twr->request_timestamp); 
-            printf("\tresponse_timestamp:0x%08lX\n}\n", ss_twr->response_timestamp);
+    else if (inst->rng->ss_twr[0].response.code == DWT_SS_TWR_FINAL) {
+            ss_twr_frame_t * ss_twr  = &inst->rng->ss_twr[0];  
+            print_frame("ss_trw=",ss_twr);
             ss_twr->response.code = DWT_SS_TWR_END;
 
             int32_t ToF = ((ss_twr->response_timestamp - ss_twr->request_timestamp) 
@@ -116,10 +132,20 @@ static void timer_ev_cb(struct os_event *ev) {
             printf("ToF=%lX, res_req=%lX rec_tra=%lX\n", ToF, (ss_twr->response_timestamp - ss_twr->request_timestamp), (ss_twr->response.transmission_timestamp - ss_twr->response.reception_timestamp));
             dw1000_set_rx_timeout(inst, 0);
             dw1000_start_rx(inst); 
-
     }
 
-    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/10);
+    else if (inst->rng->ss_twr[1].response.code == DWT_SDS_TWR_FINAL) {
+        print_frame("1st=",&inst->rng->ss_twr[0]);
+
+        inst->rng->ss_twr[1].response.code = DWT_SDS_TWR_END;
+        print_frame("2nd=",&inst->rng->ss_twr[1]);
+        
+        inst->rng->ss_twr[1].response.code = DWT_SDS_TWR_END;
+
+        dw1000_set_rx_timeout(inst, 0);
+        dw1000_start_rx(inst); 
+    }
+    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/128);
 }
 
 static void init_timer(void) {
@@ -148,7 +174,7 @@ int main(int argc, char **argv){
     dw1000_set_panid(inst,inst->PANID);
     dw1000_mac_init(inst, &mac_config);
     dw1000_rng_init(inst, &rng_config);
-    dw1000_rng_set_frames(inst, &ss_twr);
+    dw1000_rng_set_frames(inst, ss_twr, sizeof(ss_twr)/sizeof(ss_twr_frame_t));
 
     printf("device_id=%lX\n",inst->device_id);
     printf("PANID=%X\n",inst->PANID);

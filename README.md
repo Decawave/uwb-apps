@@ -32,9 +32,10 @@ Warning: The dwm1001 is flashed with a UWB Location Based Services stack. This d
 ## Project Status
 This project is destined to be up-streamed into the mynewt repo Q1 2018:
 
-* ss_twr_node (Complete)
-* ss_twr_tag  (Complete)
-* blinky  (Complete)
+* Single-Sides Two-Way-Ranging and Symetric Double-Sided Two-Way-Ranging
+*   twr_node:
+*   twr_tag  
+* blinky
 
 ## Building
 
@@ -115,29 +116,30 @@ $
 
 ```
 
-5. On the first dwm1001-dev Build the Single Side Two Way Ranging (ss_twr_tag) Applicaitons for the DWM1000 hardware platform. The mynewt-dw1000-app is already configured for the dwm1001 target, however for completeness the first two command below assign and create the target platform. The load command compiled the project and loads the image on the target platform.
+5. On the first dwm1001-dev Build the Two Way Ranging (twr_tag) Applicaitons for the DWM1000 hardware platform. The mynewt-dw1000-app is already configured for the dwm1001 target, however for completeness the first two command below assign and create the target platform. The load command compiled the project and loads the image on the target platform.
 
 (executed from the mynewt-dw1000-app directory).
 
 ```no-highlight
 
-    newt target set ss_twr_slave bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-    newt target set ss_twr_slave build_profile=debug
-    newt load ss_twr_slave
+    newt target set twr_tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+    newt target set twr_tag build_profile=debug
+    newt load twr_tag
 
 ```
 
-6. On a second dwm1001-dev build the master size of the Single Side Two Way Ranging (ss_twr_node) Applicaitons as follows. The run command compiled the project and loads the image on the target platform.
+6. On a second dwm1001-dev build the master size of the Two Way Ranging (twr_node) Applicaitons as follows. The run command compiled the project and loads the image on the target platform.
 
 (executed from the mynewt-dw1000-app directory).
 
 ```no-highlight
 
-    newt target set ss_twr_master bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-    newt target set ss_twr_master build_profile=debug
-    newt run ss_twr_slave
+    newt target set twr_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+    newt target set twr_node build_profile=debug
+    newt run twr_node
 
 ```
+Within ./twr_node/main.c you can change the line dw1000_rng_request(inst, 0x4321, DWT_SDS_TWR); to dw1000_rng_request(inst, 0x4321, DWT_SS_TWR); to switch to the single-side TWR example.
 
 7. Both examples are configured to use the Segger RTT console interface. This is covered within the mynewt tutorials/Tooling/SeggarRTT (https://mynewt.apache.org/latest/os/tutorials/segger_rtt/). To launch the console simply  telnet localhost 19021. Note time of writing the newt tools does not support multiple connect dwm1001-dev devices. So it is recomended that you connect ss_twr_slave and sw_twr_master examples to different computers or at least the ss_twr_slave to an external battery. If all going well you should see the sw_twr_master example stream range information on the console. 
 
