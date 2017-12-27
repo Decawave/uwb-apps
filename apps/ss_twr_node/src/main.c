@@ -1,5 +1,4 @@
 /**
- * Copyright (C) 2017-2018, Decawave Limited, All Rights Reserved
  * 
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -129,6 +128,7 @@ static void timer_ev_cb(struct os_event *ev) {
             printf("ToF=%lX, res_req=%lX rec_tra=%lX\n", ToF, (ss_twr->response_timestamp - ss_twr->request_timestamp), (ss_twr->response.transmission_timestamp - ss_twr->response.reception_timestamp));
     } else if (inst->rng->nframes > 1){
                 if (inst->rng->ss_twr[1].response.code == DWT_SDS_TWR_FINAL) {
+
                    ss_twr_frame_t * ss_twr  = &inst->rng->ss_twr[0];   
                     print_frame("1st=", ss_twr); 
 
@@ -144,7 +144,6 @@ static void timer_ev_cb(struct os_event *ev) {
                         -  (ss_twr->response.transmission_timestamp - ss_twr->response.reception_timestamp))/2;
 
                     printf("ToF_2nd=0x%08lX, res_req=0x%08lX rec_tra=0x%08lX\n", ToF, (ss_twr->response_timestamp - ss_twr->request_timestamp), (ss_twr->response.transmission_timestamp - ss_twr->response.reception_timestamp));
-
                     uint64_t T1R = (inst->rng->ss_twr[0].response_timestamp - inst->rng->ss_twr[0].request_timestamp); 
                     uint64_t T1r = (inst->rng->ss_twr[0].response.transmission_timestamp  - inst->rng->ss_twr[0].response.reception_timestamp); 
                     
@@ -154,6 +153,9 @@ static void timer_ev_cb(struct os_event *ev) {
                     uint32_t Tprop  =  (T1R - T1r + T2R - T2r) >> 2;
                     printf("Tprop=0x%08lX\n", Tprop);
 
+
+//                    json_rng_encode(inst->rng->ss_twr);
+//                    json_ftype_encode(&inst->rng->ss_twr[1].response);
                 }
     }
 

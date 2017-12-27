@@ -139,7 +139,13 @@ $
     newt run twr_node
 
 ```
-Within ./twr_node/main.c you can change the line dw1000_rng_request(inst, 0x4321, DWT_SDS_TWR); to dw1000_rng_request(inst, 0x4321, DWT_SS_TWR); to switch to the single-side TWR example.
+To switch from Single-Side to Symetric-Double-Size, simply comment ./twr_node/main.c as follows: 
+```no-highlight
+
+   //dw1000_rng_request(inst, 0x4321, DWT_SDS_TWR);
+   dw1000_rng_request(inst, 0x4321, DWT_SS_TWR);
+
+```
 
 7. Both examples are configured to use the Segger RTT console interface. This is covered within the mynewt tutorials/Tooling/SeggarRTT (https://mynewt.apache.org/latest/os/tutorials/segger_rtt/). To launch the console simply  telnet localhost 19021. Note time of writing the newt tools does not support multiple connect dwm1001-dev devices. So it is recomended that you connect ss_twr_slave and sw_twr_master examples to different computers or at least the ss_twr_slave to an external battery. If all going well you should see the sw_twr_master example stream range information on the console. 
 

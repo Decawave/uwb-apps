@@ -1,5 +1,4 @@
 /**
- * Copyright (C) 2017-2018, Decawave Limited, All Rights Reserved
  * 
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -50,6 +49,15 @@ static dwt_config_t mac_config = {
     .dataRate = DWT_BR_6M8,             // Data rate. 
     .phrMode = DWT_PHRMODE_STD,         // PHY header mode. 
     .sfdTO = (129 + 8 - 8)              // SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. 
+};
+
+static dw1000_phy_txrf_config_t txrf_config = { 
+        .PGdly = 0xC0,
+        //.power = 0x25456585
+        .BOOSTNORM = dw1000_power_value(DW1000_txrf_config_0db, 3),
+        .BOOSTP500 = dw1000_power_value(DW1000_txrf_config_0db, 3),    
+        .BOOSTP250 = dw1000_power_value(DW1000_txrf_config_0db, 3),     
+        .BOOSTP125 = dw1000_power_value(DW1000_txrf_config_0db, 3)
 };
 
 static dw1000_rng_config_t rng_config = {
@@ -162,6 +170,7 @@ int main(int argc, char **argv){
     sysinit();
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     dw1000_dev_init(inst, MYNEWT_VAL(DW1000_DEVICE_0_SPI_IDX));
+    dw1000_phy_init(inst, &txrf_config);
     
     hal_gpio_init_out(LED_BLINK_PIN, 1);
     hal_gpio_init_out(LED_1, 1);
