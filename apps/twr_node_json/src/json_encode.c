@@ -25,7 +25,7 @@
 #include "rtt/SEGGER_RTT.h"
 
 #include <dw1000/dw1000_ftypes.h>
-#include "json_ftypes.h"
+#include "json_encode.h"
 
 
 
@@ -49,7 +49,6 @@ _json_fflush(){
 
 static int
 json_write(void *buf, char* data, int len) {
-    
     // write(STDOUT_FILENO, data, len);  TODOs: This is the prefered approach
 
     if (idx + len > JSON_BUF_SIZE) 
@@ -97,7 +96,6 @@ int json_ftype_encode(ss_twr_frame_t * frame){
 
     rc |= json_encode_object_finish(&encoder);
     assert(rc == 0);
-
      _json_fflush();
 
     return rc;
@@ -128,7 +126,6 @@ void json_rng_encode(ss_twr_frame_t frames[], uint16_t len){
     rc |= json_encode_object_finish(&encoder);
 
     assert(rc == 0);
-
     json_fflush();
 }
 
@@ -145,7 +142,7 @@ void json_cir_encode(cir_t * cir, char * name, uint16_t nsize){
 
     rc = json_encode_object_start(&encoder);    
     rc |= json_encode_object_key(&encoder, name);
-    rc = json_encode_object_start(&encoder);    
+    rc |= json_encode_object_start(&encoder);    
 
     JSON_VALUE_INT(&value, cir->fp_idx);
     rc |= json_encode_object_entry(&encoder, "fp_idx", &value);
@@ -170,12 +167,40 @@ void json_cir_encode(cir_t * cir, char * name, uint16_t nsize){
     rc |= json_encode_array_finish(&encoder);    
     rc |= json_encode_object_finish(&encoder);
     rc |= json_encode_object_finish(&encoder);
-    
     assert(rc == 0);
-
     json_fflush();
 }
 
+
+void json_rxdiag_encode(dw1000_dev_rxdiag_t * rxdiag, char * name){
+
+    struct json_encoder encoder;
+    struct json_value value;
+    int rc;
+
+    /* reset the state of the internal test */
+    memset(&encoder, 0, sizeof(encoder));
+    encoder.je_write = json_write;
+    encoder.je_arg= NULL;
+
+    rc = json_encode_object_start(&encoder);
+    rc |= json_encode_object_key(&encoder, name);
+    rc |= json_encode_object_start(&encoder);    
+    
+    JSON_VALUE_UINT(&value, rxdiag->fp_idx);
+    rc |= json_encode_object_entry(&encoder, "fp_idx", &value);
+    JSON_VALUE_UINT(&value, rxdiag->fp_amp);
+    rc |= json_encode_object_entry(&encoder, "fp_amp", &value);
+     JSON_VALUE_UINT(&value, rxdiag->rx_std);
+    rc |= json_encode_object_entry(&encoder, "rx_std", &value);
+    JSON_VALUE_UINT(&value, rxdiag->preamble_cnt);
+    rc |= json_encode_object_entry(&encoder, "preamble_cnt", &value);
+
+    rc |= json_encode_object_finish(&encoder);
+    rc |= json_encode_object_finish(&encoder);
+    assert(rc == 0);
+    json_fflush();
+}
 
 
 

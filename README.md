@@ -23,11 +23,12 @@
 
 ## Overview
 
-This distribution contains the example applicaitons for the dw1000 IR-UWB transceiver within the mynewt-OS. The dw1000 device driver model is intergrated into the mynewt-OS (https://github.com/devawave/mynewt-dw1000-core). This driver include native support for a 6lowPAN stack, Ranging Services and Location Services etc. Mynewt and it's tools build enviorement newt and managment tools newtmgt create a powerful environment and deploying large-scale distributions within IoT.  
+This distribution contains the example applications for the dw1000 IR-UWB transceiver within the mynewt-OS. The dw1000 device driver model is integrated into the mynewt-OS (https://github.com/decawave/mynewt-dw1000-core). This driver includes native support for a 6lowPAN stack, Ranging Services, and Location Services, etc. Mynewt and it's tools build environment newt and management tools newtmgt create a powerful environment and deploying large-scale distributions within IoT.
 
-For these examples we leverage the Decawave dwm1001 module and dwm1001-dev kit. The dwm1001 includes a nrf52832 and the dw1000 transceiver. The dwm1001-dev is a breakout board that supports a Seggar OB-JLink interface with RTT support. The mynewt build environment provides a clean interface for maintaining platform agnosics distributions. The dwm1001-dev and the examples contain herein provide a clean out-of-the-box experience for UWB Location Based Services. 
+For these examples, we leverage the Decawave dwm1001 module and dwm1001-dev kit. The dwm1001 includes a nrf52832 and the dw1000 transceiver. The dwm1001-dev is a breakout board that supports a Seggar OB-JLink interface with RTT support. The mynewt build environment provides a clean interface for maintaining platform agnostics distributions. The dwm1001-dev and the examples contained herein provide a clean out-of-the-box experience for UWB Location Based Services.
 
-Warning: The dwm1001 is flashed with a UWB Location Based Services stack. This distribution repurposes the hardware and is not intended to replace the functionality of the shipped stack. This distribution is intended to be a starting point for evaluating and developing ones own such stacks. 
+Warning: The dwm1001 comes flashed with a UWB Location Based Services stack. This distribution repurposes the hardware and is not intended to replace the functionality of the shipped stack. This distribution is intended to be a starting point for evaluating and developing one's own such stacks. 
+
 
 ## Project Status
 This project is destined to be up-streamed into the mynewt repo Q1 2018:

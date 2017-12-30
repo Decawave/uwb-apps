@@ -20,8 +20,8 @@
  */
 
 
-#ifndef _JSON_FTYPES_H_
-#define _JSON_FTYPES_H_
+#ifndef _JSON_ENCODE_H_
+#define _JSON_ENCODE_H_
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -35,8 +35,6 @@ extern "C" {
 #include "json/json.h"
 #include <dw1000/dw1000_ftypes.h>
 #include <dw1000/dw1000_rng.h>
-
-
 
 
 #define CIR_SIZE 256
@@ -59,6 +57,7 @@ typedef struct _cir_t{
 int json_ftype_encode(ss_twr_frame_t * frame);
 void json_rng_encode(ss_twr_frame_t frames[], uint16_t nsize);
 void json_cir_encode(cir_t * cir, char * name, uint16_t nsize);
+void json_rxdiag_encode(dw1000_dev_rxdiag_t * rxdiag, char * name);
 
 #endif
 

@@ -1,4 +1,5 @@
 /**
+ * Copyright (C) 2017-2018, Decawave Limited, All Rights Reserved
  * 
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -38,7 +39,7 @@
 #include <dw1000/dw1000_rng.h>
 #include <dw1000/dw1000_lwip.h>
 #include <dw1000/dw1000_ftypes.h>
-#include <json_ftypes.h>
+#include <json_encode.h>
 
 static dwt_config_t mac_config = {
     .chan = 5,                          // Channel number. 
@@ -54,7 +55,7 @@ static dwt_config_t mac_config = {
 };
 
 static dw1000_phy_txrf_config_t txrf_config = { 
-        .PGdly = 0xC0,
+        .PGdly = TC_PGDELAY_CH5,
        // .power = 0x25456585
         .BOOSTNORM = dw1000_power_value(DW1000_txrf_config_0db, 3),
         .BOOSTP500 = dw1000_power_value(DW1000_txrf_config_0db, 3),    
@@ -97,7 +98,6 @@ void print_frame(const char * name, ss_twr_frame_t * ss_twr ){
 
 /* The timer callout */
 static struct os_callout blinky_callout;
-
 /*
  * Event callback function for timer events. It toggles the led pin.
 */
@@ -143,15 +143,16 @@ static void timer_ev_cb(struct os_event *ev) {
                     uint64_t T1r = (inst->rng->ss_twr[0].response.transmission_timestamp  - inst->rng->ss_twr[0].response.reception_timestamp); 
                     uint64_t T2R = (inst->rng->ss_twr[1].response_timestamp - inst->rng->ss_twr[1].request_timestamp); 
                     uint64_t T2r = (inst->rng->ss_twr[1].response.transmission_timestamp  - inst->rng->ss_twr[1].response.reception_timestamp); 
-                    
                     uint32_t Tp  =  (T1R - T1r + T2R - T2r) >> 2;
-                    
                     json_rng_encode(inst->rng->ss_twr, 2);
 
                     cir_t cir; 
                     dw1000_read_accdata(inst, (uint8_t * ) &cir, 600 * sizeof(cir_complex_t), CIR_SIZE * sizeof(cir_complex_t) + 1 );
                     cir.fp_idx = dw1000_read_reg(inst,  RX_TIME_ID,  RX_TIME_FP_INDEX_OFFSET, sizeof(uint16_t));
                     json_cir_encode(&cir, "cir", CIR_SIZE);
+
+                   if(inst->config.rxdiag_enable)
+                        json_rxdiag_encode(&inst->rxdiag, "rxdiag");
 
                     printf("{\"utime\": %ld,\"fp_idx\": %d,\"Tp\": %ld}\n", os_time_get(), cir.fp_idx, Tp);
                 }
@@ -160,10 +161,10 @@ static void timer_ev_cb(struct os_event *ev) {
     os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/32);
 }
 
+/*
+* Initialize the callout for a timer event.
+*/
 static void init_timer(void) {
-    /*
-     * Initialize the callout for a timer event.
-     */
     os_callout_init(&blinky_callout, os_eventq_dflt_get(), timer_ev_cb, NULL);
     os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC);
 }
@@ -195,9 +196,7 @@ int main(int argc, char **argv){
     while (1) {
         os_eventq_run(os_eventq_dflt_get());
     }
-
     assert(0);
-
     return rc;
 }
 
