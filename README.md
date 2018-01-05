@@ -68,7 +68,7 @@ Apply the C99 extendsion patch to the apache-mynewt-core distribution. This is c
     git apply /.patches/apache-mynewt-core.patch
 ```
 
-You all goies well the file ./repos/apache-mynewt-core/compiler/arm-none-eabi-m4/compiler.yml should not contain -fms-extensions -std=c11
+If all goies well the file ./repos/apache-mynewt-core/compiler/arm-none-eabi-m4/compiler.yml should now contain -fms-extensions -std=c11
 
 ```no-highlight
     compiler.flags.base: -mcpu=cortex-m4 -mthumb-interwork -mthumb -Wall -Werror -fno-exceptions -ffunction-sections -fdata-sections -fms-extensions -std=c11
