@@ -170,7 +170,8 @@ newt run twr_node_json
 
 ```
 
-In the console you should see something as follows. This is human and machine readable JSON format. 
+In your console you should see output simular to shown below;
+
 ```no-highlight
 
 {"rxdiag": {"fp_idx": 48075,"fp_amp": 7438,"rx_std": 68,"preamble_cnt": 122}}
@@ -181,4 +182,8 @@ In the console you should see something as follows. This is human and machine re
 {"utime": 2113,"fp_idx": 48047,"Tp": 1116}
 
 ```
+
+
+This is human and machine readable JSON format. You can now use stats.m for example to study the statistical performance of the platform or read_cir.m to study the channel impulse response. Again this is an extensible API that you augments as needed. The Mynewt OS provides native support for JSON encoding and parsing, as such this API can also be made bidirectional. 
+
 
