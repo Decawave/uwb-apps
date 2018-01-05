@@ -32,6 +32,7 @@
 #endif
 #include "rtt/SEGGER_RTT.h"
 
+
 #include <dw1000/dw1000_dev.h>
 #include <dw1000/dw1000_hal.h>
 #include <dw1000/dw1000_phy.h>
@@ -56,7 +57,7 @@ static dwt_config_t mac_config = {
 
 static dw1000_phy_txrf_config_t txrf_config = { 
         .PGdly = TC_PGDELAY_CH5,
-       // .power = 0x25456585
+        //.power = 0x25456585
         .BOOSTNORM = dw1000_power_value(DW1000_txrf_config_0db, 3),
         .BOOSTP500 = dw1000_power_value(DW1000_txrf_config_0db, 3),    
         .BOOSTP250 = dw1000_power_value(DW1000_txrf_config_0db, 3),     
@@ -108,18 +109,6 @@ static void timer_ev_cb(struct os_event *ev) {
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
 
     dw1000_rng_request(inst, 0x4321, DWT_SDS_TWR);
-#if 0
-    if (inst->status.start_rx_error)
-        printf("timer_ev_cb:[start_rx_error]\n");
-    if (inst->status.start_tx_error)
-        printf("timer_ev_cb:[start_tx_error]\n");
-    if (inst->status.rx_error)
-        printf("timer_ev_cb:[rx_error]\n");
-    if (inst->status.request_timeout)
-        printf("timer_ev_cb:[request_timeout]\n");
-    if (inst->status.rx_timeout_error)
-        printf("timer_ev_cb:[rx_timeout_error]\n");
-#endif
 
     if (inst->status.start_tx_error || inst->status.rx_error || inst->status.request_timeout ||  inst->status.rx_timeout_error){
         inst->status.start_tx_error = inst->status.rx_error = inst->status.request_timeout = inst->status.rx_timeout_error = 0;
@@ -143,8 +132,8 @@ static void timer_ev_cb(struct os_event *ev) {
                     uint64_t T1r = (inst->rng->ss_twr[0].response.transmission_timestamp  - inst->rng->ss_twr[0].response.reception_timestamp); 
                     uint64_t T2R = (inst->rng->ss_twr[1].response_timestamp - inst->rng->ss_twr[1].request_timestamp); 
                     uint64_t T2r = (inst->rng->ss_twr[1].response.transmission_timestamp  - inst->rng->ss_twr[1].response.reception_timestamp); 
-                    uint32_t Tp  =  (T1R - T1r + T2R - T2r) >> 2;
-                    json_rng_encode(inst->rng->ss_twr, 2);
+                    uint32_t Tp  =  (T1R - T1r + T2R - T2r);//  >> 2;
+                    json_rng_encode(inst->rng->ss_twr, inst->rng->nframes);
 
                     cir_t cir; 
                     dw1000_read_accdata(inst, (uint8_t * ) &cir, 600 * sizeof(cir_complex_t), CIR_SIZE * sizeof(cir_complex_t) + 1 );
@@ -173,25 +162,22 @@ static void init_timer(void) {
 int main(int argc, char **argv){
     int rc;
     
-    sysinit();
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    dw1000_dev_init(inst, MYNEWT_VAL(DW1000_DEVICE_0_SPI_IDX));
-    dw1000_phy_init(inst, &txrf_config);
-
+    sysinit(); 
     hal_gpio_init_out(LED_BLINK_PIN, 1);
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
 
-    init_timer();
-    
+    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     dw1000_softreset(inst);
+    dw1000_phy_init(inst, &txrf_config);
     inst->PANID = 0xDECA;
     inst->my_short_address = 0x1234;
     dw1000_set_panid(inst,inst->PANID);
-    
     dw1000_mac_init(inst, &mac_config);
     dw1000_rng_init(inst, &rng_config);
     dw1000_rng_set_frames(inst, ss_twr, sizeof(ss_twr)/sizeof(ss_twr_frame_t));
+
+    init_timer();
 
     while (1) {
         os_eventq_run(os_eventq_dflt_get());

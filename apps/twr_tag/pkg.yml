@@ -17,7 +17,7 @@
 # under the License.
 #
 
-pkg.name: apps/ss_twr_tag
+pkg.name: apps/twr_tag
 pkg.type: app
 pkg.description: Basic example application which blinks an LED.
 pkg.author: "Apache Mynewt <dev@mynewt.apache.org>"

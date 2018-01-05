@@ -1,4 +1,0 @@
-### Target: targets/ss_twr_tag
-target.app: "apps/ss_twr_tag"
-target.bsp: "@mynewt-dw1000-core/hw/bsp/dwm1001"
-target.build_profile: "debug"

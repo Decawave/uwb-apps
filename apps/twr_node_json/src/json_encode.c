@@ -113,7 +113,7 @@ void json_rng_encode(ss_twr_frame_t frames[], uint16_t len){
     encoder.je_arg= NULL;
 
     rc = json_encode_object_start(&encoder);
-    rc |= json_encode_array_name(&encoder, "ss_twr");
+    rc |= json_encode_array_name(&encoder, "sds_twr");
 
     rc |= json_encode_array_start(&encoder);
 
@@ -186,7 +186,7 @@ void json_rxdiag_encode(dw1000_dev_rxdiag_t * rxdiag, char * name){
     rc = json_encode_object_start(&encoder);
     rc |= json_encode_object_key(&encoder, name);
     rc |= json_encode_object_start(&encoder);    
-    
+
     JSON_VALUE_UINT(&value, rxdiag->fp_idx);
     rc |= json_encode_object_entry(&encoder, "fp_idx", &value);
     JSON_VALUE_UINT(&value, rxdiag->fp_amp);

@@ -1,7 +1,6 @@
 tcp = tcpclient('127.0.0.1', 19021);
-%data = read(tcp,1024); % Suppress Segger Bannor
 
-ntimes = 4000
+ntimes = 3000
 idx = [];
 data= [];
 utime =[];
@@ -16,7 +15,7 @@ for j=1:ntimes
     idx = find(str == 13);
     
     while (length(idx) < 4)
-        data = [data, read(tcp)];
+        data = [data, read(tcp, 1024)];
         str = char(data);
         idx = find(str == 13);
     end  
@@ -28,9 +27,9 @@ for j=1:ntimes
             if (isstruct(line)) 
                 if (isfield(line,'utime'))
                     utime(end+1) = line.utime;
-                    Tp(end+1) = line.Tp;
+                    Tp(end+1) = line.Tp/4.0;
                     fp_idx(end+1) = line.fp_idx;
-                    range(end+1) = line.Tp .* 299792458 * (1.0/499.2e6/128.0);
+                    range(end+1) = line.Tp .* 299792458 * (1.0/499.2e6/128.0)/4.0;
                 end
             end
         end
@@ -39,7 +38,7 @@ for j=1:ntimes
      
      [~,m] = size(utime);
      
-     if (mod(m,32) == 0)
+     if (mod(j,32) == 0)
         pause(0.001)
         refreshdata;
      end

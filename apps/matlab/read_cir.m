@@ -1,13 +1,14 @@
 tcp = tcpclient('127.0.0.1', 19021);
-%data = read(tcp,1024); % Suppress Segger Bannor
-
-ntime = 1000
+pause(1)
+      
+ntime =1000
 idx =[];
 data=[];
 fp_idx =[];
-cir = [];
+cir =[];
 cir_current =[];
 fp_idx_current =[];
+t =[];
 
 
 for j=1:ntime
