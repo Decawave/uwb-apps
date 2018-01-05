@@ -160,7 +160,7 @@ To switch from Single-Side to Symetric-Double-Size, simply comment ./twr_node/ma
 
 ```
 
-8. This repo also contains the project twr_node_json. This project works in conjunction with the matlab utility folder and exposed some internal variables to matlab workspace over TCP. The internal variables are encapsulated within JSON string and stream over TCP. These examples are intended as a how-to-guide. This JSON API approach is an extensible API and can be radily augments as needed. 
+8. This repo also contains the project twr_node_json. This project works in conjunction with the matlab utility folder and exposed some internal variables to matlab workspace over TCP. The internal variables are encapsulated within JSON string and stream over TCP. These examples are intended as a how-to-guide. This JSON API approach is an extensible API and can is augments as needed. 
 
 ```no-highlight
 
