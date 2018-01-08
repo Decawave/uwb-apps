@@ -75,7 +75,7 @@ If all goies well the file ./repos/apache-mynewt-core/compiler/arm-none-eabi-m4/
     compiler.flags.base: -mcpu=cortex-m4 -mthumb-interwork -mthumb -Wall -Werror -fno-exceptions -ffunction-sections -fdata-sections -fms-extensions -std=c11
 ```
 
-4. To ereae the default flash image that shipped with the DWM1001.
+4. To erase the default flash image that shipped with the DWM1001.
 
 ```no-highlight
 $ JLinkExe -device nRF52 -speed 4000 -if SWD
@@ -150,7 +150,7 @@ To switch from Single-Side to Symetric-Double-Size, simply comment ./twr_node/ma
 ```
 
 
-7. Both examples are configured to use the Segger RTT console interface. This is covered within the mynewt tutorials/Tooling/SeggarRTT (https://mynewt.apache.org/latest/os/tutorials/segger_rtt/). To launch the console simply  telnet localhost 19021. Note time of writing the newt tools does not support multiple connect dwm1001-dev devices. So it is recomended that you connect twr_tag and twr_node examples to different computers or at least the twr_tag to an external battery. If all going well you should see the twr_node example stream range information on the console. 
+7. Both examples are configured to use the Segger RTT console interface. This is covered within the mynewt tutorials/Tooling/SeggarRTT (https://mynewt.apache.org/latest/os/tutorials/segger_rtt/). To launch the console simply  telnet localhost 19021. Note at time of writing the newt tools does not support multiple connect dwm1001-dev devices. So it is recomended that you connect twr_tag and twr_node examples to different computers or at least the twr_tag to an external battery. If all going well you should see the twr_node example stream range information on the console. 
 
 (executed from the mynewt-dw1000-app directory).
 
