@@ -29,6 +29,9 @@ For these examples, we leverage the Decawave dwm1001 module and dwm1001-dev kit.
 
 Warning: The dwm1001 comes flashed with a UWB Location Based Services stack. This distribution repurposes the hardware and is not intended to replace the functionality of the shipped stack. This distribution is intended to be a starting point for evaluating and developing one's own such stacks. 
 
+## Slack
+
+Project discussion board, http://decawave.slack.com
 
 ## Project Status
 This project is destined to be up-streamed into the mynewt repo Q1 2018:
