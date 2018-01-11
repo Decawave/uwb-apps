@@ -1,7 +1,7 @@
 tcp = tcpclient('127.0.0.1', 19021);
 pause(1)
       
-ntime =1000
+ntime =3000
 idx =[];
 data=[];
 fp_idx =[];
@@ -40,20 +40,31 @@ for j=1:ntime
     
      if(n>1)
         t = (1:m) + 600;
-        cir_current = abs(cir(end,:));
+        abs_cir_current = abs(cir(end,:));
+        real_cir_current = real(cir(end,:));
+        imag_cir_current = imag(cir(end,:));
+
         fp_idx_current = fp_idx(end,:);
      end
      
      if (j==1)
         linkdata off
+        
         subplot(211);
-        plot(t,cir_current);
+        plot(t,abs_cir_current,'m-o');
         xlabel('utime')
         ylabel('range(m)')
+        
+        subplot(212);
+        plot(t,[real_cir_current;imag_cir_current]);
+        xlabel('utime')
+        ylabel('range(m)')
+        
         linkdata on
+     
      else
         if (mod(m,32) == 0)
-            pause(0.001)
+            pause(0.01)
             refreshdata;
         end
      end

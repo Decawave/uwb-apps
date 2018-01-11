@@ -61,7 +61,7 @@ json_write(void *buf, char* data, int len) {
     return len;
 }
 
-int json_ftype_encode(ss_twr_frame_t * frame){
+int json_ftype_encode(twr_frame_t * frame){
 
     struct json_encoder encoder;
     struct json_value value;
@@ -102,7 +102,7 @@ int json_ftype_encode(ss_twr_frame_t * frame){
 }
 
 
-void json_rng_encode(ss_twr_frame_t frames[], uint16_t len){
+void json_rng_encode(twr_frame_t frames[], uint16_t len){
 
     struct json_encoder encoder;
     int rc;
@@ -113,7 +113,7 @@ void json_rng_encode(ss_twr_frame_t frames[], uint16_t len){
     encoder.je_arg= NULL;
 
     rc = json_encode_object_start(&encoder);
-    rc |= json_encode_array_name(&encoder, "sds_twr");
+    rc |= json_encode_array_name(&encoder, "twr");
 
     rc |= json_encode_array_start(&encoder);
 

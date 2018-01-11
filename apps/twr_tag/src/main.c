@@ -42,14 +42,14 @@
 static dwt_config_t mac_config = {
     .chan = 5,                          // Channel number. 
     .prf = DWT_PRF_64M,                 // Pulse repetition frequency. 
-    .txPreambLength = DWT_PLEN_128,     // Preamble length. Used in TX only. 
+    .txPreambLength = DWT_PLEN_512,     // Preamble length. Used in TX only. 
     .rxPAC = DWT_PAC8,                  // Preamble acquisition chunk size. Used in RX only. 
     .txCode = 9,                        // TX preamble code. Used in TX only. 
     .rxCode = 8,                        // RX preamble code. Used in RX only. 
     .nsSFD = 0,                         // 0 to use standard SFD, 1 to use non-standard SFD. 
     .dataRate = DWT_BR_6M8,             // Data rate. 
     .phrMode = DWT_PHRMODE_STD,         // PHY header mode. 
-    .sfdTO = (129 + 8 - 8)              // SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. 
+    .sfdTO = (512 + 1 + 8 - 8)              // SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. 
 };
 
 static dw1000_phy_txrf_config_t txrf_config = { 
@@ -62,11 +62,11 @@ static dw1000_phy_txrf_config_t txrf_config = {
 };
 
 static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x800,          // Send Time delay in usec.
+    .tx_holdoff_delay = 0xA800,          // Send Time delay in usec.
     .rx_timeout_period = 0xF000         // Receive response timeout in usec.
 };
 
-static ss_twr_frame_t ss_twr[] = {
+static twr_frame_t twr[] = {
     [0].request = {
         .fctrl = 0x8841,                // frame control (0x8841 to indicate a data frame using 16-bit addressing).
         .PANID = 0xDECA,                // PAN ID (0xDECA)
@@ -79,17 +79,17 @@ static ss_twr_frame_t ss_twr[] = {
     }
 };
 
-void print_frame(const char * name, ss_twr_frame_t * ss_twr ){
-    printf("%s{\n\tfctrl:0x%04X,\n", name, ss_twr->response.fctrl);
-    printf("\tseq_num:0x%02X,\n", ss_twr->response.seq_num);
-    printf("\tPANID:0x%04X,\n", ss_twr->response.PANID);
-    printf("\tdst_address:0x%04X,\n", ss_twr->response.dst_address);
-    printf("\tsrc_address:0x%04X,\n", ss_twr->response.src_address);
-    printf("\tcode:0x%04X,\n", ss_twr->response.code);
-    printf("\treception_timestamp:0x%08lX,\n", ss_twr->response.reception_timestamp); 
-    printf("\ttransmission_timestamp:0x%08lX,\n", ss_twr->response.transmission_timestamp); 
-    printf("\trequest_timestamp:0x%08lX,\n", ss_twr->request_timestamp); 
-    printf("\tresponse_timestamp:0x%08lX\n}\n", ss_twr->response_timestamp); 
+void print_frame(const char * name, twr_frame_t * twr ){
+    printf("%s{\n\tfctrl:0x%04X,\n", name, twr->response.fctrl);
+    printf("\tseq_num:0x%02X,\n", twr->response.seq_num);
+    printf("\tPANID:0x%04X,\n", twr->response.PANID);
+    printf("\tdst_address:0x%04X,\n", twr->response.dst_address);
+    printf("\tsrc_address:0x%04X,\n", twr->response.src_address);
+    printf("\tcode:0x%04X,\n", twr->response.code);
+    printf("\treception_timestamp:0x%08lX,\n", twr->response.reception_timestamp); 
+    printf("\ttransmission_timestamp:0x%08lX,\n", twr->response.transmission_timestamp); 
+    printf("\trequest_timestamp:0x%08lX,\n", twr->request_timestamp); 
+    printf("\tresponse_timestamp:0x%08lX\n}\n", twr->response_timestamp); 
     return;
 }
 
@@ -130,26 +130,26 @@ static void timer_ev_cb(struct os_event *ev) {
     }
 #endif
 
-    else if (inst->rng->ss_twr[0].response.code == DWT_SS_TWR_FINAL) {
-            ss_twr_frame_t * ss_twr  = &inst->rng->ss_twr[0];  
-            print_frame("ss_trw=",ss_twr);
-            ss_twr->response.code = DWT_SS_TWR_END;
+    else if (inst->rng->twr[0].response.code == DWT_SS_TWR_FINAL) {
+            twr_frame_t * ss_twr  = &inst->rng->twr[0];  
+            print_frame("trw=",ss_twr);
+            twr->response.code = DWT_SS_TWR_END;
 
-            int32_t ToF = ((ss_twr->response_timestamp - ss_twr->request_timestamp) 
-                -  (ss_twr->response.transmission_timestamp - ss_twr->response.reception_timestamp))/2;
+            int32_t ToF = ((twr->response_timestamp - twr->request_timestamp) 
+                -  (twr->response.transmission_timestamp - twr->response.reception_timestamp))/2;
 
-            printf("ToF=%lX, res_req=%lX rec_tra=%lX\n", ToF, (ss_twr->response_timestamp - ss_twr->request_timestamp), (ss_twr->response.transmission_timestamp - ss_twr->response.reception_timestamp));
+            printf("ToF=%lX, res_req=%lX rec_tra=%lX\n", ToF, (twr->response_timestamp - twr->request_timestamp), (twr->response.transmission_timestamp - twr->response.reception_timestamp));
             dw1000_set_rx_timeout(inst, 0);
             dw1000_start_rx(inst); 
     }
 
-    else if (inst->rng->ss_twr[1].response.code == DWT_SDS_TWR_FINAL) {
-        print_frame("1st=",&inst->rng->ss_twr[0]);
+    else if (inst->rng->twr[1].response.code == DWT_SDS_TWR_FINAL) {
+        print_frame("1st=",&inst->rng->twr[0]);
 
-        inst->rng->ss_twr[1].response.code = DWT_SDS_TWR_END;
-        print_frame("2nd=",&inst->rng->ss_twr[1]);
+        inst->rng->twr[1].response.code = DWT_SDS_TWR_END;
+        print_frame("2nd=",&inst->rng->twr[1]);
         
-        inst->rng->ss_twr[1].response.code = DWT_SDS_TWR_END;
+        inst->rng->twr[1].response.code = DWT_SDS_TWR_END;
 
         dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst); 
@@ -174,7 +174,6 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_3, 1);
 
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-//  dw1000_dev_init(inst, MYNEWT_VAL(DW1000_DEVICE_0_SPI_IDX));
     dw1000_softreset(inst);
     dw1000_phy_init(inst, &txrf_config);    
  
@@ -183,7 +182,7 @@ int main(int argc, char **argv){
     dw1000_set_panid(inst,inst->PANID);
     dw1000_mac_init(inst, &mac_config);
     dw1000_rng_init(inst, &rng_config);
-    dw1000_rng_set_frames(inst, ss_twr, sizeof(ss_twr)/sizeof(ss_twr_frame_t));
+    dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));
 
     printf("device_id=%lX\n",inst->device_id);
     printf("PANID=%X\n",inst->PANID);

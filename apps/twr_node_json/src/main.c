@@ -45,14 +45,14 @@
 static dwt_config_t mac_config = {
     .chan = 5,                          // Channel number. 
     .prf = DWT_PRF_64M,                 // Pulse repetition frequency. 
-    .txPreambLength = DWT_PLEN_128,     // Preamble length. Used in TX only. 
+    .txPreambLength = DWT_PLEN_512,     // Preamble length. Used in TX only. 
     .rxPAC = DWT_PAC8,                  // Preamble acquisition chunk size. Used in RX only. 
     .txCode = 8,                        // TX preamble code. Used in TX only. 
     .rxCode = 9,                        // RX preamble code. Used in RX only. 
     .nsSFD = 0,                         // 0 to use standard SFD, 1 to use non-standard SFD. 
     .dataRate = DWT_BR_6M8,             // Data rate. 
     .phrMode = DWT_PHRMODE_STD,         // PHY header mode. 
-    .sfdTO = (129 + 8 - 8)              // SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. 
+    .sfdTO = (512 + 1 + 8 - 8)        // SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. 
 };
 
 static dw1000_phy_txrf_config_t txrf_config = { 
@@ -65,36 +65,22 @@ static dw1000_phy_txrf_config_t txrf_config = {
 };
 
 static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x800,          // Send Time delay in usec.
+    .tx_holdoff_delay = 0xA800,          // Send Time delay in usec.
     .rx_timeout_period = 0xF000         // Receive response timeout in usec.
 };
 
-static ss_twr_frame_t ss_twr[] = {
+static twr_frame_t twr[] = {
     [0].request = {
         .fctrl = 0x8841,                // frame control (0x8841 to indicate a data frame using 16-bit addressing).
-        .PANID = 0xDECA,                 // PAN ID (0xDECA)
+        .PANID = 0xDECA,                // PAN ID (0xDECA)
         .code = DWT_TWR_INVALID
     },
     [1].request = {
         .fctrl = 0x8841,                // frame control (0x8841 to indicate a data frame using 16-bit addressing).
-        .PANID = 0xDECA,                 // PAN ID (0xDECA)
+        .PANID = 0xDECA,                // PAN ID (0xDECA)
         .code = DWT_TWR_INVALID
     }
 };
-
-void print_frame(const char * name, ss_twr_frame_t * ss_twr ){
-    printf("%s{\n\tfctrl:0x%04X,\n", name, ss_twr->response.fctrl);
-    printf("\tseq_num:0x%02X,\n", ss_twr->response.seq_num);
-    printf("\tPANID:0x%04X,\n", ss_twr->response.PANID);
-    printf("\tdst_address:0x%04X,\n", ss_twr->response.dst_address);
-    printf("\tsrc_address:0x%04X,\n", ss_twr->response.src_address);
-    printf("\tcode:0x%04X,\n", ss_twr->response.code);
-    printf("\treception_timestamp:0x%08lX,\n", ss_twr->response.reception_timestamp); 
-    printf("\ttransmission_timestamp:0x%08lX,\n", ss_twr->response.transmission_timestamp); 
-    printf("\trequest_timestamp:0x%08lX,\n", ss_twr->request_timestamp); 
-    printf("\tresponse_timestamp:0x%08lX\n}\n", ss_twr->response_timestamp); 
-    return;
-}
 
 
 /* The timer callout */
@@ -114,26 +100,25 @@ static void timer_ev_cb(struct os_event *ev) {
         inst->status.start_tx_error = inst->status.rx_error = inst->status.request_timeout = inst->status.rx_timeout_error = 0;
     }
         
-    else if (inst->rng->ss_twr[0].response.code == DWT_SS_TWR_FINAL) {
-            ss_twr_frame_t * ss_twr  = &inst->rng->ss_twr[0]; 
-            json_rng_encode(inst->rng->ss_twr, 1);   
+    else if (inst->rng->twr[0].response.code == DWT_SS_TWR_FINAL) {
+            twr_frame_t * twr  = &inst->rng->twr[0]; 
+            json_rng_encode(inst->rng->twr, 1);   
 
-            int32_t ToF = ((ss_twr->response_timestamp - ss_twr->request_timestamp) 
-                -  (ss_twr->response.transmission_timestamp - ss_twr->response.reception_timestamp))/2;
-
+            int32_t ToF = ((twr->response_timestamp - twr->request_timestamp) 
+                -  (twr->response.transmission_timestamp - twr->response.reception_timestamp))/2;
             //float range = ToF * 299792458 * (1.0/499.2e6/128.0);
             //printf("ToF = %lX, range = %f\n", ToF, range);
-
-            printf("ToF=%lX, res_req=%lX rec_tra=%lX\n", ToF, (ss_twr->response_timestamp - ss_twr->request_timestamp), (ss_twr->response.transmission_timestamp - ss_twr->response.reception_timestamp));
-    } else if (inst->rng->nframes > 1){
-                if (inst->rng->ss_twr[1].response.code == DWT_SDS_TWR_FINAL) {
+            printf("ToF=%lX, res_req=%lX rec_tra=%lX\n", ToF, (twr->response_timestamp - twr->request_timestamp), (twr->response.transmission_timestamp - twr->response.reception_timestamp));
+   
+        } else if (inst->rng->nframes > 1){
+                if (inst->rng->twr[1].response.code == DWT_SDS_TWR_FINAL) {
                    
-                    uint64_t T1R = (inst->rng->ss_twr[0].response_timestamp - inst->rng->ss_twr[0].request_timestamp); 
-                    uint64_t T1r = (inst->rng->ss_twr[0].response.transmission_timestamp  - inst->rng->ss_twr[0].response.reception_timestamp); 
-                    uint64_t T2R = (inst->rng->ss_twr[1].response_timestamp - inst->rng->ss_twr[1].request_timestamp); 
-                    uint64_t T2r = (inst->rng->ss_twr[1].response.transmission_timestamp  - inst->rng->ss_twr[1].response.reception_timestamp); 
+                    uint64_t T1R = (inst->rng->twr[0].response_timestamp - inst->rng->twr[0].request_timestamp); 
+                    uint64_t T1r = (inst->rng->twr[0].response.transmission_timestamp  - inst->rng->twr[0].response.reception_timestamp); 
+                    uint64_t T2R = (inst->rng->twr[1].response_timestamp - inst->rng->twr[1].request_timestamp); 
+                    uint64_t T2r = (inst->rng->twr[1].response.transmission_timestamp  - inst->rng->twr[1].response.reception_timestamp); 
                     uint32_t Tp  =  (T1R - T1r + T2R - T2r);//  >> 2;
-                    json_rng_encode(inst->rng->ss_twr, inst->rng->nframes);
+                    json_rng_encode(inst->rng->twr, inst->rng->nframes);
 
                     cir_t cir; 
                     dw1000_read_accdata(inst, (uint8_t * ) &cir, 600 * sizeof(cir_complex_t), CIR_SIZE * sizeof(cir_complex_t) + 1 );
@@ -175,7 +160,7 @@ int main(int argc, char **argv){
     dw1000_set_panid(inst,inst->PANID);
     dw1000_mac_init(inst, &mac_config);
     dw1000_rng_init(inst, &rng_config);
-    dw1000_rng_set_frames(inst, ss_twr, sizeof(ss_twr)/sizeof(ss_twr_frame_t));
+    dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));
 
     init_timer();
 
