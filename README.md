@@ -36,7 +36,7 @@ Project discussion board, http://decawave.slack.com
 ## Project Status
 This project is destined to be up-streamed into the mynewt repo Q1 2018:
 
-* Single-Sides Two-Way-Ranging and Symetric Double-Sided Two-Way-Ranging
+* Single-Sides Two-Way-Ranging and Double-Sided Two-Way-Ranging
 *   twr_tag:
 *   twr_node:
 *   twr_node_json:
@@ -144,7 +144,7 @@ $
     newt run twr_node
 
 ```
-To switch from Single-Side to Symetric-Double-Size, simply comment ./twr_node/main.c as follows: 
+To switch from Single-Side to Double-Size, simply comment ./twr_node/main.c as follows: 
 ```no-highlight
 
    //dw1000_rng_request(inst, 0x4321, DWT_SDS_TWR);

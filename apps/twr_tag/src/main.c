@@ -143,13 +143,13 @@ static void timer_ev_cb(struct os_event *ev) {
             dw1000_start_rx(inst); 
     }
 
-    else if (inst->rng->twr[1].response.code == DWT_SDS_TWR_FINAL) {
+    else if (inst->rng->twr[1].response.code == DWT_DS_TWR_FINAL) {
         print_frame("1st=",&inst->rng->twr[0]);
 
-        inst->rng->twr[1].response.code = DWT_SDS_TWR_END;
+        inst->rng->twr[1].response.code = DWT_DS_TWR_END;
         print_frame("2nd=",&inst->rng->twr[1]);
         
-        inst->rng->twr[1].response.code = DWT_SDS_TWR_END;
+        inst->rng->twr[1].response.code = DWT_DS_TWR_END;
 
         dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst); 

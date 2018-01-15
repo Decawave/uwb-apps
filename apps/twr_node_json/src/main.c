@@ -94,7 +94,7 @@ static void timer_ev_cb(struct os_event *ev) {
     hal_gpio_toggle(LED_BLINK_PIN);
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
 
-    dw1000_rng_request(inst, 0x4321, DWT_SDS_TWR);
+    dw1000_rng_request(inst, 0x4321, DWT_DS_TWR);
 
     if (inst->status.start_tx_error || inst->status.rx_error || inst->status.request_timeout ||  inst->status.rx_timeout_error){
         inst->status.start_tx_error = inst->status.rx_error = inst->status.request_timeout = inst->status.rx_timeout_error = 0;
@@ -111,7 +111,7 @@ static void timer_ev_cb(struct os_event *ev) {
             printf("ToF=%lX, res_req=%lX rec_tra=%lX\n", ToF, (twr->response_timestamp - twr->request_timestamp), (twr->response.transmission_timestamp - twr->response.reception_timestamp));
    
         } else if (inst->rng->nframes > 1){
-                if (inst->rng->twr[1].response.code == DWT_SDS_TWR_FINAL) {
+                if (inst->rng->twr[1].response.code == DWT_DS_TWR_FINAL) {
                    
                     uint64_t T1R = (inst->rng->twr[0].response_timestamp - inst->rng->twr[0].request_timestamp); 
                     uint64_t T1r = (inst->rng->twr[0].response.transmission_timestamp  - inst->rng->twr[0].response.reception_timestamp); 
@@ -131,7 +131,6 @@ static void timer_ev_cb(struct os_event *ev) {
                     printf("{\"utime\": %ld,\"fp_idx\": %d,\"Tp\": %ld}\n", os_time_get(), cir.fp_idx, Tp);
                 }
     }
-
     os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/32);
 }
 
