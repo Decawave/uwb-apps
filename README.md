@@ -40,7 +40,6 @@ This project is destined to be up-streamed into the mynewt repo Q1 2018:
 *   twr_tag:
 *   twr_node:
 *   twr_node_json:
-* blinky
 
 ## Building
 
@@ -68,8 +67,8 @@ Currently mynewt-dw1000-core is a private repo and as such requires an extra ste
 Apply the C99 extendsion patch to the apache-mynewt-core distribution. This is contained in the file ./repos/.patches/apache-mynewt-core.patch
 
 ```no-highlight
-    cd ./repos/
-    git apply /.patches/apache-mynewt-core.patch
+    cd ./repos
+    git apply .patches/apache-mynewt-core.patch
 ```
 
 If all goies well the file ./repos/apache-mynewt-core/compiler/arm-none-eabi-m4/compiler.yml should now contain -fms-extensions -std=c11
@@ -127,6 +126,8 @@ $
 
 ```no-highlight
 
+    newt target create twr_tag
+    newt target set twr_node app=apps/twr_tag
     newt target set twr_tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
     newt target set twr_tag build_profile=debug
     newt load twr_tag
@@ -139,6 +140,8 @@ $
 
 ```no-highlight
 
+    newt target create twr_node 
+    newt target set twr_node app=apps/twr_node
     newt target set twr_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
     newt target set twr_node build_profile=debug
     newt run twr_node
@@ -147,13 +150,13 @@ $
 To switch from Single-Side to Double-Size, simply comment ./twr_node/main.c as follows: 
 ```no-highlight
 
-   //dw1000_rng_request(inst, 0x4321, DWT_SDS_TWR);
+   //dw1000_rng_request(inst, 0x4321, DWT_DS_TWR);
    dw1000_rng_request(inst, 0x4321, DWT_SS_TWR);
 
 ```
 
 
-7. Both examples are configured to use the Segger RTT console interface. This is covered within the mynewt tutorials/Tooling/SeggarRTT (https://mynewt.apache.org/latest/os/tutorials/segger_rtt/). To launch the console simply  telnet localhost 19021. Note at time of writing the newt tools does not support multiple connect dwm1001-dev devices. So it is recomended that you connect twr_tag and twr_node examples to different computers or at least the twr_tag to an external battery. If all going well you should see the twr_node example stream range information on the console. 
+7. Both examples are configured to use the Segger RTT console interface. This is covered within the mynewt tutorials/Tooling/SeggarRTT (https://mynewt.apache.org/latest/os/tutorials/segger_rtt/). To launch the console simply telnet localhost 19021. Note at time of writing the newt tools does not support multiple connect dwm1001-dev devices. So it is recomended that you connect twr_tag and twr_node examples to different computers or at least the twr_tag to an external battery. If all going well you should see the twr_node example stream range information on the console. 
 
 (executed from the mynewt-dw1000-app directory).
 
