@@ -45,7 +45,7 @@ This project is destined to be up-streamed into the mynewt repo Q1 2018:
 
 1. Download and install Apache Newt.
 
-You will need to download the Apache Newt tool, as documented in the [Getting Started Guide](http://mynewt.apache.org/os/get_started/introduction/). 
+You will need to download the Apache Newt tool, as documented in the [Getting Started Guide](http://mynewt.apache.org/latest/os/get_started/get_started/). 
 
 Prerequisites: You should follow the generic tutorials at https://mynewt.apache.org/latest/os/tutorials/tutorials/. This example is an extension of the basic Blinky example.
 
@@ -130,7 +130,7 @@ newt target create twr_tag
 newt target set twr_tag app=apps/twr_tag
 newt target set twr_tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target set twr_tag build_profile=debug
-newt run twr_tag
+newt run twr_tag 0
 
 ```
 
@@ -144,7 +144,7 @@ newt target create twr_node
 newt target set twr_node app=apps/twr_node
 newt target set twr_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target set twr_node build_profile=debug
-newt run twr_node
+newt run twr_node 0
 
 ```
 To switch from Single-Side to Double-Size, simply comment ./twr_node/main.c as follows: 
@@ -174,7 +174,7 @@ newt target create twr_node_json
 newt target set twr_node app=apps/twr_node_json
 newt target set twr_node_json bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target set twr_node_json build_profile=debug
-newt run twr_node_json
+newt run twr_node_json 0
 
 ```
 
