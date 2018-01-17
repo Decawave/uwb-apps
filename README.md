@@ -110,13 +110,13 @@ $
 
 ```no-highlight
 
-    newt target create dwm1001_boot
-    newt target set dwm1001_boot app=@apache-mynewt-core/apps/boot
-    newt target set dwm1001_boot bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-    newt target set dwm1001_boot build_profile=optimized
-    newt build dwm1001_boot
-    newt create-image dwm1001_boot 1.0.0
-    newt load dwm1001_boot
+newt target create dwm1001_boot
+newt target set dwm1001_boot app=@apache-mynewt-core/apps/boot
+newt target set dwm1001_boot bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set dwm1001_boot build_profile=optimized
+newt build dwm1001_boot
+newt create-image dwm1001_boot 1.0.0
+newt load dwm1001_boot
 
 ```
 
@@ -126,11 +126,11 @@ $
 
 ```no-highlight
 
-    newt target create twr_tag
-    newt target set twr_node app=apps/twr_tag
-    newt target set twr_tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-    newt target set twr_tag build_profile=debug
-    newt load twr_tag
+newt target create twr_tag
+newt target set twr_tag app=apps/twr_tag
+newt target set twr_tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set twr_tag build_profile=debug
+newt run twr_tag
 
 ```
 
@@ -140,11 +140,11 @@ $
 
 ```no-highlight
 
-    newt target create twr_node 
-    newt target set twr_node app=apps/twr_node
-    newt target set twr_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-    newt target set twr_node build_profile=debug
-    newt run twr_node
+newt target create twr_node 
+newt target set twr_node app=apps/twr_node
+newt target set twr_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set twr_node build_profile=debug
+newt run twr_node
 
 ```
 To switch from Single-Side to Double-Size, simply comment ./twr_node/main.c as follows: 
@@ -162,7 +162,7 @@ To switch from Single-Side to Double-Size, simply comment ./twr_node/main.c as f
 
 ```no-highlight
 
-    telnet localhost 19021
+telnet localhost 19021
 
 ```
 
@@ -170,6 +170,8 @@ To switch from Single-Side to Double-Size, simply comment ./twr_node/main.c as f
 
 ```no-highlight
 
+newt target create twr_node_json 
+newt target set twr_node app=apps/twr_node_json
 newt target set twr_node_json bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target set twr_node_json build_profile=debug
 newt run twr_node_json
