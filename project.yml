@@ -33,7 +33,7 @@ repository.apache-mynewt-core:
     repo: mynewt-core
 
 repository.mynewt-dw1000-core:
-    type: github
+    type: git
     vers: 0-dev
     url: 'git@github.com:Decawave/mynewt-dw1000-core.git'
 
