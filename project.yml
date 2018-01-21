@@ -32,9 +32,14 @@ repository.apache-mynewt-core:
     user: apache
     repo: mynewt-core
 
+#repository.mynewt-dw1000-core:
+#    type: github
+#    vers: 0-dev
+#    user: pkettle
+#    repo: mynewt-dw1000-core
+
 repository.mynewt-dw1000-core:
-    type: github
+    type: git
     vers: 0-dev
-    user: pkettle
-    repo: mynewt-dw1000-core
+    url: 'git@github.com:Decawave/mynewt-dw1000-apps.git'
 
