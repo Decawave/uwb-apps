@@ -171,7 +171,7 @@ telnet localhost 19021
 ```no-highlight
 
 newt target create twr_node_json 
-newt target set twr_node app=apps/twr_node_json
+newt target set twr_node_json app=apps/twr_node_json
 newt target set twr_node_json bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target set twr_node_json build_profile=debug
 newt run twr_node_json 0
