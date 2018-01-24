@@ -104,7 +104,7 @@ J-Link>exit
 $ 
 ```
 
-4. Build the new bootloader applicaiton for the DWM1001 taregt.
+4. Build the new bootloader applicaiton for the DWM1001 target.
 
 (executed from the mynewt-dw1000-app directory).
 
