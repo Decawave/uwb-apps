@@ -22,11 +22,9 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
-#include "rtt/SEGGER_RTT.h"
 
 #include <dw1000/dw1000_ftypes.h>
 #include "json_encode.h"
-
 
 
 #define JSON_BUF_SIZE (1024*8)

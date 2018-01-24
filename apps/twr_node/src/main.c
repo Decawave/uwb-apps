@@ -30,7 +30,6 @@
 #ifdef ARCH_sim
 #include "mcu/mcu_sim.h"
 #endif
-#include "rtt/SEGGER_RTT.h"
 
 #include <dw1000/dw1000_dev.h>
 #include <dw1000/dw1000_hal.h>
