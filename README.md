@@ -64,10 +64,10 @@ Currently mynewt-dw1000-core is a private repo and as such requires an extra ste
 ```no-highlight
     $ newt install
 ```
-Apply the C99 extendsion patch to the apache-mynewt-core distribution. This is contained in the file ./repos/.patches/apache-mynewt-core.patch
+Apply the gun99 extendsion patch to the apache-mynewt-core distribution. This is contained in the file ./repos/.patches/apache-mynewt-core.patch
 
 ```no-highlight
-    cd ./repos
+    cd ./repos/apache-mynewt-core
     git apply .patches/apache-mynewt-core.patch
 ```
 
