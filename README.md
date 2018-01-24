@@ -68,7 +68,7 @@ Apply the gun99 extendsion patch to the apache-mynewt-core distribution. This is
 
 ```no-highlight
     cd ./repos/apache-mynewt-core
-    git apply .patches/apache-mynewt-core.patch
+    git apply ../.patches/apache-mynewt-core.patch
 ```
 
 If all goies well the file ./repos/apache-mynewt-core/compiler/arm-none-eabi-m4/compiler.yml should now contain -fms-extensions -std=c11
