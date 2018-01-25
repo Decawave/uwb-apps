@@ -101,7 +101,7 @@ $
 newt target create dwm1001_boot
 newt target set dwm1001_boot app=@apache-mynewt-core/apps/boot
 newt target set dwm1001_boot bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target set dwm1001_boot build_profile=optimized cflags='-std=gnu99 -fms-extensions'
+newt target set dwm1001_boot build_profile=optimized 
 newt build dwm1001_boot
 newt create-image dwm1001_boot 1.0.0
 newt load dwm1001_boot
@@ -117,7 +117,7 @@ newt load dwm1001_boot
 newt target create twr_tag
 newt target set twr_tag app=apps/twr_tag
 newt target set twr_tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target set twr_tag build_profile=debug cflags='-std=gnu99 -fms-extensions'
+newt target set twr_tag build_profile=debug 
 newt run twr_tag 0
 
 ```
@@ -131,7 +131,7 @@ newt run twr_tag 0
 newt target create twr_node 
 newt target set twr_node app=apps/twr_node
 newt target set twr_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target set twr_node build_profile=debug cflags='-std=gnu99 -fms-extensions'
+newt target set twr_node build_profile=debug 
 newt run twr_node 0
 
 ```
@@ -161,7 +161,7 @@ telnet localhost 19021
 newt target create twr_node_json 
 newt target set twr_node_json app=apps/twr_node_json
 newt target set twr_node_json bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target set twr_node_json build_profile=debug cflags='-std=gnu99 -fms-extensions'
+newt target set twr_node_json build_profile=debug 
 newt run twr_node_json 0
 
 ```
