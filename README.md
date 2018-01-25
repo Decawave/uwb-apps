@@ -59,22 +59,10 @@ Prerequisites: You should follow the generic tutorials at https://mynewt.apache.
 
 3. Download the Apache Mynewt Core and Mynewt DW1000 Core package.
 
-Currently mynewt-dw1000-core is a private repo and as such requires an extra step to provide authorization. See (https://mynewt.apache.org/latest/os/tutorials/repo/private_repo/) for a how to guide. Note with newt version 1.2, I have only had sucess with the project.yml approach to private repos. It is also necessary delete the ./repos director after an error has occured. Don't forget to save the .patch folder.
+Currently mynewt-dw1000-core is a private repo and as such requires an extra step to provide authorization. See (https://mynewt.apache.org/latest/os/tutorials/repo/private_repo/) for a how to guide. Note with newt version 1.3.0, I have only had sucess with the project.yml approach to private repos. 
 
 ```no-highlight
     $ newt install
-```
-Apply the gun99 extendsion patch to the apache-mynewt-core distribution. This is contained in the file ./repos/.patches/apache-mynewt-core.patch
-
-```no-highlight
-    cd ./repos/apache-mynewt-core
-    git apply ../.patches/apache-mynewt-core.patch
-```
-
-If all goies well the file ./repos/apache-mynewt-core/compiler/arm-none-eabi-m4/compiler.yml should now contain -fms-extensions -std=c11
-
-```no-highlight
-    compiler.flags.base: -mcpu=cortex-m4 -mthumb-interwork -mthumb -Wall -Werror -fno-exceptions -ffunction-sections -fdata-sections -fms-extensions -std=c11
 ```
 
 4. To erase the default flash image that shipped with the DWM1001.
@@ -113,7 +101,7 @@ $
 newt target create dwm1001_boot
 newt target set dwm1001_boot app=@apache-mynewt-core/apps/boot
 newt target set dwm1001_boot bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target set dwm1001_boot build_profile=optimized
+newt target set dwm1001_boot build_profile=optimized cflags='-std=gnu99 -fms-extensions'
 newt build dwm1001_boot
 newt create-image dwm1001_boot 1.0.0
 newt load dwm1001_boot
@@ -129,7 +117,7 @@ newt load dwm1001_boot
 newt target create twr_tag
 newt target set twr_tag app=apps/twr_tag
 newt target set twr_tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target set twr_tag build_profile=debug
+newt target set twr_tag build_profile=debug cflags='-std=gnu99 -fms-extensions'
 newt run twr_tag 0
 
 ```
@@ -143,7 +131,7 @@ newt run twr_tag 0
 newt target create twr_node 
 newt target set twr_node app=apps/twr_node
 newt target set twr_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target set twr_node build_profile=debug
+newt target set twr_node build_profile=debug cflags='-std=gnu99 -fms-extensions'
 newt run twr_node 0
 
 ```
@@ -173,7 +161,7 @@ telnet localhost 19021
 newt target create twr_node_json 
 newt target set twr_node_json app=apps/twr_node_json
 newt target set twr_node_json bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target set twr_node_json build_profile=debug
+newt target set twr_node_json build_profile=debug cflags='-std=gnu99 -fms-extensions'
 newt run twr_node_json 0
 
 ```

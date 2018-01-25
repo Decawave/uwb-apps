@@ -49,7 +49,7 @@ static dwt_config_t mac_config = {
     .nsSFD = 0,                         // 0 to use standard SFD, 1 to use non-standard SFD. 
     .dataRate = DWT_BR_6M8,             // Data rate. 
     .phrMode = DWT_PHRMODE_STD,         // PHY header mode. 
-    .sfdTO = (256 + 1 + 8 - 8)              // SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. 
+    .sfdTO = (512 + 1 + 8 - 8)              // SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. 
 };
 
 static dw1000_phy_txrf_config_t txrf_config = { 
