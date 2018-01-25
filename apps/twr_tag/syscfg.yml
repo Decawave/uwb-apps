@@ -1,0 +1,4 @@
+syscfg.vals:
+    # Route console to RTT
+    CONSOLE_UART: 0
+    CONSOLE_RTT: 1
