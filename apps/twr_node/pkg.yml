@@ -19,10 +19,12 @@
 
 pkg.name: apps/twr_node
 pkg.type: app
-pkg.description: Basic example application which blinks an LED.
-pkg.author: "Apache Mynewt <dev@mynewt.apache.org>"
-pkg.homepage: "http://mynewt.apache.org/"
+pkg.description: "Basic TWR node example"
+pkg.author: "Paul Kettle <paul.kettle@decawave.com>"
+pkg.homepage: "http://www.decawave.com/"
 pkg.keywords:
+  - dw1000
+  - twr
 
 pkg.deps:
     - "@apache-mynewt-core/kernel/os"
@@ -31,5 +33,8 @@ pkg.deps:
     - "@apache-mynewt-core/sys/shell"
     - "@mynewt-dw1000-core/hw/drivers/dw1000"
     - "@apache-mynewt-core/encoding/json"
-    
+
+pkg.cflags:
+    - "-std=gnu99"
+    - "-fms-extensions"
 
