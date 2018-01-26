@@ -108,7 +108,7 @@ newt load dwm1001_boot
 
 ```
 
-5. On the first dwm1001-dev Build the Two Way Ranging (twr_tag) Applicaitons for the DWM1000 hardware platform. The mynewt-dw1000-app is already configured for the dwm1001 target, however for completeness the first two command below assign and create the target platform. The load command compiled the project and loads the image on the target platform.
+5. On the first dwm1001-dev board build the Two-Way-Ranging (twr_tag) applicaitons for the DWM1001 module. The build command compiled the project and loads the image on the target platform.
 
 (executed from the mynewt-dw1000-app directory).
 
@@ -118,11 +118,11 @@ newt target create twr_tag
 newt target set twr_tag app=apps/twr_tag
 newt target set twr_tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target set twr_tag build_profile=debug 
-newt run twr_tag 0
+newt build twr_tag 0
 
 ```
 
-6. On a second dwm1001-dev build the master size of the Two Way Ranging (twr_node) Applicaitons as follows. The run command compiled the project and loads the image on the target platform.
+6. On a second dwm1001-dev build the master side of the Two-Way-Ranging (twr_node) applicaitons as follows. 
 
 (executed from the mynewt-dw1000-app directory).
 
@@ -132,7 +132,7 @@ newt target create twr_node
 newt target set twr_node app=apps/twr_node
 newt target set twr_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target set twr_node build_profile=debug 
-newt run twr_node 0
+newt build twr_node 0
 
 ```
 To switch from Single-Side to Double-Size, simply comment ./twr_node/main.c as follows: 
