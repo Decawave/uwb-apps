@@ -55,10 +55,10 @@ static dwt_config_t mac_config = {
 static dw1000_phy_txrf_config_t txrf_config = { 
         .PGdly = TC_PGDELAY_CH5,
         //.power = 0x25456585
-        .BOOSTNORM = dw1000_power_value(DW1000_txrf_config_0db, 3),
-        .BOOSTP500 = dw1000_power_value(DW1000_txrf_config_0db, 3),    
-        .BOOSTP250 = dw1000_power_value(DW1000_txrf_config_0db, 3),     
-        .BOOSTP125 = dw1000_power_value(DW1000_txrf_config_0db, 3)
+        .BOOSTNORM = dw1000_power_value(DW1000_txrf_config_9db, 5),
+        .BOOSTP500 = dw1000_power_value(DW1000_txrf_config_9db, 5),
+        .BOOSTP250 = dw1000_power_value(DW1000_txrf_config_9db, 5),
+        .BOOSTP125 = dw1000_power_value(DW1000_txrf_config_9db, 5)
 };
 
 static dw1000_rng_config_t rng_config = {
@@ -78,6 +78,17 @@ static twr_frame_t twr[] = {
         .code = DWT_TWR_INVALID
     }
 };
+
+
+// Calculates the time of flight in dwt-units x 1000 (for easy mm calc)
+int32_t twr_calc_tof_32(uint32_t tround1, uint32_t treply1, uint32_t tround2, uint32_t treply2)
+{
+    int64_t nom = ((int64_t)tround1*(int64_t)tround2 - (int64_t)treply1*(int64_t)treply2)*1000;
+    int64_t denom = (int64_t)tround1+(int64_t)tround2+(int64_t)treply1+(int64_t)treply2;
+    
+    return nom/denom;
+}
+
 
 void print_frame(const char * name, twr_frame_t * twr ){
     printf("%s{\n\tfctrl:0x%04X,\n", name, twr->response.fctrl);
@@ -161,6 +172,10 @@ static void timer_ev_cb(struct os_event *ev) {
                     uint32_t Tprop  =  (T1R - T1r + T2R - T2r) >> 2;
                     printf("Tprop=0x%08lX\n", Tprop);
 
+                    int32_t tof = twr_calc_tof_32(T1R&0xFFFFFFFF, T1r&0xFFFFFFFF, T2R&0xFFFFFFFF, T2r&0xFFFFFFFF);
+                    int32_t range_mm = (((int64_t)tof)<<4)/3411;
+                    printf("tof = %lX, range = %ld mm\n", tof, range_mm);
+    
 //                    json_rng_encode(inst->rng->ss_twr);
 //                    json_ftype_encode(&inst->rng->ss_twr[1].response);
                 }
