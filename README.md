@@ -52,7 +52,7 @@ Prerequisites: You should follow the generic tutorials at https://mynewt.apache.
 2. Download the DW1000 Mynewt apps.
 
 ```no-highlight
-    git clone https://github.com/decawave/mynewt-dw1000-apps.git
+    git clone git@github.com:Decawave/mynewt-dw1000-apps.git
     cd mynewt-dw1000-apps
 ```
 
