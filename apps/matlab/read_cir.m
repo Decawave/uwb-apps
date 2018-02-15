@@ -61,6 +61,7 @@ for j=1:ntime
         ylabel('range(m)')
         
         linkdata on
+        shg
      
      else
         if (mod(m,32) == 0)

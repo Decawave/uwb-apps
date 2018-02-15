@@ -56,10 +56,10 @@ static dwt_config_t mac_config = {
 static dw1000_phy_txrf_config_t txrf_config = { 
         .PGdly = TC_PGDELAY_CH5,
         //.power = 0x25456585
-        .BOOSTNORM = dw1000_power_value(DW1000_txrf_config_0db, 3),
-        .BOOSTP500 = dw1000_power_value(DW1000_txrf_config_0db, 3),    
-        .BOOSTP250 = dw1000_power_value(DW1000_txrf_config_0db, 3),     
-        .BOOSTP125 = dw1000_power_value(DW1000_txrf_config_0db, 3)
+        .BOOSTNORM = dw1000_power_value(DW1000_txrf_config_9db, 5),
+        .BOOSTP500 = dw1000_power_value(DW1000_txrf_config_9db, 5),    
+        .BOOSTP250 = dw1000_power_value(DW1000_txrf_config_9db, 5),     
+        .BOOSTP125 = dw1000_power_value(DW1000_txrf_config_9db, 5)
 };
 
 static dw1000_rng_config_t rng_config = {
