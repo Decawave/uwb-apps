@@ -163,7 +163,7 @@ static void twr_timer_ev_cb(struct os_event *ev) {
         dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst); 
     }
-    os_callout_reset(&twr_callout, OS_TICKS_PER_SEC/128);
+    os_callout_reset(&twr_callout, OS_TICKS_PER_SEC/100);
 }
 
 int sensor_data_cb(struct sensor* sensor, void *arg, void *data, sensor_type_t type)
@@ -265,7 +265,7 @@ static void sensor_timer_ev_cb(struct os_event *ev) {
         i++;
     }
     
-    os_callout_reset(&sensor_callout, OS_TICKS_PER_SEC*5);
+    os_callout_reset(&sensor_callout, OS_TICKS_PER_SEC/100);
 }
 
 
