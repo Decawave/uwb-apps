@@ -17,7 +17,7 @@
 # under the License.
 #
 
-pkg.name: apps/twr_tag
+pkg.name: apps/twr_tag_imu
 pkg.type: app
 pkg.description: "Basic TWR tag example"
 pkg.author: "Paul Kettle <paul.kettle@decawave.com>"
@@ -32,7 +32,9 @@ pkg.deps:
     - "@apache-mynewt-core/sys/console/full" 
     - "@apache-mynewt-core/sys/shell"
     - "@mynewt-dw1000-core/hw/drivers/dw1000"
-
+    - "@apache-mynewt-core/sys/log/full"
+    - "@apache-mynewt-core/sys/stats/full"
+    - "@apache-mynewt-core/hw/sensor"
     
 pkg.cflags:
     - "-std=gnu99"

@@ -1,0 +1,13 @@
+syscfg.vals:
+    # Route console to RTT
+    CONSOLE_UART: 0
+    CONSOLE_RTT: 1
+    # Enable DW1000
+    DW1000_DEVICE_0: 1
+    I2C_1: 1
+    # ST Mems
+    LSM6DSL_ONB: 1
+    LIS2MDL_ONB: 1
+    LPS22HB_ONB: 1
+    # Inversense
+    MPU6500_ONB: 1
