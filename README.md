@@ -34,13 +34,16 @@ Warning: The dwm1001 comes flashed with a UWB Location Based Services stack. Thi
 Project discussion board, http://decawave.slack.com
 
 ## Project Status
-This project is destined to be up-streamed into the mynewt repo Q1 2018:
+This project is destined to be up-streamed into the mynewt repo Q1 2018. Below are the current examples and associated hardware plaforms.
 
-* Single-Sides Two-Way-Ranging and Double-Sided Two-Way-Ranging
-*   twr_tag:
-*   twr_node:
-*   twr_node_json:
-
+### DWM1001 || DWM1002 || DWM1003 || LPS2MINI || LPS2NANO
+*   twr_tag:        // Single & Double Two-Way-Ranging 
+*   twr_node:       // Single & Double Two-Way-Ranging 
+*   twr_node_json:  
+### DWM1002 || DWM1003 || LPS2MINI || LPS2NANO
+*   twr_tag_imu:    // Single & Double Two-Way-Ranging with 10DOF
+### DWM1003 
+*   aoa_node:       // Dual DW1000 and 10DOF  
 ## Building
 
 1. Download and install Apache Newt.
