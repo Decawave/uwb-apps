@@ -42,7 +42,7 @@
 static dwt_config_t mac_config = {
     .chan = 5,                          // Channel number. 
     .prf = DWT_PRF_64M,                 // Pulse repetition frequency. 
-    .txPreambLength = DWT_PLEN_256,     // Preamble length. Used in TX only. 
+    .txPreambLength = DWT_PLEN_512,     // Preamble length. Used in TX only. 
     .rxPAC = DWT_PAC8,                  // Preamble acquisition chunk size. Used in RX only. 
     .txCode = 8,                        // TX preamble code. Used in TX only. 
     .rxCode = 9,                        // RX preamble code. Used in RX only. 
@@ -62,7 +62,7 @@ static dw1000_phy_txrf_config_t txrf_config = {
 };
 
 static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x4800,          // Send Time delay in usec.
+    .tx_holdoff_delay = 0x0C00,         // Send Time delay in usec.
     .rx_timeout_period = 0xF000         // Receive response timeout in usec.
 };
 
@@ -181,7 +181,7 @@ static void timer_ev_cb(struct os_event *ev) {
                 }
     }
 
-    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/64);
+    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/16);
 }
 
 /*

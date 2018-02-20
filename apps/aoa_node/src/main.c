@@ -176,8 +176,8 @@ static void timer_ev_cb(struct os_event *ev) {
                     int32_t range_mm = (((int64_t)tof)<<4)/3411;
                     printf("tof = %lX, range = %ld mm\n", tof, range_mm);
     
-//                    json_rng_encode(inst->rng->ss_twr);
-//                    json_ftype_encode(&inst->rng->ss_twr[1].response);
+//                  json_rng_encode(inst->rng->ss_twr);
+//                  json_ftype_encode(&inst->rng->ss_twr[1].response);
                 }
     }
 

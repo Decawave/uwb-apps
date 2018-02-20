@@ -4,4 +4,4 @@ syscfg.vals:
     CONSOLE_RTT: 1
     # Enable DW1000
     DW1000_DEVICE_0: 1
-    
+

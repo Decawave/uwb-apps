@@ -19,11 +19,11 @@
 #
 -->
 
-# twr_node_jaon applications 
+# twr_node_json applications 
 
 ## Overview
 
-1. This repo contains the project twr_node_json. This project works in conjunction with the matlab utility folder and exposed some internal variables to matlab workspace over TCP. The internal variables are encapsulated within JSON string and stream over TCP. These examples are intended as a how-to-guide. This JSON API approach is an extensible API and can is augments as needed. 
+This example contains the project twr_node_json. This project works in conjunction with the matlab utility folder and exposed some internal variables to matlab workspace over TCP. The internal variables are encapsulated within JSON string and stream over TCP. These examples are intended as a how-to-guide. This JSON API approach is an extensible API and can is augments as needed. 
 
 ```no-highlight
 

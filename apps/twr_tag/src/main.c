@@ -62,7 +62,7 @@ static dw1000_phy_txrf_config_t txrf_config = {
 };
 
 static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0xA800,          // Send Time delay in usec.
+    .tx_holdoff_delay = 0x0C00,          // Send Time delay in usec.
     .rx_timeout_period = 0xF000         // Receive response timeout in usec.
 };
 
@@ -154,7 +154,7 @@ static void timer_ev_cb(struct os_event *ev) {
         dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst); 
     }
-    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/128);
+    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/32);
 }
 
 static void init_timer(void) {
