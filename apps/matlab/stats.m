@@ -42,7 +42,7 @@ for j=1:ntimes
         pause(0.001)
         refreshdata;
      end
-     if (mod(j,32) == 0)
+     if (mod(j,4) == 0)
             [mu,sigma,~,~] = normfit(range);
             subplot(212);histfit(range,16,'normal');title(sprintf("mu=%f sigma=%f",mu,sigma))
      end

@@ -1,7 +1,7 @@
 tcp = tcpclient('127.0.0.1', 19021);
 pause(1)
       
-ntime =3000
+ntime = 3000
 idx =[];
 data=[];
 fp_idx =[];
@@ -64,7 +64,7 @@ for j=1:ntime
         shg
      
      else
-        if (mod(m,32) == 0)
+        if (mod(m,4) == 0)
             pause(0.01)
             refreshdata;
         end
