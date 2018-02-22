@@ -69,7 +69,7 @@ static dw1000_phy_txrf_config_t txrf_config = {
 };
 
 static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0xA800,          // Send Time delay in usec.
+    .tx_holdoff_delay = 0x0D00,          // Send Time delay in usec.
     .rx_timeout_period = 0xF000         // Receive response timeout in usec.
 };
 
@@ -116,7 +116,7 @@ static void twr_timer_ev_cb(struct os_event *ev) {
     assert(inst->rng->nframes > 0);
 
 #if 0
-    if (dw1000_rng_request(inst, NULL, NULL, DWT_SS_TWR).rx_error)
+    if (dw1000_rng_request(inst, 0x1234, DWT_DS_TWR).rx_error)
         printf("twr_timer_ev_cb:rng_request failed [status.mac_error]\n");
 #else
 
@@ -163,6 +163,7 @@ static void twr_timer_ev_cb(struct os_event *ev) {
         dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst); 
     }
+
     os_callout_reset(&twr_callout, OS_TICKS_PER_SEC/100);
 }
 

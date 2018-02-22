@@ -129,7 +129,7 @@ static void timer_ev_cb(struct os_event *ev) {
                     printf("{\"utime\": %ld,\"fp_idx\": %d,\"Tp\": %ld}\n", os_time_get(), cir.fp_idx, Tp);
                 }
     }
-    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/200);
+    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/256);
 }
 
 /*
