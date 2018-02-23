@@ -27,9 +27,8 @@ for j=1:ntimes
             if (isstruct(line)) 
                 if (isfield(line,'utime'))
                     utime(end+1) = line.utime;
-                    Tp(end+1) = line.Tp/4.0;
-                    fp_idx(end+1) = line.fp_idx;
-                    range(end+1) = line.Tp .* 299792458 * (1.0/499.2e6/128.0)/4.0;
+                    Tp(end+1) = line.tof;
+                    range(end+1) = line.range/1000;% .* 299792458 * (1.0/499.2e6/128.0)/4.0;
                 end
             end
         end

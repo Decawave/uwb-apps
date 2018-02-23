@@ -42,14 +42,14 @@
 static dwt_config_t mac_config = {
     .chan = 5,                          // Channel number. 
     .prf = DWT_PRF_64M,                 // Pulse repetition frequency. 
-    .txPreambLength = DWT_PLEN_512,     // Preamble length. Used in TX only. 
+    .txPreambLength = DWT_PLEN_128,     // Preamble length. Used in TX only. 
     .rxPAC = DWT_PAC8,                  // Preamble acquisition chunk size. Used in RX only. 
     .txCode = 9,                        // TX preamble code. Used in TX only. 
     .rxCode = 8,                        // RX preamble code. Used in RX only. 
     .nsSFD = 0,                         // 0 to use standard SFD, 1 to use non-standard SFD. 
     .dataRate = DWT_BR_6M8,             // Data rate. 
     .phrMode = DWT_PHRMODE_STD,         // PHY header mode. 
-    .sfdTO = (512 + 1 + 8 - 8)              // SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. 
+    .sfdTO = (128 + 1 + 8 - 8)              // SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. 
 };
 
 static dw1000_phy_txrf_config_t txrf_config = { 
@@ -62,7 +62,7 @@ static dw1000_phy_txrf_config_t txrf_config = {
 };
 
 static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x0D00,          // Send Time delay in usec.
+    .tx_holdoff_delay = 0x0D00,         // Send Time delay in usec.
     .rx_timeout_period = 0xF000         // Receive response timeout in usec.
 };
 
@@ -89,7 +89,7 @@ void print_frame(const char * name, twr_frame_t * twr ){
     printf("\treception_timestamp:0x%08lX,\n", twr->response.reception_timestamp); 
     printf("\ttransmission_timestamp:0x%08lX,\n", twr->response.transmission_timestamp); 
     printf("\trequest_timestamp:0x%08lX,\n", twr->request_timestamp); 
-    printf("\tresponse_timestamp:0x%08lX\n}\n", twr->response_timestamp); 
+    printf("\tresponse_timestamp:0x%08lX\n}\n", twr->response_timestamp);
     return;
 }
 
@@ -131,30 +131,28 @@ static void timer_ev_cb(struct os_event *ev) {
 #endif
 
     else if (inst->rng->twr[0].response.code == DWT_SS_TWR_FINAL) {
-            twr_frame_t * ss_twr  = &inst->rng->twr[0];  
-            print_frame("trw=",ss_twr);
-            twr->response.code = DWT_SS_TWR_END;
-
-            int32_t ToF = ((twr->response_timestamp - twr->request_timestamp) 
-                -  (twr->response.transmission_timestamp - twr->response.reception_timestamp))/2;
-
-            printf("ToF=%lX, res_req=%lX rec_tra=%lX\n", ToF, (twr->response_timestamp - twr->request_timestamp), (twr->response.transmission_timestamp - twr->response.reception_timestamp));
+            uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(inst->rng->twr, DWT_SS_TWR);
+            float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(inst->rng->twr, DWT_SS_TWR)) * 1000;
+            print_frame("trw=",&inst->rng->twr[0]);
+            twr[0].response.code = DWT_SS_TWR_END;
+            twr_frame_t * twr  = &inst->rng->twr[0]; 
+            printf("Range=%ld (mm), ToF=%ld (dwt_units), res_req=%lX, rec_tra=%lX\n", (int32_t) range, time_of_flight,  (twr->response_timestamp - twr->request_timestamp), (twr->response.transmission_timestamp - twr->response.reception_timestamp));            
             dw1000_set_rx_timeout(inst, 0);
             dw1000_start_rx(inst); 
     }
 
     else if (inst->rng->twr[1].response.code == DWT_DS_TWR_FINAL) {
+        uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(inst->rng->twr, DWT_DS_TWR);
+        float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(inst->rng->twr, DWT_DS_TWR)) * 1000;
         print_frame("1st=",&inst->rng->twr[0]);
-
-        inst->rng->twr[1].response.code = DWT_DS_TWR_END;
         print_frame("2nd=",&inst->rng->twr[1]);
-        
         inst->rng->twr[1].response.code = DWT_DS_TWR_END;
-
+        twr_frame_t * twr  = &inst->rng->twr[1]; 
+        printf("Range=%ld (mm), ToF=%ld (dwt_units), res_req=%lX, rec_tra=%lX\n", (int32_t) range, time_of_flight,  (twr->response_timestamp - twr->request_timestamp), (twr->response.transmission_timestamp - twr->response.reception_timestamp));
         dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst); 
     }
-    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/32);
+    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/256);
 }
 
 static void init_timer(void) {

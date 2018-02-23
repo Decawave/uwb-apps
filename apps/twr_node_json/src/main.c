@@ -43,14 +43,14 @@
 static dwt_config_t mac_config = {
     .chan = 5,                          // Channel number. 
     .prf = DWT_PRF_64M,                 // Pulse repetition frequency. 
-    .txPreambLength = DWT_PLEN_512,     // Preamble length. Used in TX only. 
+    .txPreambLength = DWT_PLEN_128,     // Preamble length. Used in TX only. 
     .rxPAC = DWT_PAC8,                  // Preamble acquisition chunk size. Used in RX only. 
     .txCode = 8,                        // TX preamble code. Used in TX only. 
     .rxCode = 9,                        // RX preamble code. Used in RX only. 
     .nsSFD = 0,                         // 0 to use standard SFD, 1 to use non-standard SFD. 
     .dataRate = DWT_BR_6M8,             // Data rate. 
     .phrMode = DWT_PHRMODE_STD,         // PHY header mode. 
-    .sfdTO = (512 + 1 + 8 - 8)        // SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. 
+    .sfdTO = (128 + 1 + 8 - 8)        // SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. 
 };
 
 static dw1000_phy_txrf_config_t txrf_config = { 
@@ -97,27 +97,21 @@ static void timer_ev_cb(struct os_event *ev) {
     if (inst->status.start_tx_error || inst->status.rx_error || inst->status.request_timeout ||  inst->status.rx_timeout_error){
         inst->status.start_tx_error = inst->status.rx_error = inst->status.request_timeout = inst->status.rx_timeout_error = 0;
     }
+
         
     else if (inst->rng->twr[0].response.code == DWT_SS_TWR_FINAL) {
-            twr_frame_t * twr  = &inst->rng->twr[0]; 
+            uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(inst->rng->twr, DWT_SS_TWR);
+            float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(inst->rng->twr, DWT_SS_TWR)) * 1000;
             json_rng_encode(inst->rng->twr, 1);   
 
-            int32_t ToF = ((twr->response_timestamp - twr->request_timestamp) 
-                -  (twr->response.transmission_timestamp - twr->response.reception_timestamp))/2;
-            //float range = ToF * 299792458 * (1.0/499.2e6/128.0);
-            //printf("ToF = %lX, range = %f\n", ToF, range);
-            printf("ToF=%lX, res_req=%lX rec_tra=%lX\n", ToF, (twr->response_timestamp - twr->request_timestamp), (twr->response.transmission_timestamp - twr->response.reception_timestamp));
+            printf("{\"utime\": %ld,\"tof\": %ld,\"range\": %ld}\n", os_time_get(), time_of_flight, (int32_t) range);
    
         } else if (inst->rng->nframes > 1){
                 if (inst->rng->twr[1].response.code == DWT_DS_TWR_FINAL) {
-                   
-                    uint64_t T1R = (inst->rng->twr[0].response_timestamp - inst->rng->twr[0].request_timestamp); 
-                    uint64_t T1r = (inst->rng->twr[0].response.transmission_timestamp  - inst->rng->twr[0].response.reception_timestamp); 
-                    uint64_t T2R = (inst->rng->twr[1].response_timestamp - inst->rng->twr[1].request_timestamp); 
-                    uint64_t T2r = (inst->rng->twr[1].response.transmission_timestamp  - inst->rng->twr[1].response.reception_timestamp); 
-                    uint32_t Tp  =  (T1R - T1r + T2R - T2r);//  >> 2;
+          
                     json_rng_encode(inst->rng->twr, inst->rng->nframes);
-
+                    uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(inst->rng->twr, DWT_DS_TWR);
+                    float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(inst->rng->twr, DWT_DS_TWR)) * 1000;
                     cir_t cir; 
                     dw1000_read_accdata(inst, (uint8_t * ) &cir, 600 * sizeof(cir_complex_t), CIR_SIZE * sizeof(cir_complex_t) + 1 );
                     cir.fp_idx = dw1000_read_reg(inst,  RX_TIME_ID,  RX_TIME_FP_INDEX_OFFSET, sizeof(uint16_t));
@@ -126,7 +120,7 @@ static void timer_ev_cb(struct os_event *ev) {
                    if(inst->config.rxdiag_enable)
                         json_rxdiag_encode(&inst->rxdiag, "rxdiag");
 
-                    printf("{\"utime\": %ld,\"fp_idx\": %d,\"Tp\": %ld}\n", os_time_get(), cir.fp_idx, Tp);
+                    printf("{\"utime\": %ld,\"tof\": %ld,\"range\": %ld}\n", os_time_get(), time_of_flight, (int32_t) range);
                 }
     }
     os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/256);

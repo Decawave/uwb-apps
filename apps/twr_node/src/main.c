@@ -42,14 +42,14 @@
 static dwt_config_t mac_config = {
     .chan = 5,                          // Channel number. 
     .prf = DWT_PRF_64M,                 // Pulse repetition frequency. 
-    .txPreambLength = DWT_PLEN_512,     // Preamble length. Used in TX only. 
+    .txPreambLength = DWT_PLEN_128,     // Preamble length. Used in TX only. 
     .rxPAC = DWT_PAC8,                  // Preamble acquisition chunk size. Used in RX only. 
     .txCode = 8,                        // TX preamble code. Used in TX only. 
     .rxCode = 9,                        // RX preamble code. Used in RX only. 
     .nsSFD = 0,                         // 0 to use standard SFD, 1 to use non-standard SFD. 
     .dataRate = DWT_BR_6M8,             // Data rate. 
     .phrMode = DWT_PHRMODE_STD,         // PHY header mode. 
-    .sfdTO = (512 + 1 + 8 - 8)              // SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. 
+    .sfdTO = (128 + 1 + 8 - 8)          // SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. 
 };
 
 static dw1000_phy_txrf_config_t txrf_config = { 
@@ -79,7 +79,6 @@ static twr_frame_t twr[] = {
     }
 };
 
-
 // Calculates the time of flight in dwt-units x 1000 (for easy mm calc)
 int32_t twr_calc_tof_32(uint32_t tround1, uint32_t treply1, uint32_t tround2, uint32_t treply2)
 {
@@ -100,7 +99,7 @@ void print_frame(const char * name, twr_frame_t * twr ){
     printf("\treception_timestamp:0x%08lX,\n", twr->response.reception_timestamp); 
     printf("\ttransmission_timestamp:0x%08lX,\n", twr->response.transmission_timestamp); 
     printf("\trequest_timestamp:0x%08lX,\n", twr->request_timestamp); 
-    printf("\tresponse_timestamp:0x%08lX\n}\n", twr->response_timestamp); 
+    printf("\tresponse_timestamp:0x%08lX\n}\n", twr->response_timestamp);
     return;
 }
 
@@ -132,56 +131,26 @@ static void timer_ev_cb(struct os_event *ev) {
 
     if (inst->status.start_tx_error || inst->status.rx_error || inst->status.request_timeout ||  inst->status.rx_timeout_error){
         inst->status.start_tx_error = inst->status.rx_error = inst->status.request_timeout = inst->status.rx_timeout_error = 0;
-    }
-        
+    } 
+   
     else if (inst->rng->twr[0].response.code == DWT_SS_TWR_FINAL) {
+            uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(inst->rng->twr, DWT_SS_TWR);
+            float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(inst->rng->twr, DWT_SS_TWR)) * 1000;
             twr_frame_t * twr  = &inst->rng->twr[0];    
             print_frame("trw=",twr);
-
-            int32_t ToF = ((twr->response_timestamp - twr->request_timestamp) 
-                -  (twr->response.transmission_timestamp - twr->response.reception_timestamp))/2;
-
-            //float range = ToF * 299792458 * (1.0/499.2e6/128.0);
-            //printf("ToF = %lX, range = %f\n", ToF, range);
-
-            printf("ToF=%lX, res_req=%lX rec_tra=%lX\n", ToF, (twr->response_timestamp - twr->request_timestamp), (twr->response.transmission_timestamp - twr->response.reception_timestamp));
-    } else if (inst->rng->nframes > 1){
-                if (inst->rng->twr[1].response.code == DWT_DS_TWR_FINAL) {
-
-                    twr_frame_t * twr  = &inst->rng->twr[0];   
-                    print_frame("1st=", twr); 
-
-                    int32_t ToF = ((twr->response_timestamp - twr->request_timestamp) 
-                        -  (twr->response.transmission_timestamp - twr->response.reception_timestamp))/2;
-
-                    printf("ToF_1st=0x%08lX, res_req=0x%08lX rec_tra=0x%08lX\n", ToF, (twr->response_timestamp - twr->request_timestamp), (twr->response.transmission_timestamp - twr->response.reception_timestamp));
-
-                    twr  = &inst->rng->twr[1];    
-                    print_frame("2nd=", twr); 
-
-                    ToF = ((twr->response_timestamp - twr->request_timestamp) 
-                        -  (twr->response.transmission_timestamp - twr->response.reception_timestamp))/2;
-
-                    printf("ToF_2nd=0x%08lX, res_req=0x%08lX rec_tra=0x%08lX\n", ToF, (twr->response_timestamp - twr->request_timestamp), (twr->response.transmission_timestamp - twr->response.reception_timestamp));
-                    uint64_t T1R = (inst->rng->twr[0].response_timestamp - inst->rng->twr[0].request_timestamp); 
-                    uint64_t T1r = (inst->rng->twr[0].response.transmission_timestamp  - inst->rng->twr[0].response.reception_timestamp); 
-                    
-                    uint64_t T2R = (inst->rng->twr[1].response_timestamp - inst->rng->twr[1].request_timestamp); 
-                    uint64_t T2r = (inst->rng->twr[1].response.transmission_timestamp  - inst->rng->twr[1].response.reception_timestamp); 
-                    
-                    uint32_t Tprop  =  (T1R - T1r + T2R - T2r) >> 2;
-                    printf("Tprop=0x%08lX\n", Tprop);
-
-                    int32_t tof = twr_calc_tof_32(T1R&0xFFFFFFFF, T1r&0xFFFFFFFF, T2R&0xFFFFFFFF, T2r&0xFFFFFFFF);
-                    int32_t range_mm = (((int64_t)tof)<<4)/3411;
-                    printf("tof = %lX, range = %ld mm\n", tof, range_mm);
-    
-//                    json_rng_encode(inst->rng->ss_twr);
-//                    json_ftype_encode(&inst->rng->ss_twr[1].response);
-                }
+            printf("Range=%ld (mm), ToF=%ld (dwt_units), res_req=%lX, rec_tra=%lX\n", (int32_t) range, time_of_flight,  (twr->response_timestamp - twr->request_timestamp), (twr->response.transmission_timestamp - twr->response.reception_timestamp));
+            
+    } else if (inst->rng->nframes > 1) {
+        if (inst->rng->twr[1].response.code == DWT_DS_TWR_FINAL) {
+            uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(inst->rng->twr, DWT_DS_TWR);
+            float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(inst->rng->twr, DWT_DS_TWR)) * 1000;
+            print_frame("1st=", &inst->rng->twr[0]); 
+            print_frame("2nd=", &inst->rng->twr[1]); 
+            twr_frame_t * twr  = &inst->rng->twr[1];   
+            printf("Range=%ld (mm), ToF=%ld (dwt_units), res_req=%lX, rec_tra=%lX\n", (int32_t) range, time_of_flight,  (twr->response_timestamp - twr->request_timestamp), (twr->response.transmission_timestamp - twr->response.reception_timestamp));
+        }
     }
-
-    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/16);
+    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/128);
 }
 
 /*
