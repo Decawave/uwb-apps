@@ -4,7 +4,7 @@ ntimes = 3000
 idx = [];
 data= [];
 utime =[];
-Tp =[];
+tof =[];
 fp_idx =[];
 range = [];
 
@@ -27,7 +27,7 @@ for j=1:ntimes
             if (isstruct(line)) 
                 if (isfield(line,'utime'))
                     utime(end+1) = line.utime;
-                    Tp(end+1) = line.tof;
+                    tof(end+1) = line.tof;
                     range(end+1) = line.range/1000;% .* 299792458 * (1.0/499.2e6/128.0)/4.0;
                 end
             end
@@ -56,10 +56,6 @@ for j=1:ntimes
     end    
 end
  
-if (m > 64)
-            [mu,sigma,~,~] = normfit(range);
-            subplot(212);histfit(range,16,'normal');title(sprintf("mu=%f sigma=%f",mu,sigma))
-end
-
+[mu,sigma,~,~] = normfit(tof)
 
 

@@ -22,6 +22,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 #include "sysinit/sysinit.h"
 #include "os/os.h"
 #include "bsp/bsp.h"
@@ -68,12 +69,12 @@ static dw1000_rng_config_t rng_config = {
 };
 
 static twr_frame_t twr[] = {
-    [0].request = {
+    [0] = {
         .fctrl = 0x8841,                // frame control (0x8841 to indicate a data frame using 16-bit addressing).
         .PANID = 0xDECA,                // PAN ID (0xDECA)
         .code = DWT_TWR_INVALID
     },
-    [1].request = {
+    [1] = {
         .fctrl = 0x8841,                // frame control (0x8841 to indicate a data frame using 16-bit addressing).
         .PANID = 0xDECA,                // PAN ID (0xDECA)
         .code = DWT_TWR_INVALID
@@ -99,7 +100,7 @@ static void timer_ev_cb(struct os_event *ev) {
     }
 
         
-    else if (inst->rng->twr[0].response.code == DWT_SS_TWR_FINAL) {
+    else if (inst->rng->twr[0].code == DWT_SS_TWR_FINAL) {
             uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(inst->rng->twr, DWT_SS_TWR);
             float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(inst->rng->twr, DWT_SS_TWR)) * 1000;
             json_rng_encode(inst->rng->twr, 1);   
@@ -107,10 +108,10 @@ static void timer_ev_cb(struct os_event *ev) {
             printf("{\"utime\": %ld,\"tof\": %ld,\"range\": %ld}\n", os_time_get(), time_of_flight, (int32_t) range);
    
         } else if (inst->rng->nframes > 1){
-                if (inst->rng->twr[1].response.code == DWT_DS_TWR_FINAL) {
+                if (inst->rng->twr[1].code == DWT_DS_TWR_FINAL) {
           
                     json_rng_encode(inst->rng->twr, inst->rng->nframes);
-                    uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(inst->rng->twr, DWT_DS_TWR);
+                    uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(inst->rng->twr, DWT_DS_TWR);        
                     float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(inst->rng->twr, DWT_DS_TWR)) * 1000;
                     cir_t cir; 
                     dw1000_read_accdata(inst, (uint8_t * ) &cir, 600 * sizeof(cir_complex_t), CIR_SIZE * sizeof(cir_complex_t) + 1 );
