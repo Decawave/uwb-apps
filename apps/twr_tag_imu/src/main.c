@@ -49,14 +49,14 @@
 static dwt_config_t mac_config = {
     .chan = 5,                          // Channel number. 
     .prf = DWT_PRF_64M,                 // Pulse repetition frequency. 
-    .txPreambLength = DWT_PLEN_128,     // Preamble length. Used in TX only. 
-    .rxPAC = DWT_PAC8,                  // Preamble acquisition chunk size. Used in RX only. 
+    .txPreambLength = DWT_PLEN_256,     // Preamble length. Used in TX only. 
+    .rxPAC = DWT_PAC16,                  // Preamble acquisition chunk size. Used in RX only. 
     .txCode = 9,                        // TX preamble code. Used in TX only. 
     .rxCode = 8,                        // RX preamble code. Used in RX only. 
     .nsSFD = 0,                         // 0 to use standard SFD, 1 to use non-standard SFD. 
     .dataRate = DWT_BR_6M8,             // Data rate. 
     .phrMode = DWT_PHRMODE_STD,         // PHY header mode. 
-    .sfdTO = (128 + 1 + 8 - 8)              // SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. 
+    .sfdTO = (256 + 1 + 8 - 16)         // SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. 
 };
 
 static dw1000_phy_txrf_config_t txrf_config = { 
@@ -69,8 +69,8 @@ static dw1000_phy_txrf_config_t txrf_config = {
 };
 
 static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x0D00,          // Send Time delay in usec.
-    .rx_timeout_period = 0xF000         // Receive response timeout in usec.
+    .tx_holdoff_delay = 0x0800,          // Send Time delay in usec.
+    .rx_timeout_period = 0x4000         // Receive response timeout in usec.
 };
 
 static twr_frame_t twr[] = {

@@ -45,6 +45,10 @@ for j=1:ntimes
             [mu,sigma,~,~] = normfit(range);
             subplot(212);histfit(range,16,'normal');title(sprintf("mu=%f sigma=%f",mu,sigma))
      end
+      if (mod(j,64) == 0)
+            [mu,sigma,~,~] = normfit(tof);
+            subplot(211);title(sprintf("tof mu=%f tof sigma=%f (dwt unit)",mu,sigma))
+     end
      
     if (j==10)
         linkdata off
@@ -53,9 +57,9 @@ for j=1:ntimes
         xlabel('utime')
         ylabel('range(m)')
         linkdata on
-    end    
+    end
+    
 end
  
-[mu,sigma,~,~] = normfit(tof)
 
 

@@ -42,14 +42,14 @@
 static dwt_config_t mac_config = {
     .chan = 5,                          // Channel number. 
     .prf = DWT_PRF_64M,                 // Pulse repetition frequency. 
-    .txPreambLength = DWT_PLEN_128,     // Preamble length. Used in TX only. 
-    .rxPAC = DWT_PAC8,                  // Preamble acquisition chunk size. Used in RX only. 
+    .txPreambLength = DWT_PLEN_256,     // Preamble length. Used in TX only. 
+    .rxPAC = DWT_PAC8,                 // Preamble acquisition chunk size. Used in RX only. 
     .txCode = 8,                        // TX preamble code. Used in TX only. 
     .rxCode = 9,                        // RX preamble code. Used in RX only. 
     .nsSFD = 0,                         // 0 to use standard SFD, 1 to use non-standard SFD. 
     .dataRate = DWT_BR_6M8,             // Data rate. 
     .phrMode = DWT_PHRMODE_STD,         // PHY header mode. 
-    .sfdTO = (128 + 1 + 8 - 8)          // SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. 
+    .sfdTO = (256 + 1 + 8 - 8)         // SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. 
 };
 
 static dw1000_phy_txrf_config_t txrf_config = { 
@@ -62,8 +62,8 @@ static dw1000_phy_txrf_config_t txrf_config = {
 };
 
 static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x0D00,         // Send Time delay in usec.
-    .rx_timeout_period = 0xF000         // Receive response timeout in usec.
+    .tx_holdoff_delay = 0x0800,         // Send Time delay in usec.
+    .rx_timeout_period = 0x4000         // Receive response timeout in usec.
 };
 
 static twr_frame_t twr[] = {
@@ -75,7 +75,7 @@ static twr_frame_t twr[] = {
     [1] = {
         .fctrl = 0x8841,                // frame control (0x8841 to indicate a data frame using 16-bit addressing).
         .PANID = 0xDECA,                 // PAN ID (0xDECA)
-        .code = DWT_TWR_INVALID
+        .code = DWT_TWR_INVALID,
     }
 };
 
@@ -100,6 +100,7 @@ void print_frame(const char * name, twr_frame_t * twr ){
     printf("\ttransmission_timestamp:0x%08lX,\n", twr->transmission_timestamp); 
     printf("\trequest_timestamp:0x%08lX,\n", twr->request_timestamp); 
     printf("\tresponse_timestamp:0x%08lX\n}\n", twr->response_timestamp);
+
     return;
 }
 
@@ -161,7 +162,6 @@ static void init_timer(void) {
     os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC);
 }
 
-
 int main(int argc, char **argv){
     int rc;
     
@@ -186,6 +186,15 @@ int main(int argc, char **argv){
     printf("partID =%lX\n",inst->partID);
     printf("lotID =%lX\n",inst->lotID);
     printf("xtal_trim =%X\n",inst->xtal_trim);
+    printf("Length of ieee_rng_request_frame_t = %d\n", sizeof(ieee_rng_request_frame_t));
+    printf("Length of ieee_rng_response_frame_t = %d\n", sizeof(ieee_rng_response_frame_t));
+//    printf("Offset of ieee_rng_request_frame_t.dunny = %d\n", offsetof(ieee_rng_request_frame_t,dummy));
+//    printf("Offset of ieee_rng_response_frame_t.dunny = %d\n", offsetof(ieee_rng_response_frame_t,dummy));
+    printf("Offset of ieee_rng_response_frame_t.reception_timestamp = %d\n", offsetof(ieee_rng_response_frame_t,reception_timestamp));
+    printf("Offset of ieee_rng_response_frame_t.transmission_timestamp = %d\n", offsetof(ieee_rng_response_frame_t,transmission_timestamp));
+//    printf("Offset of ieee_rng_response_frame_t.dunny1 = %d\n", offsetof(ieee_rng_response_frame_t,dummy1));
+    printf("Length of twr_frame_final_t = %d\n", sizeof(twr_frame_final_t));
+    printf("Length of twr_frame_t = %d\n", sizeof(twr_frame_t));
 
     init_timer();
 
