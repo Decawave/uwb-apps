@@ -111,6 +111,7 @@ static struct os_callout blinky_callout;
 /*
  * Event callback function for timer events. It toggles the led pin.
 */
+
 static void timer_ev_cb(struct os_event *ev) {
     assert(ev != NULL);
 
@@ -118,7 +119,7 @@ static void timer_ev_cb(struct os_event *ev) {
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
 
     dw1000_rng_request(inst, 0x4321, DWT_DS_TWR);
-
+   
     if (inst->status.start_rx_error)
         printf("timer_ev_cb:[start_rx_error]\n");
     if (inst->status.start_tx_error)
@@ -173,8 +174,10 @@ int main(int argc, char **argv){
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     dw1000_softreset(inst);
     dw1000_phy_init(inst, &txrf_config);   
+
     inst->PANID = 0xDECA;
-    inst->my_short_address = 0x1234;
+    inst->my_short_address = MYNEWT_VAL(DEVICE_ID);
+
     dw1000_set_panid(inst,inst->PANID);
     dw1000_mac_init(inst, &mac_config);
     dw1000_rng_init(inst, &rng_config);
@@ -186,15 +189,6 @@ int main(int argc, char **argv){
     printf("partID =%lX\n",inst->partID);
     printf("lotID =%lX\n",inst->lotID);
     printf("xtal_trim =%X\n",inst->xtal_trim);
-    printf("Length of ieee_rng_request_frame_t = %d\n", sizeof(ieee_rng_request_frame_t));
-    printf("Length of ieee_rng_response_frame_t = %d\n", sizeof(ieee_rng_response_frame_t));
-//    printf("Offset of ieee_rng_request_frame_t.dunny = %d\n", offsetof(ieee_rng_request_frame_t,dummy));
-//    printf("Offset of ieee_rng_response_frame_t.dunny = %d\n", offsetof(ieee_rng_response_frame_t,dummy));
-    printf("Offset of ieee_rng_response_frame_t.reception_timestamp = %d\n", offsetof(ieee_rng_response_frame_t,reception_timestamp));
-    printf("Offset of ieee_rng_response_frame_t.transmission_timestamp = %d\n", offsetof(ieee_rng_response_frame_t,transmission_timestamp));
-//    printf("Offset of ieee_rng_response_frame_t.dunny1 = %d\n", offsetof(ieee_rng_response_frame_t,dummy1));
-    printf("Length of twr_frame_final_t = %d\n", sizeof(twr_frame_final_t));
-    printf("Length of twr_frame_t = %d\n", sizeof(twr_frame_t));
 
     init_timer();
 

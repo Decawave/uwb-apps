@@ -5,3 +5,10 @@ syscfg.vals:
     # Enable DW1000
     DW1000_DEVICE_0: 1
     # OS_SYSVIEW: 1   
+
+
+syscfg.defs:
+    DEVICE_ID:
+        description: >
+            Device ID
+        value: ((uint16_t){0x4321})

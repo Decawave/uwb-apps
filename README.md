@@ -60,9 +60,7 @@ Prerequisites: You should follow the generic tutorials at https://mynewt.apache.
 ```
 
 
-3. Download the Apache Mynewt Core and Mynewt DW1000 Core package.
-
-Currently mynewt-dw1000-core is a private repo and as such requires an extra step to provide authorization. See (https://mynewt.apache.org/latest/os/tutorials/repo/private_repo/) for a how to guide. Note with newt version 1.3.0, I have only had sucess with the project.yml approach to private repos. 
+3. Download the apache-mynewt-core and mynewt-dw1000-core package, both are dependent repos of the mynewt-rtls-apps project are automaticaly cloned by the newt tools.
 
 ```no-highlight
     $ newt install
@@ -95,7 +93,7 @@ J-Link>exit
 $ 
 ```
 
-4. Build the new bootloader applicaiton for the DWM1001 target.
+5. Build the new bootloader applicaiton for the DWM1001 target.
 
 (executed from the mynewt-dw1000-app directory).
 
@@ -111,7 +109,7 @@ newt load dwm1001_boot
 
 ```
 
-5. On the first dwm1001-dev board build the Two-Way-Ranging (twr_tag) applicaitons for the DWM1001 module. The run command compiled the project and loads the image on the target platform.
+6. On the first dwm1001-dev board build the Two-Way-Ranging (twr_tag) applicaitons for the DWM1001 module. The run command compiled the project and loads the image on the target platform.
 
 (executed from the mynewt-dw1000-app directory).
 
@@ -125,7 +123,7 @@ newt run twr_tag 0
 
 ```
 
-6. On a second dwm1001-dev build the master side of the Two-Way-Ranging (twr_node) applicaitons as follows. 
+7. On a second dwm1001-dev build the master side of the Two-Way-Ranging (twr_node) applicaitons as follows. 
 
 (executed from the mynewt-dw1000-app directory).
 
@@ -147,7 +145,7 @@ To switch from Single-Side to Double-Size, simply comment ./twr_node/main.c as f
 ```
 
 
-7. Both examples are configured to use the Segger RTT console interface. This is covered within the mynewt tutorials/Tooling/SeggarRTT (https://mynewt.apache.org/latest/os/tutorials/segger_rtt/). To launch the console simply telnet localhost 19021. Note at time of writing the newt tools does not support multiple connect dwm1001-dev devices. So it is recomended that you connect twr_tag and twr_node examples to different computers or at least the twr_tag to an external battery. If all going well you should see the twr_node example stream range information on the console. 
+8. Both examples are configured to use the Segger RTT console interface. This is covered within the mynewt tutorials/Tooling/SeggarRTT (https://mynewt.apache.org/latest/os/tutorials/segger_rtt/). To launch the console simply telnet localhost 19021. Note at time of writing the newt tools does not support multiple connect dwm1001-dev devices. So it is recomended that you connect twr_tag and twr_node examples to different computers or at least the twr_tag to an external battery. If all going well you should see the twr_node example stream range information on the console. 
 
 (executed from the mynewt-dw1000-app directory).
 
@@ -157,7 +155,7 @@ telnet localhost 19021
 
 ```
 
-8. This repo also contains the project twr_node_json. This project works in conjunction with the matlab utility folder and exposed some internal variables to matlab workspace over TCP. The internal variables are encapsulated within JSON string and stream over TCP. These examples are intended as a how-to-guide. This JSON API approach is an extensible API and can is augments as needed. 
+9. This repo also contains the project twr_node_json. This project works in conjunction with the matlab utility folder and exposed some internal variables to matlab workspace over TCP. The internal variables are encapsulated within JSON string and stream over TCP. These examples are intended as a how-to-guide. This JSON API approach is an extensible API and can is augments as needed. 
 
 ```no-highlight
 

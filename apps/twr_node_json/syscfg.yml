@@ -3,3 +3,10 @@ syscfg.vals:
     CONSOLE_UART: 0
     CONSOLE_RTT: 1
     DW1000_DEVICE_0: 1
+
+
+syscfg.defs:
+    DEVICE_ID:
+        description: >
+            Device ID
+        value: ((uint16_t){0x1234})

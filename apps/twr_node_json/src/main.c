@@ -147,8 +147,10 @@ int main(int argc, char **argv){
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     dw1000_softreset(inst);
     dw1000_phy_init(inst, &txrf_config);
+    
     inst->PANID = 0xDECA;
-    inst->my_short_address = 0x1234;
+    inst->my_short_address = MYNEWT_VAL(DEVICE_ID);
+
     dw1000_set_panid(inst,inst->PANID);
     dw1000_mac_init(inst, &mac_config);
     dw1000_rng_init(inst, &rng_config);
