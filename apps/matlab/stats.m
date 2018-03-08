@@ -28,7 +28,7 @@ for j=1:ntimes
                 if (isfield(line,'utime'))
                     utime(end+1) = line.utime;
                     tof(end+1) = line.tof;
-                    range(end+1) = line.range/1000;% .* 299792458 * (1.0/499.2e6/128.0)/4.0;
+                    range(end+1) = typecast(uint32(line.range),'single');
                 end
             end
         end
@@ -53,7 +53,7 @@ for j=1:ntimes
     if (j==10)
         linkdata off
         subplot(211);
-        plot(utime,range,'b-.o');
+        plot(utime,range,'b');
         xlabel('utime')
         ylabel('range(m)')
         linkdata on

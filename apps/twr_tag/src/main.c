@@ -131,23 +131,23 @@ static void timer_ev_cb(struct os_event *ev) {
 
     else if (inst->rng->twr[0].code == DWT_SS_TWR_FINAL) {
         uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(inst->rng->twr, DWT_SS_TWR);
-        float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(inst->rng->twr, DWT_SS_TWR)) * 1000;
+        float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(inst->rng->twr, DWT_SS_TWR));
         print_frame("trw=",&inst->rng->twr[0]);
         inst->rng->twr[0].code = DWT_SS_TWR_END;
         twr_frame_t * twr  = &inst->rng->twr[0]; 
-        printf("Range=%ld (mm), ToF=%ld (dwt_units), res_req=%lX, rec_tra=%lX\n", (int32_t) range, time_of_flight,  (twr->response_timestamp - twr->request_timestamp), (twr->transmission_timestamp - twr->reception_timestamp));            
+        printf("Range=%ld (mm), ToF=%ld (dwt_units), res_req=%lX, rec_tra=%lX\n", (int32_t) (range * 1000), time_of_flight,  (twr->response_timestamp - twr->request_timestamp), (twr->transmission_timestamp - twr->reception_timestamp));            
         dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst); 
     }
 
     else if (inst->rng->twr[1].code == DWT_DS_TWR_FINAL || inst->rng->twr[1].code == DWT_DS_TWR_EXT_FINAL) {
         uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(inst->rng->twr, DWT_DS_TWR);
-        float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(inst->rng->twr, DWT_DS_TWR)) * 1000;
+        float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(inst->rng->twr, DWT_DS_TWR));
         print_frame("1st=",&inst->rng->twr[0]);
         print_frame("2nd=",&inst->rng->twr[1]);
         inst->rng->twr[1].code = DWT_DS_TWR_END;
         twr_frame_t * twr  = &inst->rng->twr[1]; 
-        printf("Range=%ld (mm), ToF=%ld (dwt_units), res_req=%lX, rec_tra=%lX\n", (int32_t) range, time_of_flight,  (twr->response_timestamp - twr->request_timestamp), (twr->transmission_timestamp - twr->reception_timestamp));
+        printf("Range=%ld (mm), ToF=%ld (dwt_units), res_req=%lX, rec_tra=%lX\n", (int32_t) (range * 1000), time_of_flight,  (twr->response_timestamp - twr->request_timestamp), (twr->transmission_timestamp - twr->reception_timestamp));
         dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst); 
     }
@@ -175,7 +175,6 @@ int main(int argc, char **argv){
     dw1000_phy_init(inst, &txrf_config);    
  
     inst->PANID = 0xDECA;
-
     inst->my_short_address = MYNEWT_VAL(DEVICE_ID);
 
     dw1000_set_panid(inst,inst->PANID);

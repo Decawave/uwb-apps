@@ -102,17 +102,17 @@ static void timer_ev_cb(struct os_event *ev) {
         
     else if (inst->rng->twr[0].code == DWT_SS_TWR_FINAL) {
             uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(inst->rng->twr, DWT_SS_TWR);
-            float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(inst->rng->twr, DWT_SS_TWR)) * 1000;
+            float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(inst->rng->twr, DWT_SS_TWR));
             json_rng_encode(inst->rng->twr, 1);   
 
-            printf("{\"utime\": %ld,\"tof\": %ld,\"range\": %ld}\n", os_time_get(), time_of_flight, (int32_t) range);
+            printf("{\"utime\": %ld,\"tof\": %ld,\"range\": %lu}\n", os_time_get(), time_of_flight, *(int32_t * ) &range);
    
         } else if (inst->rng->nframes > 1){
                 if (inst->rng->twr[1].code == DWT_DS_TWR_FINAL) {
           
                     json_rng_encode(inst->rng->twr, inst->rng->nframes);
                     uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(inst->rng->twr, DWT_DS_TWR);        
-                    float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(inst->rng->twr, DWT_DS_TWR)) * 1000;
+                    float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(inst->rng->twr, DWT_DS_TWR));
                     cir_t cir; 
                     dw1000_read_accdata(inst, (uint8_t * ) &cir, 600 * sizeof(cir_complex_t), CIR_SIZE * sizeof(cir_complex_t) + 1 );
                     cir.fp_idx = dw1000_read_reg(inst,  RX_TIME_ID,  RX_TIME_FP_INDEX_OFFSET, sizeof(uint16_t));
@@ -121,7 +121,7 @@ static void timer_ev_cb(struct os_event *ev) {
                    if(inst->config.rxdiag_enable)
                         json_rxdiag_encode(&inst->rxdiag, "rxdiag");
 
-                    printf("{\"utime\": %ld,\"tof\": %ld,\"range\": %ld}\n", os_time_get(), time_of_flight, (int32_t) range);
+                    printf("{\"utime\": %ld,\"tof\": %ld,\"range\": %lu}\n", os_time_get(), time_of_flight, *(uint32_t *)&range);
                 }
     }
     os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/256);
