@@ -86,19 +86,19 @@ static twr_frame_t twr[] = {
     }
 };
 
-void print_frame(const char * name, twr_frame_t * twr ){
-    printf("%s{\n\tfctrl:0x%04X,\n", name, twr->fctrl);
-    printf("\tseq_num:0x%02X,\n", twr->seq_num);
-    printf("\tPANID:0x%04X,\n", twr->PANID);
-    printf("\tdst_address:0x%04X,\n", twr->dst_address);
-    printf("\tsrc_address:0x%04X,\n", twr->src_address);
-    printf("\tcode:0x%04X,\n", twr->code);
-    printf("\treception_timestamp:0x%08lX,\n", twr->reception_timestamp); 
-    printf("\ttransmission_timestamp:0x%08lX,\n", twr->transmission_timestamp); 
-    printf("\trequest_timestamp:0x%08lX,\n", twr->request_timestamp); 
-    printf("\tresponse_timestamp:0x%08lX\n}\n", twr->response_timestamp); 
-    return;
+void print_frame(const char * name, twr_frame_t twr){
+    printf("%s{\n\tfctrl:0x%04X,\n", name, twr.fctrl);
+    printf("\tseq_num:0x%02X,\n", twr.seq_num);
+    printf("\tPANID:0x%04X,\n", twr.PANID);
+    printf("\tdst_address:0x%04X,\n", twr.dst_address);
+    printf("\tsrc_address:0x%04X,\n", twr.src_address);
+    printf("\tcode:0x%04X,\n", twr.code);
+    printf("\treception_timestamp:0x%08lX,\n", twr.reception_timestamp); 
+    printf("\ttransmission_timestamp:0x%08lX,\n", twr.transmission_timestamp); 
+    printf("\trequest_timestamp:0x%08lX,\n", twr.request_timestamp); 
+    printf("\tresponse_timestamp:0x%08lX\n}\n", twr.response_timestamp);
 }
+
 
 /* The timer callout */
 static struct os_callout twr_callout;
@@ -120,44 +120,54 @@ static void twr_timer_ev_cb(struct os_event *ev) {
         printf("twr_timer_ev_cb:rng_request failed [status.mac_error]\n");
 #else
 
-    if (inst->status.start_rx_error)
-        printf("twr_timer_ev_cb:[start_rx_error]\n");
+   if (inst->status.start_rx_error)
+        printf("{\"utime\": %lu,\"timer_ev_cb\": \"start_rx_error\"}\n",os_time_get());
     if (inst->status.start_tx_error)
-        printf("twr_timer_ev_cb:[start_tx_error]\n");
+        printf("{\"utime\": %lu,\"timer_ev_cb\":\"start_tx_error\"}\n",os_time_get());
     if (inst->status.rx_error)
-        printf("twr_timer_ev_cb:[rx_error]\n");
+        printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_error\"}\n",os_time_get());
     if (inst->status.request_timeout)
-        printf("twr_timer_ev_cb:[request_timeout]\n");
+        printf("{\"utime\": %lu,\"timer_ev_cb\":\"request_timeout\"}\n",os_time_get());
     if (inst->status.rx_timeout_error)
-        printf("twr_timer_ev_cb:[rx_timeout_error]\n");
-
+        printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_timeout_error\"}\n",os_time_get());
+   
 
     if (inst->status.start_tx_error || inst->status.rx_error || inst->status.request_timeout ||  inst->status.rx_timeout_error){
-        inst->status.start_tx_error = inst->status.rx_error = inst->status.request_timeout = inst->status.rx_timeout_error = 0;
         dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst); 
     }
 #endif
 
-   else if (inst->rng->twr[0].code == DWT_SS_TWR_FINAL) {
-            uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(inst->rng->twr, DWT_SS_TWR);
-            float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(inst->rng->twr, DWT_SS_TWR)) * 1000;
-            print_frame("trw=",&inst->rng->twr[0]);
-            inst->rng->twr[0].code = DWT_SS_TWR_END;
-            twr_frame_t * twr  = &inst->rng->twr[0]; 
-            printf("Range=%ld (mm), ToF=%ld (dwt_units), res_req=%lX, rec_tra=%lX\n", (int32_t) range, time_of_flight,  (twr->response_timestamp - twr->request_timestamp), (twr->transmission_timestamp - twr->reception_timestamp));            
-            dw1000_set_rx_timeout(inst, 0);
-            dw1000_start_rx(inst); 
+   else if (twr[0].code == DWT_SS_TWR_FINAL) {
+        uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(twr, DWT_SS_TWR);
+        float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(twr, DWT_SS_TWR));
+        print_frame("trw=", twr[0]);
+        twr[0].code = DWT_SS_TWR_END;
+        printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": %lX, \"rec_tra\": %lX}\n", 
+            os_time_get(), 
+            time_of_flight, 
+            (uint32_t)(range * 1000), 
+            (twr->response_timestamp - twr->request_timestamp), 
+            (twr->transmission_timestamp - twr->reception_timestamp)
+        );         
+        dw1000_set_rx_timeout(inst, 0);
+        dw1000_start_rx(inst); 
     }
 
-    else if (inst->rng->twr[1].code == DWT_DS_TWR_FINAL) {
-        uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(inst->rng->twr, DWT_DS_TWR);
-        float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(inst->rng->twr, DWT_DS_TWR)) * 1000;
-        print_frame("1st=",&inst->rng->twr[0]);
-        print_frame("2nd=",&inst->rng->twr[1]);
-        inst->rng->twr[1].code = DWT_DS_TWR_END;
-        twr_frame_t * twr  = &inst->rng->twr[1]; 
-        printf("Range=%ld (mm), ToF=%ld (dwt_units), res_req=%lX, rec_tra=%lX\n", (int32_t) range, time_of_flight,  (twr->response_timestamp - twr->request_timestamp), (twr->transmission_timestamp - twr->reception_timestamp));
+    else if (twr[1].code == DWT_DS_TWR_FINAL || twr[1].code == DWT_DS_TWR_EXT_FINAL) {
+        uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(twr, DWT_DS_TWR);
+        float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(twr, DWT_DS_TWR));
+        print_frame("1st=", twr[0]);
+        print_frame("2nd=", twr[1]);
+        twr[1].code = DWT_DS_TWR_END;
+        printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": %lX, \"rec_tra\": %lX}\n", 
+             os_time_get(), 
+            time_of_flight, 
+            (uint32_t)(range * 1000), 
+            (twr->response_timestamp - twr->request_timestamp), 
+            (twr->transmission_timestamp - twr->reception_timestamp)
+        );
+
         dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst); 
     }
@@ -296,8 +306,9 @@ int main(int argc, char **argv){
     inst->my_short_address = 0x4321;
     dw1000_set_panid(inst,inst->PANID);
     dw1000_mac_init(inst, &mac_config);
-    dw1000_rng_init(inst, &rng_config);
+    dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
     dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));
+
 
     printf("device_id=%lX\n",inst->device_id);
     printf("PANID=%X\n",inst->PANID);

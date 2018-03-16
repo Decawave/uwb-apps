@@ -68,7 +68,7 @@ int json_ftype_encode(twr_frame_t * frame){
     /* reset the state of the internal test */
     memset(&encoder, 0, sizeof(encoder));
     encoder.je_write = json_write;
-    encoder.je_arg= NULL;
+    encoder.je_arg = NULL;
 
     rc = json_encode_object_start(&encoder);
     JSON_VALUE_UINT(&value, frame->fctrl);

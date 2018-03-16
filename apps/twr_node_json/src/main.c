@@ -95,34 +95,26 @@ static void timer_ev_cb(struct os_event *ev) {
 
     dw1000_rng_request(inst, 0x4321, DWT_DS_TWR);
 
-    if (inst->status.start_tx_error || inst->status.rx_error || inst->status.request_timeout ||  inst->status.rx_timeout_error){
-        inst->status.start_tx_error = inst->status.rx_error = inst->status.request_timeout = inst->status.rx_timeout_error = 0;
-    }
-
-        
-    else if (inst->rng->twr[0].code == DWT_SS_TWR_FINAL) {
-            uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(inst->rng->twr, DWT_SS_TWR);
-            float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(inst->rng->twr, DWT_SS_TWR));
-            json_rng_encode(inst->rng->twr, 1);   
+    if (twr[0].code == DWT_SS_TWR_FINAL) {
+            uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(twr, DWT_SS_TWR);
+            float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(twr, DWT_SS_TWR));
+            json_rng_encode(twr, 1);   
 
             printf("{\"utime\": %ld,\"tof\": %ld,\"range\": %lu}\n", os_time_get(), time_of_flight, *(int32_t * ) &range);
-   
-        } else if (inst->rng->nframes > 1){
-                if (inst->rng->twr[1].code == DWT_DS_TWR_FINAL) {
-          
-                    json_rng_encode(inst->rng->twr, inst->rng->nframes);
-                    uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(inst->rng->twr, DWT_DS_TWR);        
-                    float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(inst->rng->twr, DWT_DS_TWR));
-                    cir_t cir; 
-                    dw1000_read_accdata(inst, (uint8_t * ) &cir, 600 * sizeof(cir_complex_t), CIR_SIZE * sizeof(cir_complex_t) + 1 );
-                    cir.fp_idx = dw1000_read_reg(inst,  RX_TIME_ID,  RX_TIME_FP_INDEX_OFFSET, sizeof(uint16_t));
-                    json_cir_encode(&cir, "cir", CIR_SIZE);
+    }
+    else if (twr[1].code == DWT_DS_TWR_FINAL) {
+            json_rng_encode(twr, 2);
+            uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(twr, DWT_DS_TWR);        
+            float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(twr, DWT_DS_TWR));
+            cir_t cir; 
+            dw1000_read_accdata(inst, (uint8_t * ) &cir, 600 * sizeof(cir_complex_t), CIR_SIZE * sizeof(cir_complex_t) + 1 );
+            cir.fp_idx = dw1000_read_reg(inst,  RX_TIME_ID,  RX_TIME_FP_INDEX_OFFSET, sizeof(uint16_t));
+            json_cir_encode(&cir, "cir", CIR_SIZE);
 
-                   if(inst->config.rxdiag_enable)
-                        json_rxdiag_encode(&inst->rxdiag, "rxdiag");
+            if(inst->config.rxdiag_enable)
+                json_rxdiag_encode(&inst->rxdiag, "rxdiag");
 
-                    printf("{\"utime\": %ld,\"tof\": %ld,\"range\": %lu}\n", os_time_get(), time_of_flight, *(uint32_t *)&range);
-                }
+            printf("{\"utime\": %ld,\"tof\": %ld,\"range\": %lu}\n", os_time_get(), time_of_flight, *(uint32_t *)&range);
     }
     os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/256);
 }
@@ -153,7 +145,7 @@ int main(int argc, char **argv){
 
     dw1000_set_panid(inst,inst->PANID);
     dw1000_mac_init(inst, &mac_config);
-    dw1000_rng_init(inst, &rng_config);
+    dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
     dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));
 
     init_timer();
