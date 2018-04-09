@@ -3,14 +3,13 @@ syscfg.vals:
     CONSOLE_UART: 0
     CONSOLE_RTT: 1
     DW1000_DEVICE_0: 1
-    # OS_SYSVIEW: 1   
 
 syscfg.defs:
     DEVICE_ID:
         description: >
             Device ID
-        value: ((uint16_t){0x4321})
-    UUID_CCP_MASTER:
+        value: ((uint16_t){0x8000})
+    DEVICE_UUID:
         description: >
-            Clock Master UUID
-        value: ((uint16_t){0x8000})    
+            UUID
+        value: ((uint64_t){0x8000})    

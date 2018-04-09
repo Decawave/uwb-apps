@@ -104,27 +104,29 @@ static void timer_ev_cb(struct os_event *ev) {
     assert(ev != NULL);
 
     hal_gpio_toggle(LED_BLINK_PIN);
+    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/10);
+    
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
 
     dw1000_rng_request(inst, 0x4321, DWT_DS_TWR);
    
     if (inst->status.start_rx_error)
-        printf("{\"utime\": %lu,\"timer_ev_cb\": \"start_rx_error\"}\n",os_time_get());
+        printf("{\"utime\": %lu,\"timer_ev_cb\": \"start_rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
     if (inst->status.start_tx_error)
-        printf("{\"utime\": %lu,\"timer_ev_cb\":\"start_tx_error\"}\n",os_time_get());
+        printf("{\"utime\": %lu,\"timer_ev_cb\":\"start_tx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
     if (inst->status.rx_error)
-        printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_error\"}\n",os_time_get());
+        printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
     if (inst->status.request_timeout)
-        printf("{\"utime\": %lu,\"timer_ev_cb\":\"request_timeout\"}\n",os_time_get());
+        printf("{\"utime\": %lu,\"timer_ev_cb\":\"request_timeout\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
     if (inst->status.rx_timeout_error)
-        printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_timeout_error\"}\n",os_time_get());
+        printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_timeout_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
    
     if (twr[0].code == DWT_SS_TWR_FINAL ){   
             uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(twr, DWT_SS_TWR);
             float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(twr, DWT_SS_TWR));
             print_frame("trw=", twr[0]);
             printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": %lX, \"rec_tra\": %lX}\n", 
-                    os_time_get(), 
+                    os_cputime_ticks_to_usecs(os_cputime_get32()), 
                     time_of_flight, 
                     (uint32_t)(range * 1000), 
                     (twr[0].response_timestamp - twr[0].request_timestamp), 
@@ -137,7 +139,7 @@ static void timer_ev_cb(struct os_event *ev) {
             print_frame("1st=", twr[0]); 
             print_frame("2nd=", twr[1]); 
             printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": %lX, \"rec_tra\": %lX}\n", 
-                    os_time_get(), 
+                    os_cputime_ticks_to_usecs(os_cputime_get32()), 
                     time_of_flight, 
                     (uint32_t)(range * 1000), 
                     (twr[1].response_timestamp - twr[1].request_timestamp), 
@@ -146,7 +148,6 @@ static void timer_ev_cb(struct os_event *ev) {
             twr[1].code = DWT_DS_TWR_END;
     }
     
-    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/256);
 }
 
 /*
@@ -176,14 +177,14 @@ int main(int argc, char **argv){
     dw1000_mac_init(inst, &mac_config);
     dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
     dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));
-      
+
     printf("device_id = 0x%lX\n",inst->device_id);
     printf("PANID = 0x%X\n",inst->PANID);
     printf("DeviceID = 0x%X\n",inst->my_short_address);
     printf("partID = 0x%lX\n",inst->partID);
     printf("lotID = 0x%lX\n",inst->lotID);
     printf("xtal_trim = 0x%X\n",inst->xtal_trim);
-
+  
     init_timer();
 
     while (1) {

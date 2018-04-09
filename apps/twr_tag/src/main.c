@@ -37,6 +37,7 @@
 #include "dw1000/dw1000_mac.h"
 #include "dw1000/dw1000_rng.h"
 #include <dw1000/dw1000_lwip.h>
+#include <dw1000/dw1000_ccp.h>
 #include "dw1000/dw1000_ftypes.h"
 
 static dwt_config_t mac_config = {
@@ -101,21 +102,21 @@ static void timer_ev_cb(struct os_event *ev) {
     assert(ev != NULL);
 
     hal_gpio_toggle(LED_BLINK_PIN);
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/20);
     
+    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     assert(inst->rng->nframes > 0);
 
-
     if (inst->status.start_rx_error)
-        printf("{\"utime\": %lu,\"timer_ev_cb\": \"start_rx_error\"}\n",os_time_get());
+        printf("{\"utime\": %lu,\"timer_ev_cb\": \"start_rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
     if (inst->status.start_tx_error)
-        printf("{\"utime\": %lu,\"timer_ev_cb\":\"start_tx_error\"}\n",os_time_get());
+        printf("{\"utime\": %lu,\"timer_ev_cb\":\"start_tx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
     if (inst->status.rx_error)
-        printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_error\"}\n",os_time_get());
+        printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
     if (inst->status.request_timeout)
-        printf("{\"utime\": %lu,\"timer_ev_cb\":\"request_timeout\"}\n",os_time_get());
+        printf("{\"utime\": %lu,\"timer_ev_cb\":\"request_timeout\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
     if (inst->status.rx_timeout_error)
-        printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_timeout_error\"}\n",os_time_get());
+        printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_timeout_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
    
     if (inst->status.start_tx_error || inst->status.start_rx_error || inst->status.rx_error || inst->status.request_timeout ||  inst->status.rx_timeout_error){
         dw1000_set_rx_timeout(inst, 0);
@@ -128,7 +129,7 @@ static void timer_ev_cb(struct os_event *ev) {
         print_frame("trw=", twr[0]);
         twr[0].code = DWT_SS_TWR_END;
         printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": %lX, \"rec_tra\": %lX}\n", 
-            os_time_get(), 
+            os_cputime_ticks_to_usecs(os_cputime_get32()),
             time_of_flight, 
             (uint32_t)(range * 1000), 
             (twr->response_timestamp - twr->request_timestamp), 
@@ -145,7 +146,7 @@ static void timer_ev_cb(struct os_event *ev) {
         print_frame("2nd=", twr[1]);
         twr[1].code = DWT_DS_TWR_END;
         printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": %lX, \"rec_tra\": %lX}\n", 
-             os_time_get(), 
+            os_cputime_ticks_to_usecs(os_cputime_get32()),
             time_of_flight, 
             (uint32_t)(range * 1000), 
             (twr->response_timestamp - twr->request_timestamp), 
@@ -155,7 +156,7 @@ static void timer_ev_cb(struct os_event *ev) {
         dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst); 
     }
-    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/256);
+
 }
 
 static void init_timer(void) {
@@ -185,14 +186,14 @@ int main(int argc, char **argv){
     dw1000_mac_init(inst, &mac_config);
     dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
     dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));
-
+    dw1000_ccp_init(inst, 2, MYNEWT_VAL(UUID_CCP_MASTER));  
     printf("device_id=%lX\n",inst->device_id);
     printf("PANID=%X\n",inst->PANID);
     printf("DeviceID =%X\n",inst->my_short_address);
     printf("partID =%lX\n",inst->partID);
     printf("lotID =%lX\n",inst->lotID);
     printf("xtal_trim =%X\n",inst->xtal_trim);
-
+    
     dw1000_set_rx_timeout(inst, 0);
     dw1000_start_rx(inst); 
 
