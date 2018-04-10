@@ -37,6 +37,7 @@
 #include <dw1000/dw1000_mac.h>
 #include <dw1000/dw1000_rng.h>
 #include <dw1000/dw1000_lwip.h>
+#include <dw1000/dw1000_ccp.h>
 #include <dw1000/dw1000_ftypes.h>
 
 static dwt_config_t mac_config = {
@@ -62,8 +63,8 @@ static dw1000_phy_txrf_config_t txrf_config = {
 };
 
 static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x0800,         // Send Time delay in usec.
-    .rx_timeout_period = 0x4000         // Receive response timeout in usec.
+    .tx_holdoff_delay = 0x0C00,         // Send Time delay in usec.
+    .rx_timeout_period = 0x0800         // Receive response timeout in usec
 };
 
 static twr_frame_t twr[] = {
@@ -102,11 +103,13 @@ static struct os_callout blinky_callout;
 
 static void timer_ev_cb(struct os_event *ev) {
     assert(ev != NULL);
+    assert(ev->ev_arg != NULL);
 
     hal_gpio_toggle(LED_BLINK_PIN);
     os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/10);
     
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+    dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *)ev->ev_arg;
+    dw1000_rng_instance_t * rng = inst->rng; 
 
     dw1000_rng_request(inst, 0x4321, DWT_DS_TWR);
    
@@ -122,8 +125,8 @@ static void timer_ev_cb(struct os_event *ev) {
         printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_timeout_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
    
     if (twr[0].code == DWT_SS_TWR_FINAL ){   
-            uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(twr, DWT_SS_TWR);
-            float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(twr, DWT_SS_TWR));
+            uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(rng);
+            float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
             print_frame("trw=", twr[0]);
             printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": %lX, \"rec_tra\": %lX}\n", 
                     os_cputime_ticks_to_usecs(os_cputime_get32()), 
@@ -134,8 +137,8 @@ static void timer_ev_cb(struct os_event *ev) {
             );
     }     
     if (twr[1].code == DWT_DS_TWR_FINAL || twr[1].code == DWT_DS_TWR_EXT_FINAL){
-            uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(twr, DWT_DS_TWR);
-            float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(twr, DWT_DS_TWR));
+            uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(rng);
+            float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
             print_frame("1st=", twr[0]); 
             print_frame("2nd=", twr[1]); 
             printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": %lX, \"rec_tra\": %lX}\n", 
@@ -153,8 +156,8 @@ static void timer_ev_cb(struct os_event *ev) {
 /*
 * Initialize the callout for a timer event.
 */
-static void init_timer(void) {
-    os_callout_init(&blinky_callout, os_eventq_dflt_get(), timer_ev_cb, NULL);
+static void init_timer(dw1000_dev_instance_t * inst) {
+    os_callout_init(&blinky_callout, os_eventq_dflt_get(), timer_ev_cb, inst);
     os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC);
 }
 
@@ -177,7 +180,7 @@ int main(int argc, char **argv){
     dw1000_mac_init(inst, &mac_config);
     dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
     dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));
-
+    dw1000_ccp_init(inst, 2, MYNEWT_VAL(UUID_CCP_MASTER));  
     printf("device_id = 0x%lX\n",inst->device_id);
     printf("PANID = 0x%X\n",inst->PANID);
     printf("DeviceID = 0x%X\n",inst->my_short_address);
@@ -185,7 +188,7 @@ int main(int argc, char **argv){
     printf("lotID = 0x%lX\n",inst->lotID);
     printf("xtal_trim = 0x%X\n",inst->xtal_trim);
   
-    init_timer();
+    init_timer(inst);
 
     while (1) {
         os_eventq_run(os_eventq_dflt_get());

@@ -19,7 +19,7 @@
 #
 -->
 
-# Decawave clock_master example 
+# Decawave clock_master example for clock calibration packets 
 
 ## Overview
 
@@ -27,11 +27,11 @@ TDOA RTLS requires a means to synchronize the anchors timestamps, and one of the
 
 The CCP transmission control algorithm prevents Wireless Clock Synchronization packets from overlapping (in time) in the multi-master scalable system, so to avoid CCP collisions, the initial primary master sends CCP at the designated period and all other master anchors’ CCP transmissions should be timed from the initial master CCP or from the CCP transmissions of other subsequent (secondary) masters.
 
-The DW1000 Device Driver model contains the control-plane for the CCP transmissions. The Clock Master metronome for the system, all TDMA slots are derived from the timescale that is calculated from the reception of CCP frames. 
+The DW1000 Device Driver model contains the control-plane for the CCP transmissions. The Clock Master is the metronome for the system, all TDMA slots are derived from the timescale that is calculated from the reception of CCP frames. 
 
 The implementation utilises the os_timer to configure the DW1000 in advance of the required epoch and trigged a dw1000_set_delay_start()/dw1000_start_tx(). All timing is, however, relative to the DW1000 clock eliminating any OS dependencies. 
 
-The developer needs to provide a callout dw1000_ccp_set_postprocess() which will track the offset and relative drift to establish a precise epoch for each TDMA slot. Note this can be a simple interpolation or a more advanced scheme.  
+The developer needs to provide a callout dw1000_ccp_set_postprocess() that will track the offset and relative drift to establish a precise epoch for each TDMA slot. Note this can be a simple interpolation or a more advanced scheme.  
 
 1. Build the clock_master example app.
 

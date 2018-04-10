@@ -89,25 +89,27 @@ static struct os_callout blinky_callout;
 */
 static void timer_ev_cb(struct os_event *ev) {
     assert(ev != NULL);
+    assert(ev->ev_arg != NULL);
 
     hal_gpio_toggle(LED_BLINK_PIN);
-    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/256); 
-
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/20);
+    
+    dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *)ev->ev_arg;
+    dw1000_rng_instance_t * rng = inst->rng; 
 
     dw1000_rng_request(inst, 0x4321, DWT_DS_TWR);
 
     if (twr[0].code == DWT_SS_TWR_FINAL) {
-            uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(twr, DWT_SS_TWR);
-            float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(twr, DWT_SS_TWR));
+            uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(rng);
+            float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
             json_rng_encode(twr, 1);   
 
             printf("{\"utime\": %ld,\"tof\": %ld,\"range\": %lu}\n", os_time_get(), time_of_flight, *(int32_t * ) &range);
     }
     else if (twr[1].code == DWT_DS_TWR_FINAL) {
             json_rng_encode(twr, 2);
-            uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(twr, DWT_DS_TWR);        
-            float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(twr, DWT_DS_TWR));
+            uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(rng);        
+            float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
             cir_t cir; 
             dw1000_read_accdata(inst, (uint8_t * ) &cir, 600 * sizeof(cir_complex_t), CIR_SIZE * sizeof(cir_complex_t) + 1 );
             cir.fp_idx = dw1000_read_reg(inst,  RX_TIME_ID,  RX_TIME_FP_INDEX_OFFSET, sizeof(uint16_t));
@@ -123,8 +125,8 @@ static void timer_ev_cb(struct os_event *ev) {
 /*
 * Initialize the callout for a timer event.
 */
-static void init_timer(void) {
-    os_callout_init(&blinky_callout, os_eventq_dflt_get(), timer_ev_cb, NULL);
+static void init_timer(dw1000_dev_instance_t * inst) {
+    os_callout_init(&blinky_callout, os_eventq_dflt_get(), timer_ev_cb, inst);
     os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC);
 }
 
@@ -149,7 +151,7 @@ int main(int argc, char **argv){
     dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
     dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));
 
-    init_timer();
+    init_timer(inst);
 
     while (1) {
         os_eventq_run(os_eventq_dflt_get());

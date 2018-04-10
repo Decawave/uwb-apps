@@ -63,8 +63,8 @@ static dw1000_phy_txrf_config_t txrf_config = {
 };
 
 static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x0800,         // Send Time delay in usec.
-    .rx_timeout_period = 0x4000         // Receive response timeout in usec.
+    .tx_holdoff_delay = 0x0C00,         // Send Time delay in usec.
+    .rx_timeout_period = 0x0800         // Receive response timeout in usec
 };
 
 static twr_frame_t twr[] = {
@@ -100,11 +100,14 @@ static struct os_callout blinky_callout;
 */
 static void timer_ev_cb(struct os_event *ev) {
     assert(ev != NULL);
+    assert(ev->ev_arg != NULL);
 
     hal_gpio_toggle(LED_BLINK_PIN);
     os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/20);
     
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+    dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *)ev->ev_arg;
+    dw1000_rng_instance_t * rng = inst->rng; 
+
     assert(inst->rng->nframes > 0);
 
     if (inst->status.start_rx_error)
@@ -124,8 +127,8 @@ static void timer_ev_cb(struct os_event *ev) {
     }
 
     else if (twr[0].code == DWT_SS_TWR_FINAL) {
-        uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(twr, DWT_SS_TWR);
-        float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(twr, DWT_SS_TWR));
+        uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(rng);
+        float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
         print_frame("trw=", twr[0]);
         twr[0].code = DWT_SS_TWR_END;
         printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": %lX, \"rec_tra\": %lX}\n", 
@@ -140,8 +143,8 @@ static void timer_ev_cb(struct os_event *ev) {
     }
 
     else if (twr[1].code == DWT_DS_TWR_FINAL || twr[1].code == DWT_DS_TWR_EXT_FINAL) {
-        uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(twr, DWT_DS_TWR);
-        float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(twr, DWT_DS_TWR));
+        uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(rng);
+        float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
         print_frame("1st=", twr[0]);
         print_frame("2nd=", twr[1]);
         twr[1].code = DWT_DS_TWR_END;
@@ -159,11 +162,8 @@ static void timer_ev_cb(struct os_event *ev) {
 
 }
 
-static void init_timer(void) {
-    /*
-     * Initialize the callout for a timer event.
-     */
-    os_callout_init(&blinky_callout, os_eventq_dflt_get(), timer_ev_cb, NULL);
+static void init_timer(dw1000_dev_instance_t * inst) {
+    os_callout_init(&blinky_callout, os_eventq_dflt_get(), timer_ev_cb, inst);
     os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC);
 }
 
