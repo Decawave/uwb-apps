@@ -13,3 +13,4 @@ syscfg.defs:
         description: >
             Clock Master UUID
         value: ((uint16_t){0x8000})         
+    
