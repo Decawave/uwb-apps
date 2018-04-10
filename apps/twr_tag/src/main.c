@@ -197,7 +197,7 @@ int main(int argc, char **argv){
     dw1000_set_rx_timeout(inst, 0);
     dw1000_start_rx(inst); 
 
-    init_timer();
+    init_timer(inst);
 
     while (1) {
         os_eventq_run(os_eventq_dflt_get());   
