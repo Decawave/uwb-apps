@@ -40,3 +40,5 @@ pkg.cflags:
     - "-std=gnu99"
     - "-fms-extensions"
 
+pkg.lflags:
+    - "-lm"

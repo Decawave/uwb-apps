@@ -167,8 +167,8 @@ int main(int argc, char **argv){
 
     inst->PANID = 0xDECA;
     inst->my_short_address = MYNEWT_VAL(DEVICE_ID); 
-    inst->my_long_address = MYNEWT_VAL(DEVICE_UUID);
-
+    inst->my_long_address = ((uint64_t) inst->device_id << 32) + inst->partID;
+    
     dw1000_set_panid(inst,inst->PANID);
     dw1000_mac_init(inst, &mac_config);
     dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));

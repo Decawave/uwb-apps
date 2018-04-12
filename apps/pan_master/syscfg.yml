@@ -9,9 +9,6 @@ syscfg.defs:
         description: >
             Device ID
         value: ((uint16_t){0x8000})
-    DEVICE_UUID:
-        description: >
-            UUID
-        value: ((uint64_t){0x8000}) 
+
         
            
