@@ -63,7 +63,7 @@ static dw1000_phy_txrf_config_t txrf_config = {
 };
 
 static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x0C00,         // Send Time delay in usec.
+    .tx_holdoff_delay = 0x0600,         // Send Time delay in usec.
     .rx_timeout_period = 0x0800         // Receive response timeout in usec
 };
 
@@ -80,17 +80,17 @@ static twr_frame_t twr[] = {
     }
 };
 
-void print_frame(const char * name, twr_frame_t twr){
-    printf("%s{\n\tfctrl:0x%04X,\n", name, twr.fctrl);
-    printf("\tseq_num:0x%02X,\n", twr.seq_num);
-    printf("\tPANID:0x%04X,\n", twr.PANID);
-    printf("\tdst_address:0x%04X,\n", twr.dst_address);
-    printf("\tsrc_address:0x%04X,\n", twr.src_address);
-    printf("\tcode:0x%04X,\n", twr.code);
-    printf("\treception_timestamp:0x%08lX,\n", twr.reception_timestamp); 
-    printf("\ttransmission_timestamp:0x%08lX,\n", twr.transmission_timestamp); 
-    printf("\trequest_timestamp:0x%08lX,\n", twr.request_timestamp); 
-    printf("\tresponse_timestamp:0x%08lX\n}\n", twr.response_timestamp);
+void print_frame(const char * name, twr_frame_t *twr ){
+    printf("%s{\n\tfctrl:0x%04X,\n", name, twr->fctrl);
+    printf("\tseq_num:0x%02X,\n", twr->seq_num);
+    printf("\tPANID:0x%04X,\n", twr->PANID);
+    printf("\tdst_address:0x%04X,\n", twr->dst_address);
+    printf("\tsrc_address:0x%04X,\n", twr->src_address);
+    printf("\tcode:0x%04X,\n", twr->code);
+    printf("\treception_timestamp:0x%08lX,\n", twr->reception_timestamp);
+    printf("\ttransmission_timestamp:0x%08lX,\n", twr->transmission_timestamp);
+    printf("\trequest_timestamp:0x%08lX,\n", twr->request_timestamp);
+    printf("\tresponse_timestamp:0x%08lX\n}\n", twr->response_timestamp);
 }
 
 
@@ -102,17 +102,20 @@ static struct os_callout blinky_callout;
 */
 
 static void timer_ev_cb(struct os_event *ev) {
+    float rssi;
     assert(ev != NULL);
     assert(ev->ev_arg != NULL);
 
     hal_gpio_toggle(LED_BLINK_PIN);
-    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/10);
     
     dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *)ev->ev_arg;
     dw1000_rng_instance_t * rng = inst->rng; 
 
     dw1000_rng_request(inst, 0x4321, DWT_DS_TWR);
-   
+
+    twr_frame_t * previous_frame = rng->frames[(rng->idx-1)%rng->nframes];
+    twr_frame_t * frame = rng->frames[(rng->idx)%rng->nframes];
+    
     if (inst->status.start_rx_error)
         printf("{\"utime\": %lu,\"timer_ev_cb\": \"start_rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
     if (inst->status.start_tx_error)
@@ -124,33 +127,41 @@ static void timer_ev_cb(struct os_event *ev) {
     if (inst->status.rx_timeout_error)
         printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_timeout_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
    
-    if (twr[0].code == DWT_SS_TWR_FINAL ){   
+    if (frame->code == DWT_SS_TWR_FINAL) {
             uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(rng);
             float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
-            print_frame("trw=", twr[0]);
-            printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": %lX, \"rec_tra\": %lX}\n", 
+            dw1000_get_rssi(inst, &rssi);
+            print_frame("trw=", frame);
+            printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": %lX,"
+                   " \"rec_tra\": %lX, \"rssi\": %d}\n",
+                    os_cputime_ticks_to_usecs(os_cputime_get32()),
+                    time_of_flight,
+                    (uint32_t)(range * 1000),
+                   (frame->response_timestamp - frame->request_timestamp),
+                   (frame->transmission_timestamp - frame->reception_timestamp),
+                   (int)(rssi)
+            );
+    }
+
+    if (frame->code == DWT_DS_TWR_FINAL || frame->code == DWT_DS_TWR_EXT_FINAL) {
+            uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(rng);
+            float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
+            dw1000_get_rssi(inst, &rssi);
+            print_frame("1st=", previous_frame);
+            print_frame("2nd=", frame);
+            printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": %lX,"
+                   " \"rec_tra\": %lX, \"rssi\": %d}\n",
                     os_cputime_ticks_to_usecs(os_cputime_get32()), 
                     time_of_flight, 
                     (uint32_t)(range * 1000), 
-                    (twr[0].response_timestamp - twr[0].request_timestamp), 
-                    (twr[0].transmission_timestamp - twr[0].reception_timestamp)
-            );
-    }     
-    if (twr[1].code == DWT_DS_TWR_FINAL || twr[1].code == DWT_DS_TWR_EXT_FINAL){
-            uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(rng);
-            float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
-            print_frame("1st=", twr[0]); 
-            print_frame("2nd=", twr[1]); 
-            printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": %lX, \"rec_tra\": %lX}\n", 
-                    os_cputime_ticks_to_usecs(os_cputime_get32()), 
-                    time_of_flight, 
-                    (uint32_t)(range * 1000), 
-                    (twr[1].response_timestamp - twr[1].request_timestamp), 
-                    (twr[1].transmission_timestamp - twr[1].reception_timestamp)
-            );
-            twr[1].code = DWT_DS_TWR_END;
+                   (frame->response_timestamp - frame->request_timestamp),
+                   (frame->transmission_timestamp - frame->reception_timestamp),
+                    (int)(rssi)
+                );
+            frame->code = DWT_DS_TWR_END;
     }
     
+    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/9);
 }
 
 /*
