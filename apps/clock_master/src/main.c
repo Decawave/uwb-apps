@@ -36,9 +36,11 @@
 #include <dw1000/dw1000_phy.h>
 #include <dw1000/dw1000_mac.h>
 #include <dw1000/dw1000_rng.h>
-#include <dw1000/dw1000_lwip.h>
-#include <dw1000/dw1000_ccp.h>
 #include <dw1000/dw1000_ftypes.h>
+#if MYNEWT_VAL(DW1000_LWIP)
+#include <dw1000/dw1000_lwip.h>
+#endif
+#include <dw1000/dw1000_ccp.h>
 
 static dwt_config_t mac_config = {
     .chan = 5,                          // Channel number. 

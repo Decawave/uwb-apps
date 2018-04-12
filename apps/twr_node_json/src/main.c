@@ -37,8 +37,12 @@
 #include <dw1000/dw1000_phy.h>
 #include <dw1000/dw1000_mac.h>
 #include <dw1000/dw1000_rng.h>
-#include <dw1000/dw1000_lwip.h>
 #include <dw1000/dw1000_ftypes.h>
+
+#if MYNEWT_VAL(DW1000_LWIP)
+#include <dw1000/dw1000_lwip.h>
+#endif
+
 #include <json_encode.h>
 
 static dwt_config_t mac_config = {
