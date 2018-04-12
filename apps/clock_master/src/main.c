@@ -94,13 +94,13 @@ int main(int argc, char **argv){
 
     inst->PANID = 0xDECA;
     inst->my_short_address = MYNEWT_VAL(DEVICE_ID); 
-    inst->my_ext_address = MYNEWT_VAL(DEVICE_UUID);
+    inst->my_long_address = MYNEWT_VAL(DEVICE_UUID);
 
     dw1000_set_panid(inst,inst->PANID);
     dw1000_mac_init(inst, &mac_config);
     dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
     dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));  
-    dw1000_ccp_init(inst, 2, inst->my_ext_address);   
+    dw1000_ccp_init(inst, 2, inst->my_long_address);   
     dw1000_ccp_start(inst);
 
     while (1) {

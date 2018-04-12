@@ -121,7 +121,9 @@ static void timer_ev_cb(struct os_event *ev) {
     if (inst->status.rx_timeout_error)
         printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_timeout_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
    
-    if (inst->status.start_tx_error || inst->status.start_rx_error || inst->status.rx_error || inst->status.request_timeout ||  inst->status.rx_timeout_error){
+    if (inst->status.start_tx_error || inst->status.start_rx_error || inst->status.rx_error 
+            || inst->status.request_timeout ||  inst->status.rx_timeout_error){
+
         dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst); 
     }
@@ -186,7 +188,7 @@ int main(int argc, char **argv){
     dw1000_mac_init(inst, &mac_config);
     dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
     dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));
-    dw1000_ccp_init(inst, 2, MYNEWT_VAL(UUID_CCP_MASTER));  
+    //dw1000_ccp_init(inst, 2, MYNEWT_VAL(UUID_CCP_MASTER));  
     printf("device_id=%lX\n",inst->device_id);
     printf("PANID=%X\n",inst->PANID);
     printf("DeviceID =%X\n",inst->my_short_address);
