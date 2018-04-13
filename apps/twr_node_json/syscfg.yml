@@ -3,6 +3,7 @@ syscfg.vals:
     CONSOLE_UART: 0
     CONSOLE_RTT: 1
     DW1000_DEVICE_0: 1
+    DW1000_CLOCK_CALIBRATION: 1  
 
 syscfg.defs:
     DEVICE_ID:
