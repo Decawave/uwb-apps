@@ -197,13 +197,9 @@ int main(int argc, char **argv){
     dw1000_mac_init(inst, &mac_config);
     dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
     dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));
-<<<<<<< HEAD
-    dw1000_ccp_init(inst, 2, MYNEWT_VAL(UUID_CCP_MASTER));  
-=======
 #if MYNEWT_VAL(DW1000_CLOCK_CALIBRATION)
     dw1000_ccp_init(inst, 2, MYNEWT_VAL(UUID_CCP_MASTER));
 #endif
->>>>>>> f74600479a5e6bf953fa3aa8220ba6be92ddf230
     printf("device_id = 0x%lX\n",inst->device_id);
     printf("PANID = 0x%X\n",inst->PANID);
     printf("DeviceID = 0x%X\n",inst->my_short_address);
