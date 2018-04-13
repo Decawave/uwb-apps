@@ -41,10 +41,13 @@
 #if MYNEWT_VAL(DW1000_CLOCK_CALIBRATION)
 #include <dw1000/dw1000_ccp.h>
 #endif
-
 #if MYNEWT_VAL(DW1000_LWIP)
 #include <dw1000/dw1000_lwip.h>
 #endif
+#if MYNEWT_VAL(DW1000_PAN)
+#include <dw1000/dw1000_pan.h>
+#endif
+
 
 static dwt_config_t mac_config = {
     .chan = 5,                          // Channel number. 
@@ -72,6 +75,13 @@ static dw1000_rng_config_t rng_config = {
     .tx_holdoff_delay = 0x0600,         // Send Time delay in usec.
     .rx_timeout_period = 0x0800         // Receive response timeout in usec
 };
+
+#if MYNEWT_VAL(DW1000_PAN)
+static dw1000_pan_config_t pan_config = {
+    .tx_holdoff_delay = 0x0C00,         // Send Time delay in usec.
+    .rx_timeout_period = 0x4000         // Receive response timeout in usec.
+};
+#endif
 
 static twr_frame_t twr[] = {
     [0] = {
@@ -199,6 +209,10 @@ int main(int argc, char **argv){
     dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));
 #if MYNEWT_VAL(DW1000_CLOCK_CALIBRATION)
     dw1000_ccp_init(inst, 2, MYNEWT_VAL(UUID_CCP_MASTER));
+#endif
+#if MYNEWT_VAL(DW1000_PAN)
+    dw1000_pan_init(inst, &pan_config);   
+    dw1000_pan_start(inst);  
 #endif
     printf("device_id = 0x%lX\n",inst->device_id);
     printf("PANID = 0x%X\n",inst->PANID);
