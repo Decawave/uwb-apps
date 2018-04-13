@@ -1,6 +1,6 @@
 /**
  * Copyright (C) 2017-2018, Decawave Limited, All Rights Reserved
- * 
+ *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -8,7 +8,7 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * 
+ *
  *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
@@ -61,7 +61,7 @@ dwt_config_t mac_config = {
 	.nsSFD = 0,			// 0 to use standard SFD, 1 to use non-standard SFD.
 	.dataRate = DWT_BR_6M8,		// Data rate.
 	.phrMode = DWT_PHRMODE_STD,	// PHY header mode.
-	.sfdTO = (512 + 1 + 8 - 8)	// SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only.
+	.sfdTO = (256 + 1 + 8 - 8)	// SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only.
 };
 
 
@@ -96,7 +96,7 @@ ip_addr_t tgt_ip_addr = {
 	.addr[2] = MYNEWT_VAL(TGT_IP6_ADDR_3),
 	.addr[3] = MYNEWT_VAL(TGT_IP6_ADDR_4)
 };
-	
+
 
 struct netif dw1000_netif;
 static struct raw_pcb *ping_pcb;
@@ -107,7 +107,7 @@ struct pbuf *pb;
 static u8_t ping_recv(void *arg, struct raw_pcb *pcb, struct pbuf *p, const ip_addr_t *addr);
 
 
-int 
+int
 main(int argc, char **argv){
 
 	int rc;
@@ -138,7 +138,7 @@ main(int argc, char **argv){
 	raw_bind(ping_pcb, dw1000_netif.ip6_addr);
 	raw_connect(ping_pcb, ip6_tgt_addr);
 	raw_recv(ping_pcb, ping_recv, NULL);
-	
+
 	while (1) {
 		if (inst->lwip->status.start_rx_error)
 			printf("timer_ev_cb:[start_rx_error]\n");
