@@ -181,16 +181,15 @@ int main(int argc, char **argv){
     dw1000_ccp_init(inst, 2, inst->my_long_address);
     dw1000_ccp_start(inst);
 #endif
-    dw1000_pan_init(inst, &pan_config); 
-    dw1000_set_rx_timeout(inst, 0);
-    dw1000_start_rx(inst);   
- 
+    dw1000_pan_init(inst, &pan_config);  
     dw1000_pan_set_postprocess(inst, pan_master);
+    dw1000_set_rx_timeout(inst, 0);
+    dw1000_start_rx(inst);  
 
     while (1) {
         os_eventq_run(os_eventq_dflt_get());
   
-     if (inst->status.start_rx_error)
+        if (inst->status.start_rx_error)
             printf("{\"utime\": %lu,\"timer_ev_cb\": \"start_rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
         if (inst->status.start_tx_error)
             printf("{\"utime\": %lu,\"timer_ev_cb\":\"start_tx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
