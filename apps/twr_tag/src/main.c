@@ -36,9 +36,14 @@
 #include "dw1000/dw1000_phy.h"
 #include "dw1000/dw1000_mac.h"
 #include "dw1000/dw1000_rng.h"
-#include <dw1000/dw1000_lwip.h>
-#include <dw1000/dw1000_ccp.h>
 #include "dw1000/dw1000_ftypes.h"
+
+#if MYNEWT_VAL(DW1000_LWIP)
+#include <dw1000/dw1000_lwip.h>
+#endif
+#if MYNEWT_VAL(DW1000_CLOCK_CALIBRATION)
+#include <dw1000/dw1000_ccp.h>
+#endif
 
 static dwt_config_t mac_config = {
     .chan = 5,                          // Channel number. 
@@ -46,7 +51,7 @@ static dwt_config_t mac_config = {
     .txPreambLength = DWT_PLEN_256,     // Preamble length. Used in TX only. 
     .rxPAC = DWT_PAC8,                 // Preamble acquisition chunk size. Used in RX only. 
     .txCode = 9,                        // TX preamble code. Used in TX only. 
-    .rxCode = 8,                        // RX preamble code. Used in RX only. 
+    .rxCode = 9,                        // RX preamble code. Used in RX only. 
     .nsSFD = 0,                         // 0 to use standard SFD, 1 to use non-standard SFD. 
     .dataRate = DWT_BR_6M8,             // Data rate. 
     .phrMode = DWT_PHRMODE_STD,         // PHY header mode. 
@@ -198,7 +203,14 @@ int main(int argc, char **argv){
     dw1000_mac_init(inst, &mac_config);
     dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
     dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));
+<<<<<<< HEAD
     dw1000_ccp_init(inst, 2, MYNEWT_VAL(UUID_CCP_MASTER));  
+=======
+#if MYNEWT_VAL(DW1000_CLOCK_CALIBRATION)
+    dw1000_ccp_init(inst, 2, MYNEWT_VAL(UUID_CCP_MASTER));
+#endif
+    
+>>>>>>> f74600479a5e6bf953fa3aa8220ba6be92ddf230
     printf("device_id=%lX\n",inst->device_id);
     printf("PANID=%X\n",inst->PANID);
     printf("DeviceID =%X\n",inst->my_short_address);

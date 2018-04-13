@@ -36,10 +36,12 @@
 #include <dw1000/dw1000_phy.h>
 #include <dw1000/dw1000_mac.h>
 #include <dw1000/dw1000_rng.h>
-#include <dw1000/dw1000_lwip.h>
-#include <dw1000/dw1000_ccp.h>
-#include <dw1000/dw1000_pan.h>
 #include <dw1000/dw1000_ftypes.h>
+#include <dw1000/dw1000_pan.h>
+
+#if MYNEWT_VAL(DW1000_CLOCK_CALIBRATION)
+#include <dw1000/dw1000_ccp.h>
+#endif
 
 static dwt_config_t mac_config = {
     .chan = 5,                          // Channel number. 
@@ -47,7 +49,7 @@ static dwt_config_t mac_config = {
     .txPreambLength = DWT_PLEN_256,     // Preamble length. Used in TX only. 
     .rxPAC = DWT_PAC8,                 // Preamble acquisition chunk size. Used in RX only. 
     .txCode = 9,                        // TX preamble code. Used in TX only. 
-    .rxCode = 8,                        // RX preamble code. Used in RX only. 
+    .rxCode = 9,                        // RX preamble code. Used in RX only. 
     .nsSFD = 0,                         // 0 to use standard SFD, 1 to use non-standard SFD. 
     .dataRate = DWT_BR_6M8,             // Data rate. 
     .phrMode = DWT_PHRMODE_STD,         // PHY header mode. 
@@ -132,13 +134,15 @@ pan_master(struct os_event * ev){
 
         g_device_idx++;
     }
-    if(g_device_idx > PAN_SIZE) 
+    if(g_device_idx > PAN_SIZE)
+    {
         printf("{\"utime\":%lu,\"Warning\": \"PANIDs over subscribed\",{\"g_device_idx\":%d}\n", 
             os_cputime_ticks_to_usecs(os_cputime_get32()),
             g_device_idx
         );  
+    }
 
-        printf("{\"utime\":%lu,\"UUID\":\"%llX\",\"ID\":\"%X\",\"PANID\":\"%X\",\"SLOTID\":%d}\n", 
+    printf("{\"utime\":%lu,\"UUID\":\"%llX\",\"ID\":\"%X\",\"PANID\":\"%X\",\"SLOTID\":%d}\n", 
         os_cputime_ticks_to_usecs(os_cputime_get32()),
         frame->long_address,
         frame->short_address,
@@ -173,8 +177,10 @@ int main(int argc, char **argv){
     dw1000_mac_init(inst, &mac_config);
     dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
     dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));  
-//    dw1000_ccp_init(inst, 2, inst->my_long_address);   
-//    dw1000_ccp_start(inst);
+#if MYNEWT_VAL(DW1000_CLOCK_CALIBRATION)
+    dw1000_ccp_init(inst, 2, inst->my_long_address);
+    dw1000_ccp_start(inst);
+#endif
     dw1000_pan_init(inst, &pan_config); 
     dw1000_set_rx_timeout(inst, 0);
     dw1000_start_rx(inst);   

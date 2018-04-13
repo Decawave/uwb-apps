@@ -43,8 +43,11 @@
 #include "dw1000/dw1000_phy.h"
 #include "dw1000/dw1000_mac.h"
 #include "dw1000/dw1000_rng.h"
+
+#if MYNEWT_VAL(DW1000_LWIP)
 #include <dw1000/dw1000_lwip.h>
-#include "dw1000/dw1000_ftypes.h"
+#endif
+
 
 static dwt_config_t mac_config = {
     .chan = 5,                          // Channel number. 
@@ -52,7 +55,7 @@ static dwt_config_t mac_config = {
     .txPreambLength = DWT_PLEN_256,     // Preamble length. Used in TX only. 
     .rxPAC = DWT_PAC8,                  // Preamble acquisition chunk size. Used in RX only. 
     .txCode = 9,                        // TX preamble code. Used in TX only. 
-    .rxCode = 8,                        // RX preamble code. Used in RX only. 
+    .rxCode = 9,                        // RX preamble code. Used in RX only. 
     .nsSFD = 0,                         // 0 to use standard SFD, 1 to use non-standard SFD. 
     .dataRate = DWT_BR_6M8,             // Data rate. 
     .phrMode = DWT_PHRMODE_STD,         // PHY header mode. 
@@ -112,6 +115,7 @@ static void twr_timer_ev_cb(struct os_event *ev) {
 
     hal_gpio_toggle(LED_BLINK_PIN);
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+    dw1000_rng_instance_t * rng = inst->rng; 
     
     assert(inst->rng->nframes > 0);
 
@@ -139,8 +143,8 @@ static void twr_timer_ev_cb(struct os_event *ev) {
 #endif
 
    else if (twr[0].code == DWT_SS_TWR_FINAL) {
-        uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(twr, DWT_SS_TWR);
-        float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(twr, DWT_SS_TWR));
+        uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(rng);
+        float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
         print_frame("trw=", twr[0]);
         twr[0].code = DWT_SS_TWR_END;
         printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": %lX, \"rec_tra\": %lX}\n", 
@@ -155,8 +159,8 @@ static void twr_timer_ev_cb(struct os_event *ev) {
     }
 
     else if (twr[1].code == DWT_DS_TWR_FINAL || twr[1].code == DWT_DS_TWR_EXT_FINAL) {
-        uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(twr, DWT_DS_TWR);
-        float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(twr, DWT_DS_TWR));
+        uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(rng);
+        float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
         print_frame("1st=", twr[0]);
         print_frame("2nd=", twr[1]);
         twr[1].code = DWT_DS_TWR_END;

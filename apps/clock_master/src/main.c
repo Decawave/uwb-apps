@@ -36,16 +36,22 @@
 #include <dw1000/dw1000_phy.h>
 #include <dw1000/dw1000_mac.h>
 #include <dw1000/dw1000_rng.h>
-#include <dw1000/dw1000_lwip.h>
-#include <dw1000/dw1000_ccp.h>
 #include <dw1000/dw1000_ftypes.h>
+#if MYNEWT_VAL(DW1000_LWIP)
+#include <dw1000/dw1000_lwip.h>
+#endif
+#include <dw1000/dw1000_ccp.h>
 
 static dwt_config_t mac_config = {
     .chan = 5,                          // Channel number. 
     .prf = DWT_PRF_64M,                 // Pulse repetition frequency. 
     .txPreambLength = DWT_PLEN_256,     // Preamble length. Used in TX only. 
     .rxPAC = DWT_PAC8,                 // Preamble acquisition chunk size. Used in RX only. 
+<<<<<<< HEAD
     .txCode = 8,                        // TX preamble code. Used in TX only. 
+=======
+    .txCode = 9,                        // TX preamble code. Used in TX only. 
+>>>>>>> f74600479a5e6bf953fa3aa8220ba6be92ddf230
     .rxCode = 9,                        // RX preamble code. Used in RX only. 
     .nsSFD = 0,                         // 0 to use standard SFD, 1 to use non-standard SFD. 
     .dataRate = DWT_BR_6M8,             // Data rate. 
