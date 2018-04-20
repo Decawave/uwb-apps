@@ -58,7 +58,7 @@ static dwt_config_t mac_config = {
     .nsSFD = 0,                         // 0 to use standard SFD, 1 to use non-standard SFD. 
     .dataRate = DWT_BR_6M8,             // Data rate. 
     .phrMode = DWT_PHRMODE_STD,         // PHY header mode. 
-    .sfdTO = (256 + 1 + 8 - 8)         // SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. 
+    .sfdTO = (256 + 1 + 8 - 8)          // SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. 
 };
 
 static dw1000_phy_txrf_config_t txrf_config = { 
@@ -111,7 +111,7 @@ void print_frame(const char * name, twr_frame_t *twr ){
 /* The timer callout */
 static struct os_callout blinky_callout;
 
-#define SAMPLE_FREQ 30.0
+#define SAMPLE_FREQ 50.0
 static void timer_ev_cb(struct os_event *ev) {
     float rssi;
     assert(ev != NULL);
@@ -134,14 +134,11 @@ static void timer_ev_cb(struct os_event *ev) {
         printf("{\"utime\": %lu,\"timer_ev_cb\":\"start_tx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
     if (inst->status.rx_error)
         printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
-    if (inst->status.request_timeout)
-        printf("{\"utime\": %lu,\"timer_ev_cb\":\"request_timeout\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
     if (inst->status.rx_timeout_error)
         printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_timeout_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
    
     if (inst->status.start_tx_error || inst->status.start_rx_error || inst->status.rx_error 
-            || inst->status.request_timeout ||  inst->status.rx_timeout_error){
-
+        ||  inst->status.rx_timeout_error){
         dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst); 
     }
@@ -181,7 +178,6 @@ static void timer_ev_cb(struct os_event *ev) {
             (frame->transmission_timestamp - frame->reception_timestamp),
             (int)(rssi)
         );
-
         dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst); 
     }

@@ -37,7 +37,7 @@ extern "C" {
 #include <dw1000/dw1000_rng.h>
 
 
-#define CIR_SIZE (256 + 128)
+#define CIR_SIZE (32)
 
 typedef union {
     struct  _cir_complex_t{

@@ -1,7 +1,7 @@
 syscfg.vals:
     # Route console to RTT
-    CONSOLE_UART: 1
-    CONSOLE_RTT: 0
+    CONSOLE_UART: 0
+    CONSOLE_RTT: 1
     DW1000_DEVICE_0: 1
     DW1000_LWIP: 1
 
@@ -10,6 +10,7 @@ syscfg.defs:
         value: 0x4321
     DEVICE_PAN_ID:
         value: 0xDECA
+
     DEV_IP6_ADDR_1:
         value: 0x5040302
     DEV_IP6_ADDR_2:
@@ -18,6 +19,7 @@ syscfg.defs:
         value: 0xD0C0B0A
     DEV_IP6_ADDR_4:
         value: 0xF0F0F0E
+
     TGT_IP6_ADDR_1:
         value: 0x4030201
     TGT_IP6_ADDR_2:
