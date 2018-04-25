@@ -28,16 +28,12 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "json/json.h"
 #include <dw1000/dw1000_ftypes.h>
 #include <dw1000/dw1000_rng.h>
 
 
-#define CIR_SIZE (32)
+#define CIR_SIZE (32*16)
 
 typedef union {
     struct  _cir_complex_t{

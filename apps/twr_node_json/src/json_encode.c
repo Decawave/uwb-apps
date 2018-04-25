@@ -103,6 +103,7 @@ int json_ftype_encode(twr_frame_t * frame){
 void json_rng_encode(twr_frame_t frames[], uint16_t len){
 
     struct json_encoder encoder;
+    struct json_value value;
     int rc;
 
     /* reset the state of the internal test */
@@ -111,8 +112,10 @@ void json_rng_encode(twr_frame_t frames[], uint16_t len){
     encoder.je_arg= NULL;
 
     rc = json_encode_object_start(&encoder);
-    rc |= json_encode_array_name(&encoder, "twr");
+    JSON_VALUE_INT(&value, os_cputime_ticks_to_usecs(os_cputime_get32()));
+    rc |= json_encode_object_entry(&encoder, "utime", &value);
 
+    rc |= json_encode_array_name(&encoder, "twr");
     rc |= json_encode_array_start(&encoder);
 
     for (uint16_t i=0; i< len; i++){
@@ -139,6 +142,9 @@ void json_cir_encode(cir_t * cir, char * name, uint16_t nsize){
     encoder.je_arg= NULL;
 
     rc = json_encode_object_start(&encoder);    
+    JSON_VALUE_INT(&value, os_cputime_ticks_to_usecs(os_cputime_get32()));
+    rc |= json_encode_object_entry(&encoder, "utime", &value);
+    
     rc |= json_encode_object_key(&encoder, name);
     rc |= json_encode_object_start(&encoder);    
 
@@ -182,6 +188,9 @@ void json_rxdiag_encode(dw1000_dev_rxdiag_t * rxdiag, char * name){
     encoder.je_arg= NULL;
 
     rc = json_encode_object_start(&encoder);
+    JSON_VALUE_INT(&value, os_cputime_ticks_to_usecs(os_cputime_get32()));
+    rc |= json_encode_object_entry(&encoder, "utime", &value);
+
     rc |= json_encode_object_key(&encoder, name);
     rc |= json_encode_object_start(&encoder);    
 

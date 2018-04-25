@@ -37,4 +37,4 @@ pkg.deps:
 pkg.cflags:
     - "-std=gnu99"
     - "-fms-extensions"
-    - "-DNRF52"
+    

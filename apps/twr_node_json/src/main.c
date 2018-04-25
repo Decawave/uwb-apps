@@ -68,8 +68,8 @@ static dw1000_phy_txrf_config_t txrf_config = {
 };
 
 static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x0800,          // Send Time delay in usec.
-    .rx_timeout_period = 0x1000         // Receive response timeout in usec.
+    .tx_holdoff_delay = 0x0600,          // Send Time delay in usec.
+    .rx_timeout_period = 0x0800         // Receive response timeout in usec.
 };
 
 static twr_frame_t twr[] = {
@@ -88,41 +88,59 @@ static twr_frame_t twr[] = {
 
 /* The timer callout */
 static struct os_callout blinky_callout;
-/*
- * Event callback function for timer events. It toggles the led pin.
-*/
+
+#define SAMPLE_FREQ 50.0
 static void timer_ev_cb(struct os_event *ev) {
     assert(ev != NULL);
     assert(ev->ev_arg != NULL);
 
     hal_gpio_toggle(LED_BLINK_PIN);
-    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/20);
+    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/SAMPLE_FREQ);
     
     dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *)ev->ev_arg;
     dw1000_rng_instance_t * rng = inst->rng; 
 
     dw1000_rng_request(inst, 0x4321, DWT_DS_TWR);
 
-    if (twr[0].code == DWT_SS_TWR_FINAL) {
+    twr_frame_t * frame = rng->frames[(rng->idx)%rng->nframes];
+    
+    if (inst->status.start_rx_error)
+        printf("{\"utime\": %lu,\"timer_ev_cb\": \"start_rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
+    if (inst->status.start_tx_error)
+        printf("{\"utime\": %lu,\"timer_ev_cb\":\"start_tx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
+    if (inst->status.rx_error)
+        printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
+    if (inst->status.rx_timeout_error)
+        printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_timeout_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
+    
+    if (frame->code == DWT_SS_TWR_FINAL) {
             uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(rng);
             float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
-            json_rng_encode(twr, 1);   
-
-            printf("{\"utime\": %ld,\"tof\": %ld,\"range\": %lu}\n", os_time_get(), time_of_flight, *(int32_t * ) &range);
+            json_rng_encode(frame, 1);   
+            printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu}\n",
+                    os_cputime_ticks_to_usecs(os_cputime_get32()),
+                    time_of_flight,
+                    *(uint32_t *)&range
+            );
     }
-    else if (twr[1].code == DWT_DS_TWR_FINAL) {
-            json_rng_encode(twr, 2);
+   if (frame->code == DWT_DS_TWR_FINAL || frame->code == DWT_DS_TWR_EXT_FINAL) {
+            json_rng_encode(frame, 2);
             uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(rng);        
             float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
             cir_t cir; 
-            dw1000_read_accdata(inst, (uint8_t * ) &cir, 600 * sizeof(cir_complex_t), CIR_SIZE * sizeof(cir_complex_t) + 1 );
-            cir.fp_idx = dw1000_read_reg(inst,  RX_TIME_ID,  RX_TIME_FP_INDEX_OFFSET, sizeof(uint16_t));
+            cir.fp_idx = dw1000_read_reg(inst, RX_TIME_ID, RX_TIME_FP_INDEX_OFFSET, sizeof(uint16_t));
+            cir.fp_idx = roundf(((float) (cir.fp_idx >> 6) + 0.5f));
+            dw1000_read_accdata(inst, (uint8_t *)&cir,  cir.fp_idx * sizeof(cir_complex_t) - CIR_SIZE * sizeof(cir_complex_t)/2, CIR_SIZE * sizeof(cir_complex_t) + 1);
             json_cir_encode(&cir, "cir", CIR_SIZE);
 
             if(inst->config.rxdiag_enable)
-                json_rxdiag_encode(&inst->rxdiag, "rxdiag");
-
-            printf("{\"utime\": %ld,\"tof\": %ld,\"range\": %lu}\n", os_time_get(), time_of_flight, *(uint32_t *)&range);
+            json_rxdiag_encode(&inst->rxdiag, "rxdiag");
+            printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu}\n",
+                    os_cputime_ticks_to_usecs(os_cputime_get32()), 
+                    time_of_flight, 
+                     *(uint32_t *)&range
+                );
+            frame->code = DWT_DS_TWR_END;
     }
 }
 

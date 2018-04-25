@@ -29,9 +29,9 @@ for j=1:ntime
         if (line(1) == '{')
             line = jsondecode(line);
             if (isstruct(line)) 
-                if (isfield(line,'cir'))
+                if (isfield(line,'utime') && isfield(line,'cir'))
                     ir(end+1,:) = complex(line.cir.real,line.cir.imag)';
-                    fp_idx(end+1) = line.cir.fp_idx/pow2(2,5);
+                    fp_idx(end+1) = line.cir.fp_idx;
                 end
             end
         end
@@ -44,36 +44,29 @@ for j=1:ntime
     [n,m] = size(ir);
    
      if(n > nwin)
-        t = (1:m) + 600;
+        t = (1:m);
         abs_ir_current = abs(ir(end,:));
         real_ir_current = real(ir(end,:));
         imag_ir_current = imag(ir(end,:));
        
         fp_idx_current = fp_idx(end);
         
-%        subplot(211);
+ %       subplot(211);
          [upper,lower]=envelope(abs(ir((end-nwin):end,:))',8,'peak');
  
-         plot(t,[abs_ir_current;mean(upper',1);mean(lower',1)]);
-         hold on
-         plot(t,[abs_ir_current],'+');
-         hold off
-%        xlabel('utime')
-%        ylabel('range(m)')
-%        ax = axis();
-%        ax(1) = fp_idx(end) - m/2;
-%        ax(2) = fp_idx(end) + m/2;
-%        axis(ax)
+        plot(t,[abs_ir_current;mean(upper',1);mean(lower',1)]);
+        hold on
+        plot(t,[abs_ir_current],'+');
+        hold off
+         
+        xlabel('utime')
+        ylabel('range(m)')
         
-     
 %        subplot(212);
-%        plot(t,[real_cir_current;imag_cir_current]);
+%        p = angle(ir(end,:));
+%        plot(t,p);
 %        xlabel('utime')
 %        ylabel('range(m)')
-%        ax = axis();
-%        ax(1) = fp_idx(end) - m/2;
-%        ax(2) = fp_idx(end) + m/2;
-%        axis(ax)
         
         pause(0.01)
         refreshdata;

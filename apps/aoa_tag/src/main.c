@@ -22,6 +22,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 #include "sysinit/sysinit.h"
 #include "os/os.h"
 #include "bsp/bsp.h"
@@ -131,9 +132,9 @@ static void timer_ev_cb(struct os_event *ev) {
     
     os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/SAMPLE_FREQ);
 
-    dw1000_rng_request(inst, 0x4321, DWT_DS_TWR);
+    dw1000_rng_request(inst, 0x4321, DWT_DS_TWR_EXT);
 
-    twr_frame_t * previous_frame = rng->frames[(rng->idx-1)%rng->nframes];
+//    twr_frame_t * previous_frame = rng->frames[(rng->idx-1)%rng->nframes];
     twr_frame_t * frame = rng->frames[(rng->idx)%rng->nframes];
     
     if (inst->status.start_rx_error)
@@ -142,14 +143,14 @@ static void timer_ev_cb(struct os_event *ev) {
         printf("{\"utime\": %lu,\"timer_ev_cb\":\"start_tx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
     if (inst->status.rx_error)
         printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
-    if (inst->status.rx_timeout_error)
-        printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_timeout_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
+//    if (inst->status.rx_timeout_error)
+//        printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_timeout_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
    
     if (frame->code == DWT_SS_TWR_FINAL) {
             uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(rng);
             float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
             dw1000_get_rssi(inst, &rssi);
-            print_frame("trw=", frame);
+//            print_frame("trw=", frame);
             printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": %lX,"
                    " \"rec_tra\": %lX, \"rssi\": %d}\n",
                     os_cputime_ticks_to_usecs(os_cputime_get32()),
@@ -163,17 +164,17 @@ static void timer_ev_cb(struct os_event *ev) {
 
     if (frame->code == DWT_DS_TWR_FINAL || frame->code == DWT_DS_TWR_EXT_FINAL) {
             uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(rng);
-            float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
             dw1000_get_rssi(inst, &rssi);
-            print_frame("1st=", previous_frame);
-            print_frame("2nd=", frame);
-            printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": %lX,"
+//            print_frame("1st=", previous_frame);
+//            print_frame("2nd=", frame);
+            printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"azimuth\": %lu,\"res_req\": %lX,"
                    " \"rec_tra\": %lX, \"rssi\": %d}\n",
                     os_cputime_ticks_to_usecs(os_cputime_get32()), 
                     time_of_flight, 
-                    (uint32_t)(range * 1000), 
-                   (frame->response_timestamp - frame->request_timestamp),
-                   (frame->transmission_timestamp - frame->reception_timestamp),
+                    (uint32_t)(1000 * frame->spherical.range),
+                    (uint32_t)(180 * frame->spherical.azimuth/M_PI),
+                    (frame->response_timestamp - frame->request_timestamp),
+                    (frame->transmission_timestamp - frame->reception_timestamp),
                     (int)(rssi)
                 );
             frame->code = DWT_DS_TWR_END;

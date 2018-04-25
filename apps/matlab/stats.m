@@ -15,7 +15,7 @@ for j=1:ntimes
     idx = find(str == 13);
     
     while (length(idx) < 4)
-        data = [data, read(tcp, 1024)];
+        data = [data, read(tcp)];
         str = char(data);
         idx = find(str == 13);
     end  
@@ -25,7 +25,7 @@ for j=1:ntimes
         if (line(1) == '{')
             line = jsondecode(line);
             if (isstruct(line)) 
-                if (isfield(line,'utime'))
+                if (isfield(line,'utime') && isfield(line,'tof') && isfield(line,'range'))
                     utime(end+1) = line.utime;
                     tof(end+1) = line.tof;
                     range(end+1) = typecast(uint32(line.range),'single');
@@ -41,7 +41,7 @@ for j=1:ntimes
         pause(0.001)
         refreshdata;
      end
-     if (mod(j,4) == 0)
+     if (mod(j,16) == 0)
             [mu,sigma,~,~] = normfit(range);
             subplot(212);histfit(range,16,'normal');title(sprintf("mu=%f sigma=%f",mu,sigma))
      end

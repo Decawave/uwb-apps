@@ -22,6 +22,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 #include "sysinit/sysinit.h"
 #include "os/os.h"
 #include "bsp/bsp.h"
@@ -48,6 +49,7 @@
 #include <dw1000/dw1000_pan.h>
 #endif
 
+#include "json_encode.h"
 
 static dwt_config_t mac_config = {
     .chan = 5,                          // Channel number. 
@@ -62,13 +64,27 @@ static dwt_config_t mac_config = {
     .sfdTO = (256 + 1 + 8 - 8)         // SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. 
 };
 
-static dw1000_phy_txrf_config_t txrf_config = { 
+static dw1000_phy_txrf_config_t txrf_config_A = { 
         .PGdly = TC_PGDELAY_CH5,
-        //.power = 0x25456585
         .BOOSTNORM = dw1000_power_value(DW1000_txrf_config_9db, 5),
         .BOOSTP500 = dw1000_power_value(DW1000_txrf_config_9db, 5),
         .BOOSTP250 = dw1000_power_value(DW1000_txrf_config_9db, 5),
         .BOOSTP125 = dw1000_power_value(DW1000_txrf_config_9db, 5)
+};
+
+// Turn off B TX power
+static dw1000_phy_txrf_config_t txrf_config_B = { 
+        .PGdly = TC_PGDELAY_CH5,
+        .BOOSTNORM = dw1000_power_value(DW1000_txrf_config_off, 0),
+        .BOOSTP500 = dw1000_power_value(DW1000_txrf_config_off, 0),
+        .BOOSTP250 = dw1000_power_value(DW1000_txrf_config_off, 0),
+        .BOOSTP125 = dw1000_power_value(DW1000_txrf_config_off, 0)
+};
+
+
+static dw1000_phy_txrf_config_t * txrf_config[] = {
+    &txrf_config_A,
+    &txrf_config_B
 };
 
 static dw1000_rng_config_t rng_config = {
@@ -131,12 +147,7 @@ void print_frame(const char * name, twr_frame_t *twr ){
 /* The timer callout */
 static struct os_callout aoa_callout;
 
-/*
- * Event callback function for timer events. It toggles the led pin.
-*/
-
-
-#define SAMPLE_FREQ 10.0
+#define SAMPLE_FREQ 50.0
 static void timer_ev_cb(struct os_event *ev) {
     float rssi;
     assert(ev != NULL);
@@ -146,14 +157,10 @@ static void timer_ev_cb(struct os_event *ev) {
     os_callout_reset(&aoa_callout, OS_TICKS_PER_SEC/SAMPLE_FREQ);
     
     dw1000_dev_instance_t ** _inst = (dw1000_dev_instance_t **)ev->ev_arg;
-    for (uint8_t i=0; i< 2; i++){
-        
+    
+    for (uint8_t i=0; i< 2; i++){    
         dw1000_dev_instance_t * inst = _inst[i];
         dw1000_rng_instance_t * rng = inst->rng; 
-
-        assert(inst->rng->nframes > 0);
-
-        twr_frame_t * previous_frame = rng->frames[(rng->idx-1)%rng->nframes];
         twr_frame_t * frame = rng->frames[(rng->idx)%rng->nframes];
 
         if (inst->status.start_rx_error)
@@ -162,8 +169,6 @@ static void timer_ev_cb(struct os_event *ev) {
             printf("{\"utime\": %lu,\"timer_ev_cb\":\"start_tx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
         if (inst->status.rx_error)
             printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
-        if (inst->status.rx_timeout_error)
-            printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_timeout_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
     
         if (inst->status.start_tx_error || inst->status.start_rx_error || inst->status.rx_error 
             ||  inst->status.rx_timeout_error){
@@ -171,29 +176,28 @@ static void timer_ev_cb(struct os_event *ev) {
             dw1000_start_rx(inst); 
         }
 
-        else if (frame->code == DWT_DS_TWR_FINAL || frame->code == DWT_DS_TWR_EXT_FINAL) {
+        else if ((frame->code == DWT_DS_TWR_FINAL || frame->code == DWT_DS_TWR_EXT_FINAL)) {
             uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(rng);
-            float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
             dw1000_get_rssi(inst, &rssi);
-            print_frame("1st=", previous_frame);
-            print_frame("2nd=", frame);
-            frame->code = DWT_DS_TWR_END;
-                printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": %lX,"
-                    " \"rec_tra\": %lX, \"rssi\": %d, \"Node\": %c}\n",
+
+            if (i == 0 )
+                printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"azimuth\": %lu,\"res_req\":\"%lX\","
+                    " \"rec_tra\":\"%lX\", \"rssi\": %d, \"Node\": \"%c\"}\n",
                 os_cputime_ticks_to_usecs(os_cputime_get32()),
                 time_of_flight, 
-                (uint32_t)(range * 1000), 
+                *(uint32_t *)(&frame->spherical.range),
+                *(uint32_t *)(&frame->spherical.azimuth),
                 (frame->response_timestamp - frame->request_timestamp),
                 (frame->transmission_timestamp - frame->reception_timestamp),
                 (int)(rssi),
                 'A' + i
             );
+            frame->code = DWT_DS_TWR_END;
             dw1000_set_rx_timeout(inst, 0);
             dw1000_start_rx(inst); 
         }
     }
 }
-
 
 /*
 * Initialize the callout for a timer event.
@@ -204,7 +208,9 @@ static void init_timer(dw1000_dev_instance_t * inst[]) {
 }
 
 
-static void aoa_clk_sync(dw1000_dev_instance_t * inst[], uint8_t n){
+static void 
+aoa_clk_sync(dw1000_dev_instance_t * inst[], uint8_t n){
+
     for (uint8_t i = 0; i < n; i++ )
         dw1000_phy_external_sync(inst[i],33, true);
 
@@ -212,7 +218,7 @@ static void aoa_clk_sync(dw1000_dev_instance_t * inst[], uint8_t n){
     hal_gpio_init_out(MYNEWT_VAL(DW1000_AOA_SYNC_CLR), 1);
 
     hal_gpio_init_out(MYNEWT_VAL(DW1000_AOA_SYNC), 1);
-    os_cputime_delay_usecs(5000);
+    os_cputime_delay_usecs(1000);
     hal_gpio_write(MYNEWT_VAL(DW1000_AOA_SYNC), 0);
 
     hal_gpio_write(MYNEWT_VAL(DW1000_AOA_SYNC_CLR), 0);
@@ -220,6 +226,42 @@ static void aoa_clk_sync(dw1000_dev_instance_t * inst[], uint8_t n){
     
     for (uint8_t i = 0; i < n; i++ )
         dw1000_phy_external_sync(inst[i],0, false);
+}
+
+static void 
+aoa_final_cb(dw1000_dev_instance_t * inst){
+
+    dw1000_rng_instance_t * rng = inst->rng; 
+    twr_frame_t * frame = rng->frames[(rng->idx)%rng->nframes];
+
+    cir_t cir[2]; 
+    float rcphase[2];
+    float angle[2];
+  
+    for (uint8_t i= 0; i<2; i++){
+        dw1000_dev_instance_t * inst = hal_dw1000_inst(i);
+        cir[i].fp_idx = dw1000_read_reg(inst, RX_TIME_ID, RX_TIME_FP_INDEX_OFFSET, sizeof(uint16_t));
+        cir[i].fp_idx = (uint16_t) roundf( ((float)cir[i].fp_idx)/64.0f + 0.5f);
+        dw1000_read_accdata(inst, (uint8_t *)&cir[i],  cir[i].fp_idx * sizeof(cir_complex_t), CIR_SIZE * sizeof(cir_complex_t) + 1);
+        float _rcphase = (float)((uint8_t)dw1000_read_reg(inst, RX_TTCKO_ID, 4, sizeof(uint8_t)) & 0x7F);
+        rcphase[i] = _rcphase * (M_PI/64.0f);
+        angle[i] = atan2f((float)cir[i].array[0].imag, (float)cir[i].array[0].real);
+    }
+
+    float pd = fmodf((angle[0] - rcphase[0]) - (angle[1] - rcphase[1]) + 2*M_PI, 2*M_PI) - M_PI;   
+
+    frame->cartesian.x = MYNEWT_VAL(LOCAL_COORDINATE_X);
+    frame->cartesian.y = MYNEWT_VAL(LOCAL_COORDINATE_Y);
+    frame->cartesian.z = MYNEWT_VAL(LOCAL_COORDINATE_Z);
+    frame->spherical.range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
+    frame->spherical.azimuth = ((pd > M_PI)?M_PI/2:((pd < -M_PI)?(-M_PI/2):asinf(pd/M_PI))); 
+    frame->spherical_variance.range = MYNEWT_VAL(RANGE_VARIANCE);
+    frame->spherical_variance.azimuth = MYNEWT_VAL(AZIMUTH_VARIANCE);
+    frame->spherical_variance.zenith = -1;
+    frame->utime = os_cputime_ticks_to_usecs(os_cputime_get32());
+
+   // printf("{\"rcphase\":[%lu,%lu],\"angle\":[%lu,%lu],\"pd\": %lu, \"AoA\": %lu}\n", *(uint32_t *)&rcphase[0],*(uint32_t *)&rcphase[1], *(uint32_t *)&angle[0], *(uint32_t *)&angle[1], *(uint32_t *)&pd, *(uint32_t *)&frame->spherical.azimuth);
+
 }
 
 int main(int argc, char **argv){
@@ -235,7 +277,7 @@ int main(int argc, char **argv){
     for (uint8_t i=0; i < 2; i++){
         inst[i] = hal_dw1000_inst(i);
         dw1000_softreset(inst[i]);
-        dw1000_phy_init(inst[i], &txrf_config);   
+        dw1000_phy_init(inst[i], txrf_config[i]);   
         inst[i]->PANID = 0xDECA;
         inst[i]->my_short_address = MYNEWT_VAL(DEVICE_ID);
         inst[i]->my_long_address = ((uint64_t) inst[i]->device_id << 32) + inst[i]->partID;
@@ -258,9 +300,9 @@ int main(int argc, char **argv){
         printf("lotID = 0x%lX\n",inst[i]->lotID);
         printf("xtal_trim = 0x%X\n",inst[i]->xtal_trim);
     }
-
+    dw1000_rng_set_tx_final_cb(inst[0], aoa_final_cb); 
+    dw1000_rng_set_tx_final_cb(inst[1], NULL); 
     aoa_clk_sync(inst, 2);
-
     init_timer(inst);
 
     for (uint8_t i=0; i < 2; i++){
