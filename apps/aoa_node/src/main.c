@@ -235,26 +235,24 @@ aoa_final_cb(dw1000_dev_instance_t * inst){
     twr_frame_t * frame = rng->frames[(rng->idx)%rng->nframes];
 
     cir_t cir[2]; 
-    float rcphase[2];
-    float angle[2];
   
     for (uint8_t i= 0; i<2; i++){
         dw1000_dev_instance_t * inst = hal_dw1000_inst(i);
         cir[i].fp_idx = dw1000_read_reg(inst, RX_TIME_ID, RX_TIME_FP_INDEX_OFFSET, sizeof(uint16_t));
-        cir[i].fp_idx = (uint16_t) roundf( ((float)cir[i].fp_idx)/64.0f + 0.5f);
+        cir[i].fp_idx = (uint16_t) roundf( ((float)cir[i].fp_idx)/64.0f + 0.5f) - 1;
         dw1000_read_accdata(inst, (uint8_t *)&cir[i],  cir[i].fp_idx * sizeof(cir_complex_t), CIR_SIZE * sizeof(cir_complex_t) + 1);
         float _rcphase = (float)((uint8_t)dw1000_read_reg(inst, RX_TTCKO_ID, 4, sizeof(uint8_t)) & 0x7F);
-        rcphase[i] = _rcphase * (M_PI/64.0f);
-        angle[i] = atan2f((float)cir[i].array[0].imag, (float)cir[i].array[0].real);
+        cir[i].rcphase = _rcphase * (M_PI/64.0f);
+        cir[i].angle = atan2f((float)cir[i].array[0].imag, (float)cir[i].array[0].real);
     }
 
-    float pd = fmodf((angle[0] - rcphase[0]) - (angle[1] - rcphase[1]) + 2*M_PI, 2*M_PI) - M_PI;   
+    float pd = fmodf((cir[0].angle - cir[0].rcphase) - (cir[1].angle - cir[1].rcphase) + 3*M_PI, 2*M_PI) - M_PI;  
 
     frame->cartesian.x = MYNEWT_VAL(LOCAL_COORDINATE_X);
     frame->cartesian.y = MYNEWT_VAL(LOCAL_COORDINATE_Y);
     frame->cartesian.z = MYNEWT_VAL(LOCAL_COORDINATE_Z);
     frame->spherical.range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
-    frame->spherical.azimuth = ((pd > M_PI)?M_PI/2:((pd < -M_PI)?(-M_PI/2):asinf(pd/M_PI))); 
+    frame->spherical.azimuth = asinf(pd/M_PI); 
     frame->spherical_variance.range = MYNEWT_VAL(RANGE_VARIANCE);
     frame->spherical_variance.azimuth = MYNEWT_VAL(AZIMUTH_VARIANCE);
     frame->spherical_variance.zenith = -1;
