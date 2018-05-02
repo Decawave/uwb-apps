@@ -24,7 +24,7 @@ for j=1:ntime
         idx = find(str == 13);
     end    
             
-    for i=1:length(idx)-2
+    for i=1:length(idx) - 1
         line = str((idx(i)+2):idx(i+1));
         if (line(1) == '{')
             line = jsondecode(line);
@@ -35,8 +35,9 @@ for j=1:ntime
                 end
             end
         end
-        data = data(idx(i+1):end);
+       
     end
+    data = data(idx(end):end);
     
     pause(0.01)
     refreshdata;

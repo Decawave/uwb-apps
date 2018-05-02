@@ -130,6 +130,8 @@ static twr_frame_t * twr[] = {
     twr_B
 };
 
+cir_t cir[2]; 
+
 void print_frame(const char * name, twr_frame_t *twr ){
     printf("%s{\n\tfctrl:0x%04X,\n", name, twr->fctrl);
     printf("\tseq_num:0x%02X,\n", twr->seq_num);
@@ -180,7 +182,7 @@ static void timer_ev_cb(struct os_event *ev) {
             uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(rng);
             dw1000_get_rssi(inst, &rssi);
 
-            if (i == 0 )
+            if (i == 0 && (abs(cir[0].fp_idx - cir[1].fp_idx) < 2) )
                 printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"azimuth\": %lu,\"res_req\":\"%lX\","
                     " \"rec_tra\":\"%lX\", \"rssi\": %d, \"Node\": \"%c\"}\n",
                 os_cputime_ticks_to_usecs(os_cputime_get32()),
@@ -233,13 +235,11 @@ aoa_final_cb(dw1000_dev_instance_t * inst){
 
     dw1000_rng_instance_t * rng = inst->rng; 
     twr_frame_t * frame = rng->frames[(rng->idx)%rng->nframes];
-
-    cir_t cir[2]; 
   
     for (uint8_t i= 0; i<2; i++){
         dw1000_dev_instance_t * inst = hal_dw1000_inst(i);
         cir[i].fp_idx = dw1000_read_reg(inst, RX_TIME_ID, RX_TIME_FP_INDEX_OFFSET, sizeof(uint16_t));
-        cir[i].fp_idx = (uint16_t) roundf( ((float)cir[i].fp_idx)/64.0f + 0.5f) - 1;
+        cir[i].fp_idx = (uint16_t) roundf( ((float)cir[i].fp_idx)/64.0f + 0.5f) - 0;
         dw1000_read_accdata(inst, (uint8_t *)&cir[i],  cir[i].fp_idx * sizeof(cir_complex_t), CIR_SIZE * sizeof(cir_complex_t) + 1);
         float _rcphase = (float)((uint8_t)dw1000_read_reg(inst, RX_TTCKO_ID, 4, sizeof(uint8_t)) & 0x7F);
         cir[i].rcphase = _rcphase * (M_PI/64.0f);

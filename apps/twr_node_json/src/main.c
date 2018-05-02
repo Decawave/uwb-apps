@@ -129,8 +129,8 @@ static void timer_ev_cb(struct os_event *ev) {
             float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
             cir_t cir; 
             cir.fp_idx = dw1000_read_reg(inst, RX_TIME_ID, RX_TIME_FP_INDEX_OFFSET, sizeof(uint16_t));
-            cir.fp_idx = roundf(((float) (cir.fp_idx >> 6) + 0.5f));
-            dw1000_read_accdata(inst, (uint8_t *)&cir,  cir.fp_idx * sizeof(cir_complex_t) - CIR_SIZE * sizeof(cir_complex_t)/2, CIR_SIZE * sizeof(cir_complex_t) + 1);
+            cir.fp_idx = roundf(((float) (cir.fp_idx >> 6) + 0.5f)) - 2;
+            dw1000_read_accdata(inst, (uint8_t *)&cir,  cir.fp_idx * sizeof(cir_complex_t), CIR_SIZE * sizeof(cir_complex_t) + 1);
             json_cir_encode(&cir, "cir", CIR_SIZE);
 
             if(inst->config.rxdiag_enable)

@@ -14,7 +14,7 @@ for j=1:ntimes
     str = char(data);
     idx = find(str == 13);
     
-    while (length(idx) < 4)
+    while (length(idx) < 16)
         data = [data, read(tcp)];
         str = char(data);
         idx = find(str == 13);
@@ -41,7 +41,7 @@ for j=1:ntimes
         pause(0.001)
         refreshdata;
      end
-     if (mod(j,16) == 0)
+     if (mod(j,64) == 0)
             [mu,sigma,~,~] = normfit(range);
             subplot(212);histfit(range,16,'normal');title(sprintf("mu=%f sigma=%f",mu,sigma))
      end

@@ -27,13 +27,9 @@
 #include <stdint.h>
 #include <fcntl.h>
 #include <unistd.h>
-
 #include "json/json.h"
-#include <dw1000/dw1000_ftypes.h>
-#include <dw1000/dw1000_rng.h>
 
-
-#define CIR_SIZE (64)
+#define CIR_SIZE (8)
 
 typedef union {
     struct  _cir_complex_t{
@@ -44,18 +40,14 @@ typedef union {
 }cir_complex_t;
 
 typedef struct _cir_t{
-    uint8_t dummy;
+    uint8_t dummy;      //Errata
     cir_complex_t array[CIR_SIZE];
     uint16_t fp_idx;
     uint16_t fp_amp1;
+    float rcphase;
+    float angle;
 }cir_t;
 
-int json_ftype_encode(twr_frame_t * frame);
-void json_rng_encode(twr_frame_t frames[], uint16_t nsize);
 void json_cir_encode(cir_t * cir, char * name, uint16_t nsize);
-void json_rxdiag_encode(dw1000_dev_rxdiag_t * rxdiag, char * name);
 
 #endif
-
-
-
