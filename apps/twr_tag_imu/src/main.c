@@ -44,6 +44,8 @@
 #include "dw1000/dw1000_mac.h"
 #include "dw1000/dw1000_rng.h"
 
+#define IMU_READ_RATE (OS_TICKS_PER_SEC/10)
+
 #if MYNEWT_VAL(DW1000_LWIP)
 #include <dw1000/dw1000_lwip.h>
 #endif
@@ -130,13 +132,12 @@ static void twr_timer_ev_cb(struct os_event *ev) {
         printf("{\"utime\": %lu,\"timer_ev_cb\":\"start_tx_error\"}\n",os_time_get());
     if (inst->status.rx_error)
         printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_error\"}\n",os_time_get());
-    if (inst->status.request_timeout)
-        printf("{\"utime\": %lu,\"timer_ev_cb\":\"request_timeout\"}\n",os_time_get());
     if (inst->status.rx_timeout_error)
         printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_timeout_error\"}\n",os_time_get());
    
 
-    if (inst->status.start_tx_error || inst->status.rx_error || inst->status.request_timeout ||  inst->status.rx_timeout_error){
+    if (inst->status.start_tx_error || inst->status.rx_error ||
+        inst->status.rx_timeout_error) {
         dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst); 
     }
@@ -278,7 +279,7 @@ static void sensor_timer_ev_cb(struct os_event *ev) {
         i++;
     }
     
-    os_callout_reset(&sensor_callout, OS_TICKS_PER_SEC/100);
+    os_callout_reset(&sensor_callout, IMU_READ_RATE);
 }
 
 
