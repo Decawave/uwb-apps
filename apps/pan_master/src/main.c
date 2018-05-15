@@ -195,15 +195,14 @@ int main(int argc, char **argv){
             printf("{\"utime\": %lu,\"timer_ev_cb\":\"start_tx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
         if (inst->status.rx_error)
             printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
-        if (inst->status.request_timeout)
-            printf("{\"utime\": %lu,\"timer_ev_cb\":\"request_timeout\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
         if (inst->status.rx_timeout_error)
             printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_timeout_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
 
-    if (inst->status.start_tx_error || inst->status.start_rx_error || inst->status.rx_error || inst->status.request_timeout ||  inst->status.rx_timeout_error){
-        dw1000_set_rx_timeout(inst, 0);
-        dw1000_start_rx(inst); 
-    }
+        if (inst->status.start_tx_error || inst->status.start_rx_error ||
+            inst->status.rx_error || inst->status.rx_timeout_error) {
+            dw1000_set_rx_timeout(inst, 0);
+            dw1000_start_rx(inst); 
+        }
     }
     assert(0);
     return rc;
