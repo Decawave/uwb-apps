@@ -1,0 +1,17 @@
+syscfg.vals:
+    # Route console to RTT
+    CONSOLE_UART: 0
+    CONSOLE_RTT: 1
+    # Enable DW1000
+    DW1000_DEVICE_0: 1
+    SHELL_TASK: 0
+    DW1000_PROVISION: 1
+syscfg.defs:
+    SLOT_ID:
+        value: 0
+    DEVICE_TYPE:
+        value: 1
+    DEVICE_ID:
+        value: 0x1234
+    DEVICE_PAN_ID:
+        value: 0xDECA
