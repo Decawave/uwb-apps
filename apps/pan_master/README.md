@@ -33,17 +33,17 @@ newt target set pan_master bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target set pan_master build_profile=debug 
 newt run pan_master 0
 
-newt target create pan_tag
-newt target set pan_tag app=apps/pan_tag
-newt target set pan_tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target set pan_tag build_profile=debug 
-newt run pan_tag 0
+newt target create twr_tag
+newt target set twr_tag app=apps/twr_tag
+newt target set twr_tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set twr_tag build_profile=debug 
+newt run twr_tag 0
 
-newt target create pan_node
-newt target set pan_node app=apps/pan_node
-newt target set pan_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target set pan_node build_profile=debug 
-newt run pan_node 0
+newt target create twr_node
+newt target set twr_node app=apps/twr_node
+newt target set twr_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set twr_node build_profile=debug 
+newt run twr_node 0
 
 ```
 

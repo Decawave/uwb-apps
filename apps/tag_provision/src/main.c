@@ -40,6 +40,16 @@
 #include <dw1000/dw1000_ftypes.h>
 #include <dw1000/dw1000_provision.h>
 
+#if MYNEWT_VAL(DW1000_LWIP)
+#include <dw1000/dw1000_lwip.h>
+#endif
+#if MYNEWT_VAL(DW1000_CLOCK_CALIBRATION)
+#include <dw1000/dw1000_ccp.h>
+#endif
+#if MYNEWT_VAL(DW1000_PAN)
+#include <dw1000/dw1000_pan.h>
+#endif
+
 #define NUM_NODES 32 
 #define NUM_FRAMES 2
 
@@ -132,6 +142,9 @@ int main(int argc, char **argv){
     dw1000_mac_init(inst, &mac_config);
     dw1000_rng_init(inst, &rng_config, NUM_FRAMES);
     dw1000_rng_set_frames(inst, twr, NUM_FRAMES);
+#if MYNEWT_VAL(DW1000_CLOCK_CALIBRATION)
+    dw1000_ccp_init(inst, 2, MYNEWT_VAL(UUID_CCP_MASTER));
+#endif
 
     printf("\nTAG:%d_______Address:0x%04X\n",inst->slot_id,inst->my_short_address);
     

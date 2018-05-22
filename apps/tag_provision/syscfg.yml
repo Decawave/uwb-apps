@@ -6,6 +6,7 @@ syscfg.vals:
     DW1000_DEVICE_0: 1
     SHELL_TASK: 0
     DW1000_PROVISION: 1
+    DW1000_CLOCK_CALIBRATION: 1
 
 syscfg.defs:
     SLOT_ID:
@@ -16,3 +17,7 @@ syscfg.defs:
         value: 0x4321
     DEVICE_PAN_ID:
         value: 0xDECA
+    UUID_CCP_MASTER:
+        description: >
+            Clock Master UUID
+        value: ((uint16_t){0x8000})   

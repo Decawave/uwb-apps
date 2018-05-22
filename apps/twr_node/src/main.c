@@ -214,6 +214,10 @@ int main(int argc, char **argv){
 #if MYNEWT_VAL(DW1000_PAN)
     dw1000_pan_init(inst, &pan_config);   
     dw1000_pan_start(inst, DWT_NONBLOCKING);  
+    while(inst->pan->status.valid != true){ 
+        os_eventq_run(os_eventq_dflt_get());
+        os_cputime_delay_usecs(5000);
+    } 
 #endif
     printf("device_id = 0x%lX\n",inst->device_id);
     printf("PANID = 0x%X\n",inst->PANID);
