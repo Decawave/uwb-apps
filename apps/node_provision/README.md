@@ -26,6 +26,8 @@ Provision service allows tags/nodes to find the short addresses of all nodes of 
 
 The DW1000 Device Driver Model contains the control plane for the provision packet transmissions and response receptions. The tags/nodes will send out a broadcast message and all the nodes are supposed to respond in a time slotted fashion. The new tag/node receives responses from other nodes in a sequence and stores their short address for future communication. The new tag/node continues to receive response messages from other nodes till receive timeout occurs. 
 
+**NOTE:** Provision of one tag alone at a time is possible with this example. As there is no TDMA slot structure with example, the tags tend to reply to the original provision_start request by other tags in place which gives a wrong database. This will go out once TDMA slot is in place where the tags will be only on during their respective slots and hence can use n tags at the same time.
+
 In this example apps, a new tag(apps/tag_provision) initiates the the provisioning and all nearby nodes(apps/node_provision) respond to it. 
 
 1. Build the Provision examples app
@@ -39,18 +41,22 @@ newt target set node0 build_profile=debug
 newt target amend node0 syscfg=DEVICE_ID=0x1111
 newt target amend node0 syscfg=SLOT_ID=0
 newt build node0
+newt create-image node0 1.0.0
 newt load node0
 newt target amend node0 syscfg=DEVICE_ID=0x1112
 newt target amend node0 syscfg=SLOT_ID=1
 newt build node0
+newt create-image node0 1.0.0
 newt load node0
 newt target amend node0 syscfg=DEVICE_ID=0x1113
 newt target amend node0 syscfg=SLOT_ID=2
 newt build node0
+newt create-image node0 1.0.0
 newt load node0
 newt target amend node0 syscfg=DEVICE_ID=0x1114
 newt target amend node0 syscfg=SLOT_ID=3
 newt build node0
+newt create-image node0 1.0.0
 newt load node0
 
 newt target create tag0
