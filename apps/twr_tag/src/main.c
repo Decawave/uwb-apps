@@ -149,8 +149,8 @@ static void timer_ev_cb(struct os_event *ev) {
         dw1000_get_rssi(inst, &rssi);
         print_frame("trw=", frame);
         frame->code = DWT_SS_TWR_END;
-        printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": %lX,"
-               " \"rec_tra\": %lX, \"rssi\": %d}\n",
+        printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\":\"%lX\","
+               " \"rec_tra\":\"%lX\", \"rssi\": %d}\n",
             os_cputime_ticks_to_usecs(os_cputime_get32()),
             time_of_flight, 
             (uint32_t)(range * 1000), 
@@ -169,8 +169,8 @@ static void timer_ev_cb(struct os_event *ev) {
         print_frame("1st=", previous_frame);
         print_frame("2nd=", frame);
         frame->code = DWT_DS_TWR_END;
-            printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": %lX,"
-                   " \"rec_tra\": %lX, \"rssi\": %d}\n",
+            printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\":\"%lX\","
+                   " \"rec_tra\":\"%lX\", \"rssi\": %d}\n",
             os_cputime_ticks_to_usecs(os_cputime_get32()),
             time_of_flight, 
             (uint32_t)(range * 1000), 
