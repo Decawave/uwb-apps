@@ -6,7 +6,7 @@ syscfg.vals:
     DW1000_DEVICE_0: 1
     SHELL_TASK: 0
     DW1000_PROVISION: 1
-    DW1000_CLOCK_CALIBRATION: 1
+    DW1000_CCP_ENABLED: 1
 
 syscfg.defs:
     SLOT_ID:

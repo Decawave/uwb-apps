@@ -52,21 +52,6 @@
 
 
 static
-dwt_config_t mac_config = {
-	.chan = 5,			// Channel number.
-	.prf = DWT_PRF_64M,		// Pulse repetition frequency.
-	.txPreambLength = DWT_PLEN_256,	// Preamble length. Used in TX only.
-	.rxPAC = DWT_PAC8,		// Preamble acquisition chunk size. Used in RX only.
-	.txCode = 10,			// TX preamble code. Used in TX only.
-	.rxCode = 10,			// RX preamble code. Used in RX only.
-	.nsSFD = 0,			// 0 to use standard SFD, 1 to use non-standard SFD.
-	.dataRate = DWT_BR_6M8,		// Data rate.
-	.phrMode = DWT_PHRMODE_STD,	// PHY header mode.
-	.sfdTO = (256 + 1 + 8 - 8)	// SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only.
-};
-
-
-static
 dw1000_phy_txrf_config_t txrf_config = {
 	.PGdly = TC_PGDELAY_CH5,
 	.BOOSTNORM = dw1000_power_value(DW1000_txrf_config_9db, 5),
@@ -120,8 +105,7 @@ int main(int argc, char **argv){
 	inst->my_short_address = MYNEWT_VAL(SHORT_ADDRESS);
 
 	dw1000_set_panid(inst,inst->PANID);
-
-	dw1000_low_level_init(inst, &txrf_config, &mac_config);
+	dw1000_low_level_init(inst, NULL, NULL);
 	dw1000_lwip_init(inst, &lwip_config, MYNEWT_VAL(NUM_FRAMES), MYNEWT_VAL(BUFFER_SIZE));
 
 	dw1000_netif_config(inst, &dw1000_netif, &my_ip_addr, RX_STATUS);

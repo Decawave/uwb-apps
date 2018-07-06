@@ -40,7 +40,7 @@
 #include <dw1000/dw1000_ftypes.h>
 #include <json_encode.h>
 
-#if MYNEWT_VAL(DW1000_CLOCK_CALIBRATION)
+#if MYNEWT_VAL(DW1000_CCP_ENABLED)
 #include <dw1000/dw1000_ccp.h>
 #endif
 #if MYNEWT_VAL(DW1000_LWIP)
@@ -53,28 +53,6 @@
 #include <dw1000/dw1000_range.h>
 #endif
 
-
-static dwt_config_t mac_config = {
-    .chan = 5,                          // Channel number. 
-    .prf = DWT_PRF_16M,                 // Pulse repetition frequency.
-    .txPreambLength = DWT_PLEN_256,     // Preamble length. Used in TX only. 
-    .rxPAC = DWT_PAC8,                 // Preamble acquisition chunk size. Used in RX only. 
-    .txCode = 8,                        // TX preamble code. Used in TX only.
-    .rxCode = 8,                        // RX preamble code. Used in RX only.
-    .nsSFD = 0,                         // 0 to use standard SFD, 1 to use non-standard SFD. 
-    .dataRate = DWT_BR_6M8,             // Data rate. 
-    .phrMode = DWT_PHRMODE_STD,         // PHY header mode. 
-    .sfdTO = (256 + 1 + 8 - 8)         // SFD timeout (preamble length + 1 + SFD length - PAC size). Used in RX only. 
-};
-
-static dw1000_phy_txrf_config_t txrf_config = { 
-        .PGdly = TC_PGDELAY_CH5,
-        //.power = 0x25456585
-        .BOOSTNORM = dw1000_power_value(DW1000_txrf_config_9db, 5),
-        .BOOSTP500 = dw1000_power_value(DW1000_txrf_config_9db, 5),
-        .BOOSTP250 = dw1000_power_value(DW1000_txrf_config_9db, 5),
-        .BOOSTP125 = dw1000_power_value(DW1000_txrf_config_9db, 5)
-};
 
 static twr_frame_t twr[] = {
     [0] = {
@@ -240,12 +218,11 @@ static void range_postprocess(struct os_event * ev){
         twr_frame_t *frame;
         uint32_t time_of_flight;
         float dist;
-        float rssi;
         frame = rng->frames[(range->pp_idx_list[i])%rng->nframes];
         if (frame->code == DWT_SS_TWR_FINAL) {
             time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(frame, frame);
             dist = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(frame, frame));
-            dw1000_get_rssi(inst, &rssi);
+            float rssi = dw1000_get_rssi(inst);
             printf("\tseq_num:0x%02X,\n", frame->seq_num);
             printf("\tPANID:0x%04X,\n", frame->PANID);
             printf("\tdst_address:0x%04X,\n", frame->dst_address);
@@ -270,8 +247,7 @@ static void range_postprocess(struct os_event * ev){
         if ((frame->code == DWT_DS_TWR_FINAL && previous_frame->code == DWT_DS_TWR_T1) || frame->code == DWT_DS_TWR_EXT_FINAL) {
             time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(previous_frame, frame);
             dist = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(previous_frame, frame));
-            dw1000_get_rssi(inst, &rssi);
-
+            float rssi = dw1000_get_rssi(inst);
             printf("\tseq_num:0x%02X,\n", frame->seq_num);
             printf("\tPANID:0x%04X,\n", frame->PANID);
             printf("\tdst_address:0x%04X,\n", frame->dst_address);
@@ -311,7 +287,7 @@ int main(int argc, char **argv){
     
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     dw1000_softreset(inst);
-    dw1000_phy_init(inst, &txrf_config);   
+    dw1000_phy_init(inst, NULL);   
 
     inst->PANID = 0xDECA;
     inst->my_short_address = MYNEWT_VAL(DEVICE_ID);
@@ -320,10 +296,10 @@ int main(int argc, char **argv){
     dw1000_set_address16(inst, inst->my_short_address);
     dw1000_mac_framefilter(inst, DWT_FF_DATA_EN );
 
-    dw1000_mac_init(inst, &mac_config);
+    dw1000_mac_init(inst, NULL);
     dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
     dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));
-#if MYNEWT_VAL(DW1000_CLOCK_CALIBRATION)
+#if MYNEWT_VAL(DW1000_CCP_ENABLED)
     dw1000_ccp_init(inst, 2, MYNEWT_VAL(UUID_CCP_MASTER));
 #endif
 #if MYNEWT_VAL(DW1000_PAN)

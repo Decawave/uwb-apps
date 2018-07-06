@@ -198,10 +198,10 @@ void json_rxdiag_encode(dw1000_dev_rxdiag_t * rxdiag, char * name){
     rc |= json_encode_object_entry(&encoder, "fp_idx", &value);
     JSON_VALUE_UINT(&value, rxdiag->fp_amp);
     rc |= json_encode_object_entry(&encoder, "fp_amp", &value);
-     JSON_VALUE_UINT(&value, rxdiag->rx_std);
+    JSON_VALUE_UINT(&value, rxdiag->rx_std);
     rc |= json_encode_object_entry(&encoder, "rx_std", &value);
-    JSON_VALUE_UINT(&value, rxdiag->preamble_cnt);
-    rc |= json_encode_object_entry(&encoder, "preamble_cnt", &value);
+    JSON_VALUE_UINT(&value, rxdiag->pacc_cnt);
+    rc |= json_encode_object_entry(&encoder, "pacc_cnt", &value);
 
     rc |= json_encode_object_finish(&encoder);
     rc |= json_encode_object_finish(&encoder);
