@@ -117,6 +117,7 @@ static void timer_ev_cb(struct os_event *ev) {
    
     if (inst->status.start_tx_error || inst->status.start_rx_error || inst->status.rx_error 
         ||  inst->status.rx_timeout_error){
+        inst->status.start_tx_error = inst->status.start_rx_error = inst->status.rx_error = inst->status.rx_timeout_error = 0;
         dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst); 
     }

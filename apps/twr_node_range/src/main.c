@@ -294,7 +294,7 @@ int main(int argc, char **argv){
 
     dw1000_set_panid(inst,inst->PANID);
     dw1000_set_address16(inst, inst->my_short_address);
-    dw1000_mac_framefilter(inst, DWT_FF_DATA_EN );
+    dw1000_mac_framefilter(inst, DWT_FF_DATA_EN|DWT_FF_RSVD_EN );
 
     dw1000_mac_init(inst, NULL);
     dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
@@ -303,12 +303,20 @@ int main(int argc, char **argv){
     dw1000_ccp_init(inst, 2, MYNEWT_VAL(UUID_CCP_MASTER));
 #endif
 #if MYNEWT_VAL(DW1000_PAN)
-    dw1000_pan_init(inst, &pan_config);   
-    dw1000_pan_start(inst);  
+    dw1000_pan_init(inst, &pan_config);
+    dw1000_pan_start(inst, DWT_NONBLOCKING);
+    while(inst->pan->status.valid != true){
+        os_eventq_run(os_eventq_dflt_get());
+        os_cputime_delay_usecs(5000);
+    }
 #endif
 #if MYNEWT_VAL(DW1000_RANGE)
     dw1000_range_init(inst, 2, node_addr);
     dw1000_range_set_postprocess(inst, &range_postprocess);
+#endif
+    dw1000_set_address16(inst, inst->my_short_address);
+    dw1000_mac_framefilter(inst, DWT_FF_DATA_EN);
+#if MYNEWT_VAL(DW1000_RANGE)
     dw1000_range_start(inst, DWT_DS_TWR);
 #endif
     printf("device_id = 0x%lX\n",inst->device_id);

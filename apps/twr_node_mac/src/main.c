@@ -105,8 +105,6 @@ static void timer_ev_cb(struct os_event *ev) {
     
     dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *)ev->ev_arg;
     dw1000_rng_instance_t * rng = inst->rng; 
-    
-    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/SAMPLE_FREQ);
 
     dw1000_rng_request(inst, 0xDEC1, DWT_DS_TWR);
 
@@ -155,8 +153,7 @@ static void timer_ev_cb(struct os_event *ev) {
                 );
             frame->code = DWT_DS_TWR_END;
     }
-    
-    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/9);
+    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/SAMPLE_FREQ);
 }
 
 /*
@@ -186,6 +183,7 @@ int main(int argc, char **argv){
     dw1000_set_address16(inst, inst->my_short_address);
 #endif 
     dw1000_set_panid(inst,inst->PANID);
+    inst->config.framefilter_enabled = 0;
     dw1000_mac_init(inst, NULL);
     dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
     dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));
@@ -194,7 +192,14 @@ int main(int argc, char **argv){
 #endif
 #if MYNEWT_VAL(DW1000_PAN)
     dw1000_pan_init(inst, &pan_config);   
-    dw1000_pan_start(inst, DWT_NONBLOCKING);  
+    dw1000_pan_start(inst, DWT_NONBLOCKING); 
+        while(inst->pan->status.valid != true){
+        os_eventq_run(os_eventq_dflt_get());
+        os_cputime_delay_usecs(5000);
+    } 
+    inst->config.framefilter_enabled = 1;
+    dw1000_set_address16(inst, inst->my_short_address);
+    dw1000_mac_init(inst, NULL);
 #endif
     printf("device_id = 0x%lX\n",inst->device_id);
     printf("PANID = 0x%X\n",inst->PANID);

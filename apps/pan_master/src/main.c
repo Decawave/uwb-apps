@@ -132,6 +132,8 @@ pan_master(struct os_event * ev){
     dw1000_write_tx_fctrl(inst, sizeof(pan_frame_resp_t), 0, true); 
     dw1000_set_wait4resp(inst, false);    
     pan->status.start_tx_error = dw1000_start_tx(inst).start_tx_error;
+    dw1000_set_rx_timeout(inst, 0);
+    dw1000_start_rx(inst); 
 }
 #endif
 
@@ -166,22 +168,8 @@ int main(int argc, char **argv){
 
     while (1) {
         os_eventq_run(os_eventq_dflt_get());
-  
-        if (inst->status.start_rx_error)
-            printf("{\"utime\": %lu,\"timer_ev_cb\": \"start_rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
-        if (inst->status.start_tx_error)
-            printf("{\"utime\": %lu,\"timer_ev_cb\":\"start_tx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
-        if (inst->status.rx_error)
-            printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
-        if (inst->status.rx_timeout_error)
-            printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_timeout_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
-
-        if (inst->status.start_tx_error || inst->status.start_rx_error ||
-            inst->status.rx_error || inst->status.rx_timeout_error) {
-            dw1000_set_rx_timeout(inst, 0);
-            dw1000_start_rx(inst); 
-        }
     }
+
     assert(0);
     return rc;
 }
