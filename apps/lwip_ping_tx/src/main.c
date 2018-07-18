@@ -50,17 +50,6 @@
 #define PING_DATA_SIZE 2
 #define RX_STATUS false
 
-
-static
-dw1000_phy_txrf_config_t txrf_config = {
-	.PGdly = TC_PGDELAY_CH5,
-	.BOOSTNORM = dw1000_power_value(DW1000_txrf_config_9db, 5),
-	.BOOSTP500 = dw1000_power_value(DW1000_txrf_config_9db, 5),
-	.BOOSTP250 = dw1000_power_value(DW1000_txrf_config_9db, 5),
-	.BOOSTP125 = dw1000_power_value(DW1000_txrf_config_9db, 5)
-};
-
-
 static
 dw1000_lwip_config_t lwip_config = {
 	.poll_resp_delay = 0x4800,
