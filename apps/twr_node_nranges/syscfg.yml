@@ -1,0 +1,28 @@
+syscfg.vals:
+    # Route console to RTT
+    CONSOLE_UART: 0
+    CONSOLE_RTT: 1
+    DW1000_DEVICE_0: 1
+    DW1000_SS_TWR_ENABLED: 0
+    DW1000_DS_TWR_ENABLED: 1
+    DW1000_DS_TWR_EXT_ENABLED: 0
+    DW1000_CLOCK_CALIBRATION: 0
+    DW1000_PAN: 0
+
+syscfg.defs:
+    DEVICE_ID:
+        description: >
+            Device ID
+        value: ((uint16_t){0x2222})
+    UUID_CCP_MASTER:
+        description: >
+            Clock Master UUID
+        value: ((uint16_t){0x8000})
+    N_RANGES_NPLUS_TWO_MSGS:
+        description: >
+            To enable/disable the 2n+2ranges method
+        value: 1
+    SLOT_ID:
+        description: >
+            SLOT_ID for the Device
+        value: 1
