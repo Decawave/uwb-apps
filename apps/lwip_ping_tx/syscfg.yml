@@ -29,6 +29,6 @@ syscfg.defs:
     TGT_IP6_ADDR_4:
         value: 0xE0F0F0F
     BUFFER_SIZE:
-        value: 80
+        value: 100
     NUM_FRAMES:
         value: 1

@@ -40,14 +40,10 @@
 #include <dw1000/dw1000_ftypes.h>
 
 #include <lwip/init.h>
-#include <lwip/raw.h>
-#include <lwip/icmp.h>
 #include <lwip/ethip6.h>
-#include <lwip/inet_chksum.h>
 #include <netif/lowpan6.h>
 
-#define PING_ID	0xDECA
-#define PING_DATA_SIZE 2
+#define PING_ID	0xDDEE
 #define RX_STATUS false
 
 static
@@ -65,29 +61,81 @@ ip_addr_t my_ip_addr = {
 	.addr[3] = MYNEWT_VAL(DEV_IP6_ADDR_4)
 };
 
-ip_addr_t tgt_ip_addr = {
-	.addr[0] = MYNEWT_VAL(TGT_IP6_ADDR_1),
-	.addr[1] = MYNEWT_VAL(TGT_IP6_ADDR_2),
-	.addr[2] = MYNEWT_VAL(TGT_IP6_ADDR_3),
-	.addr[3] = MYNEWT_VAL(TGT_IP6_ADDR_4)
-};
 
+ip_addr_t ip6_tgt_addr[4];
 
-struct netif dw1000_netif;
-static struct raw_pcb *ping_pcb;
-ip_addr_t ip6_tgt_addr[LWIP_IPV6_NUM_ADDRESSES];
-
-struct pbuf *p;
-void ping_prepare_echo();
 err_t error;
 static uint16_t seq_no = 0x0000;
+char *payload;
 
+struct ping_payload{
+	uint16_t src_addr;
+	uint16_t dst_addr;
+	uint16_t ping_id;
+	uint16_t seq_no;
+	uint16_t data[5];
+};
+
+static struct os_callout blinky_callout;
+
+#define SAMPLE_FREQ 20.0
+
+static void timer_ev_cb(struct os_event *ev) {
+    assert(ev != NULL);
+    assert(ev->ev_arg != NULL);
+
+    hal_gpio_toggle(LED_BLINK_PIN);
+    
+    dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *)ev->ev_arg;
+	uint16_t payload_size = (uint16_t)sizeof(struct ping_payload);
+
+    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/SAMPLE_FREQ);
+
+	struct ping_payload *ping_pl = (struct ping_payload*)payload;
+	ping_pl->src_addr = MYNEWT_VAL(SHORT_ADDRESS);
+	ping_pl->dst_addr = 0x4321;
+	ping_pl->ping_id = PING_ID;
+	ping_pl->seq_no  = seq_no++;
+
+	dw1000_lwip_send(inst, payload_size, payload, ip6_tgt_addr);
+
+	printf("\n\tSeq # - %d\n\n", seq_no);
+
+	if (inst->lwip->status.start_rx_error)
+		printf("timer_ev_cb:[start_rx_error]\n");
+	if (inst->lwip->status.start_tx_error)
+		printf("timer_ev_cb:[start_tx_error]\n");
+	if (inst->lwip->status.rx_error)
+		printf("timer_ev_cb:[rx_error]\n");
+	if (inst->lwip->status.request_timeout){
+		printf("timer_ev_cb:[request_timeout]\n");
+		error = ERR_INPROGRESS;
+	}
+	if (inst->lwip->status.rx_timeout_error){
+		printf("timer_ev_cb:[rx_timeout_error]\n");
+		error = ERR_TIMEOUT;
+	}
+
+	if (inst->lwip->status.start_tx_error ||
+			inst->lwip->status.rx_error ||
+			inst->lwip->status.request_timeout ||
+			inst->lwip->status.rx_timeout_error){
+
+		inst->lwip->status.start_tx_error = inst->lwip->status.rx_error = inst->lwip->status.request_timeout = inst->lwip->status.rx_timeout_error = 0;
+	}
+	print_error(error);
+}
+
+static void init_timer(dw1000_dev_instance_t * inst) {
+    os_callout_init(&blinky_callout, os_eventq_dflt_get(), timer_ev_cb, inst);
+    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC);
+}
 
 int main(int argc, char **argv){
 	int rc;
 
 	dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-
+	
 	sysinit();
 	dw1000_softreset(inst);
 	inst->PANID = MYNEWT_VAL(DEVICE_PAN_ID);
@@ -96,85 +144,30 @@ int main(int argc, char **argv){
 	dw1000_set_panid(inst,inst->PANID);
 	dw1000_low_level_init(inst, NULL, NULL);
 	dw1000_lwip_init(inst, &lwip_config, MYNEWT_VAL(NUM_FRAMES), MYNEWT_VAL(BUFFER_SIZE));
-
-	dw1000_netif_config(inst, &dw1000_netif, &my_ip_addr, RX_STATUS);
-
+    dw1000_netif_config(inst, &inst->lwip->lwip_netif, &my_ip_addr, RX_STATUS);
 	lwip_init();
+    lowpan6_if_init(&inst->lwip->lwip_netif);
 
-	lowpan6_if_init(&dw1000_netif);
-
-	dw1000_netif.flags |= NETIF_FLAG_UP | NETIF_FLAG_LINK_UP;
+    inst->lwip->lwip_netif.flags |= NETIF_FLAG_UP | NETIF_FLAG_LINK_UP;
 	lowpan6_set_pan_id(MYNEWT_VAL(DEVICE_PAN_ID));
 
-	IP_ADDR6(ip6_tgt_addr, tgt_ip_addr.addr[0], tgt_ip_addr.addr[1], tgt_ip_addr.addr[2], tgt_ip_addr.addr[3]);
+    dw1000_pcb_init(inst);
 
-	ping_pcb = raw_new(IP_PROTO_ICMP);
-	raw_bind(ping_pcb, dw1000_netif.ip6_addr);
-	raw_connect(ping_pcb, ip6_tgt_addr);
+    inst->lwip->dst_addr = 0x4321;
 
+    IP_ADDR6(ip6_tgt_addr, MYNEWT_VAL(TGT_IP6_ADDR_1), MYNEWT_VAL(TGT_IP6_ADDR_2), 
+                            MYNEWT_VAL(TGT_IP6_ADDR_3), MYNEWT_VAL(TGT_IP6_ADDR_4));
+
+
+    payload = (char *)malloc(sizeof(struct ping_payload));
+    assert(payload != NULL);
+
+    init_timer(inst);
 
 	while (1) {
-		ping_prepare_echo();
-		assert(p != NULL);
-
-		error = raw_sendto(ping_pcb, p, ip6_tgt_addr);
-		if(error == ERR_OK){
-			printf("\n\t[Ping Sent] ");
-			printf("\n\tSeq # - %d\n\n ", seq_no);
-		}
-
-		mem_free(p);
-		if (inst->lwip->status.start_rx_error)
-			printf("timer_ev_cb:[start_rx_error]\n");
-		if (inst->lwip->status.start_tx_error)
-			printf("timer_ev_cb:[start_tx_error]\n");
-		if (inst->lwip->status.rx_error)
-			printf("timer_ev_cb:[rx_error]\n");
-		if (inst->lwip->status.request_timeout){
-			printf("timer_ev_cb:[request_timeout]\n");
-			error = ERR_INPROGRESS;
-		}
-		if (inst->lwip->status.rx_timeout_error){
-			printf("timer_ev_cb:[rx_timeout_error]\n");
-			error = ERR_TIMEOUT;
-		}
-
-		if (inst->lwip->status.start_tx_error ||
-				inst->lwip->status.rx_error ||
-				inst->lwip->status.request_timeout ||
-				inst->lwip->status.rx_timeout_error){
-
-			inst->lwip->status.start_tx_error = inst->lwip->status.rx_error = inst->lwip->status.request_timeout = inst->lwip->status.rx_timeout_error = 0;
-		}
-
-		print_error(error);
-		os_time_delay(5);
+        os_eventq_run(os_eventq_dflt_get());
 	}
 
 	assert(0);
 	return rc;
-}
-
-void ping_prepare_echo()
-{
-	size_t i;
-
-	struct icmp_echo_hdr *iecho;
-	size_t ping_size = sizeof(struct icmp_echo_hdr) + PING_DATA_SIZE;
-
-	p = pbuf_alloc(PBUF_RAW, (u16_t)ping_size, PBUF_RAM);
-	assert( p != NULL);
-
-	iecho = (struct icmp_echo_hdr *)p->payload;
-	ICMPH_TYPE_SET(iecho, ICMP_ECHO);
-	ICMPH_CODE_SET(iecho, 0);
-	iecho->chksum = 0;
-	iecho->id     = PING_ID;
-	iecho->seqno  = seq_no++;
-
-	/* fill the additional data buffer with some data */
-	for(i = 0; i < PING_DATA_SIZE; i++)
-		((char*)iecho)[sizeof(struct icmp_echo_hdr) + i] = (char)(i);
-
-	iecho->chksum = inet_chksum(iecho, ping_size);
 }
