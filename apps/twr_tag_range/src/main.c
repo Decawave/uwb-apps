@@ -153,6 +153,7 @@ int main(int argc, char **argv){
  
     inst->PANID = 0xDECA;
     inst->my_short_address = MYNEWT_VAL(DEVICE_ID);
+    inst->my_long_address = ((uint64_t) inst->device_id << 32) + inst->partID;
 
     dw1000_set_panid(inst,inst->PANID);
     dw1000_set_address16(inst, inst->my_short_address);
@@ -165,7 +166,7 @@ int main(int argc, char **argv){
 #endif
 #if MYNEWT_VAL(DW1000_PAN)
     dw1000_pan_init(inst, &pan_config);   
-    dw1000_pan_start(inst);  
+    dw1000_pan_start(inst, DWT_NONBLOCKING);
     while(inst->pan->status.valid != true){
         os_eventq_run(os_eventq_dflt_get());
         os_cputime_delay_usecs(5000);
