@@ -22,15 +22,14 @@
 # Decawave DW1000 Application lwip_p2p_tx.
 
 ## Overview
-The Decawave DW1000 Application lwip_p2p_tx showcases the ability of lwIP P2P service to send and receive user defined payloads to and from another node via lwip_p2p service.
-In this case, we are sending a string from Node A to other node.
+The Decawave DW1000 Application lwip_p2p_tx showcases the ability of lwIP P2P service to send and receive user defined payloads to and from a node via lwip_p2p service. In this sample application, we are sending a string from Node A to other node.
 
 ## Pre-Requisites
 Repo 	:	mynewt-dw1000-apps
-Branch	:	lwip_ext
+Branch	:	master
 
 Repo	:	mynewt-dw1000-core
-Branch	:	lwip_ext
+Branch	:	master
 
 Repo	:	apache-mynewt-core
 Branch	:	master
@@ -44,8 +43,10 @@ Tag 	:	1.3.0
 newt target create lwip_p2p_tx
 newt target set lwip_p2p_tx app=apps/lwip_p2p_tx
 newt target set lwip_p2p_tx bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target set lwip_p2p_tx build_profile=debug 
-newt run lwip_p2p_tx 0
+newt target set lwip_p2p_tx build_profile=debug
+newt build lwip_p2p_tx
+newt create-image lwip_p2p_tx 1.0.0
+newt load lwip_p2p_tx
 ```
 
 ## Testing

@@ -23,15 +23,14 @@
 
 ## Overview
 The Decawave DW1000 Application lwip_p2p_rx showcases the ability of lwIP P2P service to send and receive 
-user defined payloads to and from another node via lwip_p2p service.
-In this case, we are receiving a string from Node A.
+user defined payloads to and from a node via lwip_p2p service. In this case, we are receiving a string from Node A.
 
 ## Pre-Requisites
 Repo 	:	mynewt-dw1000-apps
-Branch	:	lwip_ext
+Branch	:	master
 
 Repo	:	mynewt-dw1000-core
-Branch	:	lwip_ext
+Branch	:	master
 
 Repo	:	apache-mynewt-core
 Branch	:	master

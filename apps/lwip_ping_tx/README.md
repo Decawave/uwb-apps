@@ -23,15 +23,14 @@
 
 ## Overview
 The Decawave DW1000 Application lwip_ping_tx showcases the ability of lwIP driver to send and receive 
-payloads to and from another node.
-In this case, we are sending a ping from Node A.
+payloads to and from a node. In this sample application, we are sending a ping from Node A to NODE B.
 
 ## Pre-Requisites
 Repo 	:	mynewt-dw1000-apps
-Branch	:	lwip_ext
+Branch	:	master
 
 Repo	:	mynewt-dw1000-core
-Branch	:	lwip_ext
+Branch	:	master
 
 Repo	:	apache-mynewt-core
 Branch	:	master
