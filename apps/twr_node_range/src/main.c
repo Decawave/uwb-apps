@@ -133,8 +133,8 @@ static dw1000_pan_config_t pan_config = {
 
 
 #if MYNEWT_VAL(DW1000_RANGE)
-static uint16_t node_addr[] = {0x6002, 0x6003};
-static uint16_t node_addr_rev[] = {0x6002, 0x6003, 0x6004, 0x6005};
+static uint16_t node_addr[] = {0xDEC1, 0xDEC2};
+static uint16_t node_addr_rev[] = {0xDEC1, 0xDEC2, 0xDEC3, 0xDEC4};
 static uint32_t cntr = 0;
 #endif
 
@@ -291,6 +291,7 @@ int main(int argc, char **argv){
 
     inst->PANID = 0xDECA;
     inst->my_short_address = MYNEWT_VAL(DEVICE_ID);
+    inst->my_long_address = ((uint64_t) inst->device_id << 32) + inst->partID;
 
     dw1000_set_panid(inst,inst->PANID);
     dw1000_set_address16(inst, inst->my_short_address);
