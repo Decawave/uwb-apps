@@ -23,24 +23,5 @@
 
 ## Overview
 
-1. To erase the default flash image that shipped with the DWM1001.
+See companion example twr_node_tdma
 
-```no-highlight
-$ JLinkExe -device nRF52 -speed 4000 -if SWD
-J-Link>erase
-J-Link>exit
-$
-```
-
-
-2. On the dwm1001-dev build tag (twr_tag_tdma) application as follows.
-
-```no-highlight
-
-newt target create twr_tag_tdma
-newt target set twr_tag_tdma app=apps/twr_tag_tdma
-newt target set twr_tag_tdma bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target set twr_tag_tdma build_profile=debug
-newt run twr_tag_tdma 0
-
-```

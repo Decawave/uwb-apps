@@ -90,7 +90,7 @@ void print_frame(const char * name, twr_frame_t *twr ){
 /* The timer callout */
 static struct os_callout blinky_callout;
 
-#define SAMPLE_FREQ 50.0
+#define SAMPLE_FREQ 25.0
 static void timer_ev_cb(struct os_event *ev) {
     assert(ev != NULL);
     assert(ev->ev_arg != NULL);
