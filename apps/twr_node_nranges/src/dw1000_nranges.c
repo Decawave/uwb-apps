@@ -186,6 +186,11 @@ nranges_tx_complete_cb(dw1000_dev_instance_t * inst){
         }
         return;
     }
+    if(DWT_DS_TWR_NRNG_FINAL){
+        if (inst->rng_complete_cb) {
+            inst->rng_complete_cb(inst);
+        }
+    }
 }
 
 static void

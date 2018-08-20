@@ -91,19 +91,8 @@ void print_frame(const char * name, twr_frame_t *twr ){
     printf("\tresponse_timestamp:0x%08lX\n}\n", twr->response_timestamp);
 }
 
-/* The timer callout */
-static struct os_callout blinky_callout;
-
-#define SAMPLE_FREQ 256.0
-
-static void timer_ev_cb(struct os_event *ev) {
-    assert(ev != NULL);
-    assert(ev->ev_arg != NULL);
-
+static void complete_cb(struct _dw1000_dev_instance_t *inst) {
     hal_gpio_toggle(LED_BLINK_PIN);
-    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/SAMPLE_FREQ);
-
-    dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *)ev->ev_arg;
     dw1000_rng_instance_t * rng = inst->rng;
 
     assert(inst->rng->nframes > 0);
@@ -127,11 +116,11 @@ static void timer_ev_cb(struct os_event *ev) {
     }
 
     if (frame->code == DWT_DS_TWR_NRNG_FINAL || frame->code == DWT_DS_TWR_NRNG_EXT_FINAL){
+        previous_frame = previous_frame;
         uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(rng);
         float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
         float rssi = dw1000_get_rssi(inst);
         //print_frame("1st=", previous_frame);
-        previous_frame = previous_frame;
         //print_frame("2nd=", frame);
         frame->code = DWT_DS_TWR_END;
             printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": %lX,"
@@ -146,11 +135,6 @@ static void timer_ev_cb(struct os_event *ev) {
         dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst);
     }
-}
-
-static void init_timer(dw1000_dev_instance_t * inst) {
-    os_callout_init(&blinky_callout, os_eventq_dflt_get(), timer_ev_cb, inst);
-    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/100);
 }
 
 int main(int argc, char **argv){
@@ -200,7 +184,7 @@ int main(int argc, char **argv){
     printf("lotID =%lX\n",inst->lotID);
     printf("xtal_trim =%X\n",inst->xtal_trim);
 
-    init_timer(inst);
+    dw1000_rng_set_complete_cb(inst, complete_cb);
 
     dw1000_set_rx_timeout(inst, 0);
     dw1000_start_rx(inst);

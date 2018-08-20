@@ -130,10 +130,9 @@ pan_master(struct os_event * ev){
 
     dw1000_write_tx(inst, frame->array, 0, sizeof(pan_frame_resp_t));
     dw1000_write_tx_fctrl(inst, sizeof(pan_frame_resp_t), 0, true); 
-    dw1000_set_wait4resp(inst, false);    
-    pan->status.start_tx_error = dw1000_start_tx(inst).start_tx_error;
+    dw1000_set_wait4resp(inst, true);    
     dw1000_set_rx_timeout(inst, 0);
-    dw1000_start_rx(inst); 
+    pan->status.start_tx_error = dw1000_start_tx(inst).start_tx_error;
 }
 #endif
 

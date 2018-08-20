@@ -17,33 +17,31 @@
 # under the License.
 #
 
-project.name: "mynewt-dw1000-apps"
+pkg.name: apps/twr_tag_tdma
+pkg.type: app
+pkg.description: "Basic reverse superres anchor node"
+pkg.author: "Paul Kettle <paul.kettle@decawave.com>"
+pkg.homepage: "http://www.decawave.com/"
+pkg.keywords:
+  - dw1000
+  - superres
 
-project.repositories:
-    - apache-mynewt-core
-    - mynewt-dw1000-core
-    - mynewt-timescale-lib
+pkg.deps:
+    - "@apache-mynewt-core/kernel/os"
+    - "@apache-mynewt-core/hw/hal"
+    - "@apache-mynewt-core/sys/console/full" 
+    - "@apache-mynewt-core/sys/shell"
+    - "@apache-mynewt-core/encoding/json"
+    - "@mynewt-dw1000-core/hw/drivers/dw1000"
+    - "@mynewt-timescale-lib/lib/clkcal"
+    - "@mynewt-timescale-lib/lib/timescale"
+    
+pkg.cflags:
+    - "-std=gnu99"
+    - "-fms-extensions"
+    - "-DNRF52"
 
-# Use github's distribution mechanism for core ASF libraries.
-# This provides mirroring automatically for us.
-#
-repository.apache-mynewt-core:
-    type: github
-    vers: 1.3.0
-    user: apache
-    repo: mynewt-core
+pkg.lflags:
+    - "-lm"
 
-repository.mynewt-dw1000-core:
-    type: github
-    vers: 0-dev
-    user: decawave
-    repo: mynewt-dw1000-core
-    url: 'git@github.com:Decawave/mynewt-dw1000-core.git'
-
-repository.mynewt-timescale-lib:
-    type: github
-    vers: 0-dev
-    user: decawave
-    repo: mynewt-timescale-lib
-    url: 'git@github.com:Decawave/mynewt-timescale-lib.git'
 

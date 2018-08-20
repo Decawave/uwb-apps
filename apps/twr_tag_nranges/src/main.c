@@ -107,7 +107,7 @@ static struct os_callout blinky_callout;
  * Event callback function for timer events. It toggles the led pin.
 */
 
-#define SAMPLE_FREQ 50.0
+#define SAMPLE_FREQ 256.0
 
 static void timer_ev_cb(struct os_event *ev) {
     assert(ev != NULL);
@@ -156,7 +156,7 @@ static void timer_ev_cb(struct os_event *ev) {
         rng->idx = 0xffff;
         nranges->resp_count = 0;
     }
-    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/256);
+    os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/SAMPLE_FREQ);
 }
 
 /*
