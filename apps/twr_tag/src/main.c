@@ -184,6 +184,8 @@ int main(int argc, char **argv){
     inst->my_long_address = ((uint64_t) inst->device_id << 32) + inst->partID;
 
     dw1000_set_panid(inst,inst->PANID);
+    inst->config.framefilter_enabled = 1;
+    dw1000_set_address16(inst, inst->my_short_address);
     dw1000_mac_init(inst, NULL);
     dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
     dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));
