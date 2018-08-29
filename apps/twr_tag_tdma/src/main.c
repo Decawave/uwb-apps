@@ -99,7 +99,7 @@ static void timeout_cb(struct _dw1000_dev_instance_t * inst);
 static void error_cb(struct _dw1000_dev_instance_t * inst);
 
 /*! 
- * @fn frame_timer_cb(struct os_event * ev)
+ * @fn slot_timer_cb(struct os_event * ev)
  *
  * @brief This function each 
  *
@@ -130,7 +130,7 @@ slot_timer_cb(struct os_event *ev){
     dx_time = dx_time  & 0xFFFFFFFE00UL;
 
 //    uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
-    if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_DS_TWR).start_tx_error){
+    if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_DS_TWR_EXT).start_tx_error){
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
         printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\"}\n",utime,idx);
     }else{
@@ -296,7 +296,7 @@ tx_complete_cb(dw1000_dev_instance_t* inst){
 
 
 /*! 
- * @fn superres_complete_cb(dw1000_dev_instance_t * inst)
+ * @fn rx_complete_cb(dw1000_dev_instance_t * inst)
  *
  * @brief This callback is in the interrupt context and is uses to schedule an pdoa_complete event on the default event queue.  
  * Processing should be kept to a minimum giving the context. All algorithms should be deferred to a thread on an event queue. 
@@ -312,7 +312,9 @@ tx_complete_cb(dw1000_dev_instance_t* inst){
 static struct os_callout slot_complete_callout;
 
 static void 
-complete_cb(struct _dw1000_dev_instance_t * inst){
+rx_complete_cb(struct _dw1000_dev_instance_t * inst){
+    
+
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         if(inst->extension_cb->next != NULL){
             inst->extension_cb = inst->extension_cb->next;
@@ -337,7 +339,6 @@ complete_cb(struct _dw1000_dev_instance_t * inst){
 }
 
 
-#define ALT_SLOT 0
 int main(int argc, char **argv){
     int rc;
     dw1000_extension_callbacks_t tdma_cbs;
@@ -352,7 +353,7 @@ int main(int argc, char **argv){
     dw1000_phy_init(inst, NULL);   
 
     inst->PANID = 0xDECA;
-    inst->my_short_address = MYNEWT_VAL(DEVICE_ID) + ALT_SLOT;
+    inst->my_short_address = MYNEWT_VAL(DEVICE_ID);
     inst->my_long_address = ((uint64_t) inst->device_id << 32) + inst->partID;
 
     dw1000_set_panid(inst,inst->PANID);
@@ -363,7 +364,7 @@ int main(int argc, char **argv){
     tdma_cbs.tx_error_cb = error_cb;
     tdma_cbs.rx_error_cb = error_cb;
     tdma_cbs.rx_timeout_cb = timeout_cb;
-    tdma_cbs.rx_complete_cb = complete_cb;
+    tdma_cbs.rx_complete_cb = rx_complete_cb;
     tdma_cbs.tx_complete_cb = tx_complete_cb;
     tdma_cbs.id = DW1000_RANGE;
     dw1000_add_extension_callbacks(inst, tdma_cbs);

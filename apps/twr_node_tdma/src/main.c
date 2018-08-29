@@ -315,6 +315,7 @@ slot_timer_cb(struct os_event * ev){
     dw1000_set_delay_start(inst, dx_time);
     dw1000_set_rx_timeout(inst, rng_config.rx_timeout_period);
     if(dw1000_start_rx(inst).start_rx_error){
+         printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb:start_rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
     }
 
 #ifdef VERBOSE
@@ -344,6 +345,7 @@ int main(int argc, char **argv){
     dw1000_mac_init(inst, NULL);
     dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
     dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));
+
 #if MYNEWT_VAL(DW1000_PAN)
         dw1000_pan_init(inst, &pan_config);   
         dw1000_pan_start(inst, DWT_NONBLOCKING); 
