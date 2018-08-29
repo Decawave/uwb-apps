@@ -29,7 +29,7 @@ For these examples, we leverage the Decawave dwm1001 module and dwm1001-dev kit.
 
 Warning: The DWM1001 comes flashed with a UWB Location Based Services stack. This distribution repurposes the hardware and is not intended to replace the functionality of the shipped stack. This distribution is intended to be a starting point for evaluating and developing one's own such stacks. 
 
-## Slack
+## Getting support
 
 Project discussion board, http://decawave.slack.com
 
@@ -40,26 +40,7 @@ Project discussion board, http://decawave.slack.com
 * lps2mini  from https://loligoelectronics.com
 * lps2nano  from https://loligoelectronics.com
 
-## File Description 
-```
-├── README.md        // This file
-├── clock_master     // Standalone Clock Master 
-├── lwip_p2p_rx      // LWIP Read/Write example
-├── lwip_p2p_tx      // ~
-├── lwip_ping_rx     // LWIP sign-of-life
-├── lwip_ping_tx     // ~
-├── matlab           // Realtime Matlab visualisation utilities
-├── node_provision   // Elementary standalone provisioning example 
-├── tag_provision    // ~
-├── pan_master       // Elementary PAN Master example 
-├── twr_node         // Two-Way-Ranging examples
-├── twr_tag          // ~
-├── twr_node_tdma    // Two-Way-Ranging example with TDMA scheme
-└── twr_tag_tdma     // ~
-├── twr_node_nranges // 2n+2 example with TDMA scheme
-├── twr_tag_nranges  // ~
-├── twr_tag_imu      // TWR with IMU example 
-```
+## Getting started
 
 The remainder of this README.md show how to bring up the elemantary twr_node/twr_tag examples for the DWM1001_DEV kit.
 

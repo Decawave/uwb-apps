@@ -21,14 +21,6 @@
 
 ## Overview
 
-## Current BSPs and supported hardware
-* DWM1001   from https://www.decawave.com/products/dwm1001-module
-* DWM1002   from https://decawave.com (coming soon)
-* DWM1003   from https://decawave.com (coming soon)
-* lps2mini  from https://loligoelectronics.com
-* lps2nano  from https://loligoelectronics.com
-
-## File Description 
 ```
 ├── README.md        // This file
 ├── clock_master     // Standalone Clock Master 
