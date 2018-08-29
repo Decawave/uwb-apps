@@ -41,6 +41,7 @@ Project discussion board, http://decawave.slack.com
 * lps2nano  from https://loligoelectronics.com
 
 ## File Description 
+```
 ├── README.md        // This file
 ├── clock_master     // Standalone Clock Master 
 ├── lwip_p2p_rx      // LWIP Read/Write example
@@ -58,6 +59,7 @@ Project discussion board, http://decawave.slack.com
 ├── twr_node_nranges // 2n+2 example with TDMA scheme
 ├── twr_tag_nranges  // ~
 ├── twr_tag_imu      // TWR with IMU example 
+```
 
 The remainder of this README.md show how to bring up the elemantary twr_node/twr_tag examples for the DWM1001_DEV kit.
 

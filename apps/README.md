@@ -19,138 +19,33 @@
 #
 -->
 
-# Decawave DW1000 Applications 
-
 ## Overview
 
-This distribution contains the example applications for the dw1000 IR-UWB transceiver within the mynewt-OS. The dw1000 device driver model is integrated into the mynewt-OS (https://github.com/decawave/mynewt-dw1000-core). This driver includes native support for a 6lowPAN stack, Ranging Services, and Location Services, etc. Mynewt and it's tools build environment newt and management tools newtmgt create a powerful environment and deploying large-scale distributions within IoT.
+## Current BSPs and supported hardware
+* DWM1001   from https://www.decawave.com/products/dwm1001-module
+* DWM1002   from https://decawave.com (coming soon)
+* DWM1003   from https://decawave.com (coming soon)
+* lps2mini  from https://loligoelectronics.com
+* lps2nano  from https://loligoelectronics.com
 
-For these examples, we leverage the Decawave dwm1001 module and dwm1001-dev kit. The dwm1001 includes a nrf52832 and the dw1000 transceiver. The dwm1001-dev is a breakout board that supports a Seggar OB-JLink interface with RTT support. The mynewt build environment provides a clean interface for maintaining platform agnostics distributions. The dwm1001-dev and the examples contained herein provide a clean out-of-the-box experience for UWB Location Based Services.
-
-Warning: The dwm1001 comes flashed with a UWB Location Based Services stack. This distribution repurposes the hardware and is not intended to replace the functionality of the shipped stack. This distribution is intended to be a starting point for evaluating and developing one's own such stacks. 
-
-## Project Status
-Below are the current examples and associated hardware plaforms.
-
-### DWM1001 || DWM1002 || DWM1003 || LPS2MINI || LPS2NANO
-*   twr_tag:        // Single & Double Two-Way-Ranging 
-*   twr_node:       // Single & Double Two-Way-Ranging 
-*   twr_node_json:  
-### DWM1002 || DWM1003 || LPS2MINI || LPS2NANO
-*   twr_tag_imu:    // Single & Double Two-Way-Ranging with 10DOF
-### DWM1003 
-*   aoa_node:       // Dual DW1000 and 10DOF  
-## Building
-
-1. Download and install Apache Newt.
-
-You will need to download the Apache Newt tool, as documented in the [Getting Started Guide](http://mynewt.apache.org/latest/os/get_started/get_started/). 
-
-Prerequisites: You should follow the generic tutorials at https://mynewt.apache.org/latest/os/tutorials/tutorials/. This example is an extension of the basic Blinky example.
-
-2. Download the DW1000 Mynewt apps.
-
-```no-highlight
-    git clone git@github.com:Decawave/mynewt-dw1000-apps.git
-    cd mynewt-dw1000-apps
+## File Description 
 ```
-
-
-3. Download the Apache Mynewt Core and Mynewt DW1000 Core package.
-
-Currently mynewt-dw1000-core is a private repo and as such requires an extra step to provide authorization. See (https://mynewt.apache.org/latest/os/tutorials/repo/private_repo/) for a how to guide. Note with newt version 1.3.0, I have only had sucess with the project.yml approach to private repos. 
-
-```no-highlight
-    $ newt install
-```
-
-4. To erase the default flash image that shipped with the DWM1001.
-
-```no-highlight
-$ JLinkExe -device nRF52 -speed 4000 -if SWD
-SEGGER J-Link Commander V5.12c (Compiled Apr 21 2016 16:05:51)
-DLL version V5.12c, compiled Apr 21 2016 16:05:45
-
-Connecting to J-Link via USB...O.K.
-Firmware: J-Link OB-SAM3U128-V2-NordicSemi compiled Mar 15 2016 18:03:17
-Hardware version: V1.00
-S/N: 682863966
-VTref = 3.300V
-
-
-Type "connect" to establish a target connection, '?' for help
-J-Link>erase
-Cortex-M4 identified.
-Erasing device (0;?i?)...
-Comparing flash   [100%] Done.
-Erasing flash     [100%] Done.
-Verifying flash   [100%] Done.
-J-Link: Flash download: Total time needed: 0.363s (Prepare: 0.093s, Compare: 0.000s, Erase: 0.262s, Program: 0.000s, Verify: 0.000s, Restore: 0.008s)
-Erasing done.
-J-Link>exit
-$ 
-```
-
-4. Build the new bootloader applicaiton for the DWM1001 target.
-
-(executed from the mynewt-dw1000-app directory).
-
-```no-highlight
-
-newt target create dwm1001_boot
-newt target set dwm1001_boot app=@apache-mynewt-core/apps/boot
-newt target set dwm1001_boot bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target set dwm1001_boot build_profile=optimized 
-newt build dwm1001_boot
-newt create-image dwm1001_boot 1.0.0
-newt load dwm1001_boot
+├── README.md        // This file
+├── clock_master     // Standalone Clock Master 
+├── lwip_p2p_rx      // LWIP Read/Write example
+├── lwip_p2p_tx      // ~
+├── lwip_ping_rx     // LWIP sign-of-life
+├── lwip_ping_tx     // ~
+├── matlab           // Realtime Matlab visualisation utilities
+├── node_provision   // Elementary standalone provisioning example 
+├── tag_provision    // ~
+├── pan_master       // Elementary PAN Master example 
+├── twr_node         // Two-Way-Ranging examples
+├── twr_tag          // ~
+├── twr_node_tdma    // Two-Way-Ranging example with TDMA scheme
+└── twr_tag_tdma     // ~
+├── twr_node_nranges // 2n+2 example with TDMA scheme
+├── twr_tag_nranges  // ~
+├── twr_tag_imu      // TWR with IMU example 
 
 ```
-
-5. On the first dwm1001-dev board build the Two-Way-Ranging (twr_tag) applicaitons for the DWM1001 module. The run command compiled the project and loads the image on the target platform.
-
-(executed from the mynewt-dw1000-app directory).
-
-```no-highlight
-
-newt target create twr_tag
-newt target set twr_tag app=apps/twr_tag
-newt target set twr_tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target set twr_tag build_profile=debug 
-newt run twr_tag 0
-
-```
-
-6. On a second dwm1001-dev build the master side of the Two-Way-Ranging (twr_node) applicaitons as follows. 
-
-(executed from the mynewt-dw1000-app directory).
-
-```no-highlight
-
-newt target create twr_node 
-newt target set twr_node app=apps/twr_node
-newt target set twr_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target set twr_node build_profile=debug 
-newt run twr_node 0
-
-```
-To switch from Single-Side to Double-Size, simply comment ./twr_node/main.c as follows: 
-```no-highlight
-
-   //dw1000_rng_request(inst, 0x4321, DWT_DS_TWR);
-   dw1000_rng_request(inst, 0x4321, DWT_SS_TWR);
-
-```
-
-
-7. Both examples are configured to use the Segger RTT console interface. This is covered within the mynewt tutorials/Tooling/SeggarRTT (https://mynewt.apache.org/latest/os/tutorials/segger_rtt/). To launch the console simply telnet localhost 19021. Note at time of writing the newt tools does not support multiple connect dwm1001-dev devices. So it is recomended that you connect twr_tag and twr_node examples to different computers or at least the twr_tag to an external battery. If all going well you should see the twr_node example stream range information on the console. 
-
-(executed from the mynewt-dw1000-app directory).
-
-```no-highlight
-
-telnet localhost 19021
-
-```
-
-
