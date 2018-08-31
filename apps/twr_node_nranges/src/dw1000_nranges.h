@@ -36,9 +36,6 @@ extern "C" {
 #include <dw1000/dw1000_rng.h>
 
 #define FCNTL_IEEE_N_RANGES_16 0x88C1
-typedef enum _dw1000_nranges_extension_id_t{
-    DW1000_N_RANGES = 4,
-}dw1000_nranges_extension_id_t;
 
 typedef enum _dw1000_nranges_modes_t{
     DWT_DS_TWR_NRNG = 17,

@@ -37,11 +37,11 @@
 #if MYNEWT_VAL(N_RANGES_NPLUS_TWO_MSGS)
 #include <dw1000_nranges.h>
 
-static void nranges_rx_complete_cb(dw1000_dev_instance_t * inst);
-static void nranges_rx_error_cb(dw1000_dev_instance_t * inst);
-static void nranges_rx_timeout_cb(dw1000_dev_instance_t* inst);
-static void nranges_tx_complete_cb(dw1000_dev_instance_t* inst);
-static void nranges_tx_error_cb(dw1000_dev_instance_t * inst);
+static bool nranges_rx_complete_cb(dw1000_dev_instance_t * inst);
+static bool nranges_rx_error_cb(dw1000_dev_instance_t * inst);
+static bool nranges_rx_timeout_cb(dw1000_dev_instance_t* inst);
+static bool nranges_tx_complete_cb(dw1000_dev_instance_t* inst);
+static bool nranges_tx_error_cb(dw1000_dev_instance_t * inst);
 static dw1000_nranges_instance_t * nranges_instance;
 
 
@@ -106,15 +106,10 @@ dw1000_nranges_request(dw1000_dev_instance_t * inst, uint16_t dst_address, dw100
 }
 
 
-static void
+static bool
 nranges_rx_timeout_cb(dw1000_dev_instance_t * inst){
     if(inst->fctrl != FCNTL_IEEE_N_RANGES_16){
-        if(inst->extension_cb->next != NULL){
-            inst->extension_cb = inst->extension_cb->next;
-            if(inst->extension_cb->rx_timeout_cb != NULL)
-                inst->extension_cb->rx_timeout_cb(inst);
-        }
-        return;
+        return false;
     }
     assert(nranges_instance);
     dw1000_nranges_instance_t * nranges = nranges_instance;
@@ -154,68 +149,50 @@ nranges_rx_timeout_cb(dw1000_dev_instance_t * inst){
         os_error_t err = os_sem_release(&nranges->sem);
         assert(err == OS_OK);
     }
-
+    return true;
 }
 
-static void
+static bool
 nranges_rx_error_cb(dw1000_dev_instance_t * inst){
     /* Place holder */
     if(inst->fctrl != FCNTL_IEEE_N_RANGES_16){
-        if(inst->extension_cb->next != NULL){
-            inst->extension_cb = inst->extension_cb->next;
-            if(inst->extension_cb->rx_error_cb != NULL)
-                inst->extension_cb->rx_error_cb(inst);
-        }
-        return;
+        return false;
     }
     assert(nranges_instance);
     dw1000_nranges_instance_t * nranges = nranges_instance;
     os_error_t err = os_sem_release(&nranges->sem);
     assert(err == OS_OK);
-
+    return true;
 }
 
-static void
+static bool
 nranges_tx_complete_cb(dw1000_dev_instance_t * inst){
     /* Place holder */
    if(inst->fctrl != FCNTL_IEEE_N_RANGES_16){
-        if(inst->extension_cb->next != NULL){
-            inst->extension_cb = inst->extension_cb->next;
-            if(inst->extension_cb->tx_complete_cb != NULL)
-                inst->extension_cb->tx_complete_cb(inst);
-        }
-        return;
+        return false;
     }
     if(DWT_DS_TWR_NRNG_FINAL){
         if (inst->rng_complete_cb) {
             inst->rng_complete_cb(inst);
         }
     }
+    return true;
 }
 
-static void
+static bool
 nranges_tx_error_cb(dw1000_dev_instance_t * inst){
     /* Place holder */
     if(inst->fctrl != FCNTL_IEEE_N_RANGES_16){
-        if(inst->extension_cb->next != NULL){
-            inst->extension_cb = inst->extension_cb->next;
-            if(inst->extension_cb->tx_error_cb != NULL)
-                inst->extension_cb->tx_error_cb(inst);
-        }
-        return;
+        return false;
     }
+    return true;
 }
 
-static void
+static bool
 nranges_rx_complete_cb(dw1000_dev_instance_t * inst){
     /* Place holder */
      if(inst->fctrl != FCNTL_IEEE_N_RANGES_16){
-        if(inst->extension_cb->next != NULL){
-            inst->extension_cb = inst->extension_cb->next;
-            if(inst->extension_cb->rx_complete_cb != NULL)
-                inst->extension_cb->rx_complete_cb(inst);
-        }
-        return;
+        return false;
     }
     assert(nranges_instance);
     dw1000_nranges_instance_t * nranges = nranges_instance;
@@ -228,7 +205,7 @@ nranges_rx_complete_cb(dw1000_dev_instance_t * inst){
     if (dst_address != inst->my_short_address && dst_address != BROADCAST_ADDRESS){
         inst->control = inst->control_rx_context;
         dw1000_restart_rx(inst, control);
-        return;
+        return true;
     }
 
     switch (code){
@@ -559,6 +536,7 @@ nranges_rx_complete_cb(dw1000_dev_instance_t * inst){
         default:
              break;
     }
+    return true;
 }
 
 void dw1000_nranges_set_ext_callbacks(dw1000_dev_instance_t * inst, dw1000_extension_callbacks_t nranges_cbs){

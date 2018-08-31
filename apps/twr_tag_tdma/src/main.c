@@ -95,11 +95,11 @@ static uint16_t g_slot[NSLOTS] = {0};//{0,1,126,127};//,4,5,6,7,8,9,10,11,12,13,
        // 31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62};
 #endif
 
-static void timeout_cb(struct _dw1000_dev_instance_t * inst);
-static void error_cb(struct _dw1000_dev_instance_t * inst);
+static bool timeout_cb(struct _dw1000_dev_instance_t * inst);
+static bool error_cb(struct _dw1000_dev_instance_t * inst);
 
 /*! 
- * @fn slot_timer_cb(struct os_event * ev)
+ * @fn frame_timer_cb(struct os_event * ev)
  *
  * @brief This function each 
  *
@@ -130,7 +130,7 @@ slot_timer_cb(struct os_event *ev){
     dx_time = dx_time  & 0xFFFFFFFE00UL;
 
 //    uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
-    if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_DS_TWR_EXT).start_tx_error){
+    if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_DS_TWR).start_tx_error){
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
         printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\"}\n",utime,idx);
     }else{
@@ -220,15 +220,10 @@ slot_complete_cb(struct os_event * ev){
  *
  * returns none 
  */
-static void 
+static bool
 timeout_cb(struct _dw1000_dev_instance_t * inst) {
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
-        if(inst->extension_cb->next != NULL){
-            inst->extension_cb = inst->extension_cb->next;
-            if(inst->extension_cb->rx_timeout_cb != NULL)
-                inst->extension_cb->rx_timeout_cb(inst);
-        }
-        return;
+        return false;
     }
 
     if (inst->status.rx_timeout_error){
@@ -239,6 +234,7 @@ timeout_cb(struct _dw1000_dev_instance_t * inst) {
         dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst); 
     }
+    return true;
 }
 
 /*! 
@@ -254,20 +250,10 @@ timeout_cb(struct _dw1000_dev_instance_t * inst) {
  *
  * returns none 
  */
-static void 
+static bool
 error_cb(struct _dw1000_dev_instance_t * inst) {
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
-        if(inst->extension_cb->next != NULL){
-            inst->extension_cb = inst->extension_cb->next;
-            if(inst->status.rx_error == 1 || inst->status.start_rx_error == 1){
-                if(inst->extension_cb->rx_error_cb != NULL)
-                    inst->extension_cb->rx_error_cb(inst);
-            }else if(inst->status.start_tx_error == 1){
-                if(inst->extension_cb->tx_error_cb != NULL)
-                    inst->extension_cb->tx_error_cb(inst);
-            }
-        }
-        return;
+        return false;
     }   
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
     if (inst->status.start_rx_error)
@@ -282,16 +268,15 @@ error_cb(struct _dw1000_dev_instance_t * inst) {
         dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst); 
     }
+    return true;
 }
-static void
+
+static bool
 tx_complete_cb(dw1000_dev_instance_t* inst){
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
-        if(inst->extension_cb->next != NULL){
-            inst->extension_cb = inst->extension_cb->next;
-            if(inst->extension_cb->tx_complete_cb != NULL)
-                inst->extension_cb->tx_complete_cb(inst);
-        }
+        return false;
     }
+    return true;
 }
 
 
@@ -311,21 +296,12 @@ tx_complete_cb(dw1000_dev_instance_t* inst){
 /* The timer callout */
 static struct os_callout slot_complete_callout;
 
-static void 
+static bool 
 rx_complete_cb(struct _dw1000_dev_instance_t * inst){
     
 
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
-        if(inst->extension_cb->next != NULL){
-            inst->extension_cb = inst->extension_cb->next;
-            if(inst->extension_cb->rx_complete_cb != NULL)
-                inst->extension_cb->rx_complete_cb(inst);
-        }else{
-            dw1000_dev_control_t control = inst->control_rx_context;
-            inst->control = inst->control_rx_context;
-            dw1000_restart_rx(inst, control);
-        }
-        return;
+        return false;
     }
     os_callout_init(&slot_complete_callout, os_eventq_dflt_get(), slot_complete_cb, inst);
     os_eventq_put(os_eventq_dflt_get(), &slot_complete_callout.c_ev);
@@ -336,6 +312,7 @@ rx_complete_cb(struct _dw1000_dev_instance_t * inst){
             dw1000_set_rx_timeout(inst, 0);
             dw1000_start_rx(inst); 
     }
+    return true;
 }
 
 
