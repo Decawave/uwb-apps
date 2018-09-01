@@ -35,9 +35,9 @@
 ├── twr_node         // Two-Way-Ranging examples
 ├── twr_tag          // ~
 ├── twr_node_tdma    // Two-Way-Ranging example with TDMA scheme
-└── twr_tag_tdma     // ~
+├── twr_tag_tdma     // ~
 ├── twr_node_nranges // 2n+2 example with TDMA scheme
 ├── twr_tag_nranges  // ~
-├── twr_tag_imu      // TWR with IMU example 
+└── twr_tag_imu      // TWR with IMU example 
 
 ```
