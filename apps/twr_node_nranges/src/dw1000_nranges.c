@@ -91,14 +91,16 @@ dw1000_nranges_request(dw1000_dev_instance_t * inst, uint16_t dst_address, dw100
     if (rng->control.delay_start_enabled)
         dw1000_set_delay_start(inst, rng->delay);
     if (dw1000_start_tx(inst).start_tx_error){
-        if(inst->extension_cb != NULL){
-            dw1000_extension_callbacks_t *head = inst->extension_cb;
-            if(inst->extension_cb->tx_error_cb != NULL){
-                inst->extension_cb->tx_error_cb(inst);
+        if(!(SLIST_EMPTY(&inst->extension_cbs))){
+            dw1000_extension_callbacks_t *temp = NULL;
+            SLIST_FOREACH(temp, &inst->extension_cbs, cbs_next){
+                if(temp != NULL)
+                    if(temp->tx_error_cb != NULL)
+                        if(temp->tx_error_cb(inst) == true)
+                            break;
             }
-            inst->extension_cb = head;
         }
-        os_sem_release(&nranges->sem);
+        os_sem_release(&inst->rng->sem);
     }
     err = os_sem_pend(&nranges->sem, OS_TIMEOUT_NEVER); // Wait for completion of transactions
     os_sem_release(&nranges->sem);
