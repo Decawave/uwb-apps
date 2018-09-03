@@ -100,7 +100,7 @@ dw1000_nranges_request(dw1000_dev_instance_t * inst, uint16_t dst_address, dw100
                             break;
             }
         }
-        os_sem_release(&inst->rng->sem);
+        os_sem_release(&nranges->sem);
     }
     err = os_sem_pend(&nranges->sem, OS_TIMEOUT_NEVER); // Wait for completion of transactions
     os_sem_release(&nranges->sem);
@@ -199,7 +199,7 @@ nranges_rx_complete_cb(dw1000_dev_instance_t * inst){
     dw1000_read_rx(inst, (uint8_t *) &code, offsetof(ieee_rng_request_frame_t,code), sizeof(uint16_t));
     dw1000_read_rx(inst, (uint8_t *) &dst_address, offsetof(ieee_rng_request_frame_t,dst_address), sizeof(uint16_t));
 
-    if (dst_address != inst->my_short_address && dst_address != BROADCAST_ADDRESS){
+    if (dst_address != inst->my_short_address){
         inst->control = inst->control_rx_context;
         dw1000_restart_rx(inst, control);
         return true;

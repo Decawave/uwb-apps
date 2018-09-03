@@ -100,7 +100,7 @@ dw1000_nranges_request(dw1000_dev_instance_t * inst, uint16_t dst_address, dw100
                             break;
             }
         }
-        os_sem_release(&inst->rng->sem);
+        os_sem_release(&nranges->sem);
     }
     err = os_sem_pend(&nranges->sem, OS_TIMEOUT_NEVER); // Wait for completion of transactions
     os_sem_release(&nranges->sem);
