@@ -75,10 +75,10 @@ static void timer_ev_cb(struct os_event *ev) {
 
     hal_gpio_toggle(LED_BLINK_PIN);
     os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/SAMPLE_FREQ);
-    
+     
     dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *)ev->ev_arg;
     dw1000_rng_instance_t * rng = inst->rng; 
-
+    rng->idx = 0xFFFF;
     dw1000_rng_request(inst, 0x4321, DWT_DS_TWR);
 
     twr_frame_t * frame = rng->frames[(rng->idx)%rng->nframes];
@@ -103,7 +103,7 @@ static void timer_ev_cb(struct os_event *ev) {
             );
     }
    if (frame->code == DWT_DS_TWR_FINAL || frame->code == DWT_DS_TWR_EXT_FINAL) {
-            json_rng_encode(frame, 2);
+            json_rng_encode((frame-1), 2);
             uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(rng);        
             float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
             cir_t cir; 
