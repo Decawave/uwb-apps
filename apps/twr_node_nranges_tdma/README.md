@@ -52,10 +52,11 @@ newt run clock 0
 The number of nodes to range with can be configured by setting the **N_NODES** on tag app during build time,
    (ex: for 3 nodes, use this command while building tag app **newt target amend tag syscfg=N_NODES=3** )
 
-**NOTE:** To monitor the logs from the multiple tags, Do the following changes in the apps/twr_tag_tdma_nranges/syscfg.yml
+**NOTE:** To monitor the logs from the multiple tags in same PC, Do the following changes in the apps/twr_tag_tdma_nranges/syscfg.yml
 ```
     CONSOLE_RTT: 0
     CONSOLE_UART: 1
 
 ```
   Rebuild the app and run again.
+  Use Any serial Console app with 1000000 baudrate on PC to monitor the Logs.

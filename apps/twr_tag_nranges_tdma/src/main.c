@@ -31,7 +31,6 @@
 #ifdef ARCH_sim
 #include "mcu/mcu_sim.h"
 #endif
-#include "extension.h"
 #include <dw1000/dw1000_dev.h>
 #include <dw1000/dw1000_hal.h>
 #include <dw1000/dw1000_phy.h>
@@ -281,24 +280,7 @@ complete_cb(struct _dw1000_dev_instance_t * inst){
     }
     return true;
 }
-/*
-static void
-pan_postprocess(struct os_event* ev){
-    dw1000_dev_instance_t* inst = (dw1000_dev_instance_t*)ev->ev_arg;
-    if(inst->pan->status.valid != true){
-        os_sem_release(&inst->pan->sem_waitforsucess);
-    }else{
-        dw1000_set_address16(inst, inst->my_short_address);
-        printf("Discovery Completed \n");
-        printf("DeviceID =%X\n",inst->my_short_address);
-        printf("SlotID =%X\n",inst->slot_id);
-        tdma_release_slot(inst->tdma, g_slot[1]);
-        tdma_assign_slot(inst->tdma, slot_timer_cb, inst->slot_id, &inst->slot_id);
-    }
-    dw1000_set_rx_timeout(inst, 0);
-    dw1000_start_rx(inst);
-}
-*/
+
 #define SLOT MYNEWT_VAL(SLOT_ID)
 #define ALT_SLOT 0
 int main(int argc, char **argv){
@@ -336,16 +318,7 @@ int main(int argc, char **argv){
     dw1000_ccp_init(inst, 2, MYNEWT_VAL(UUID_CCP_MASTER));
 #endif
 #if MYNEWT_VAL(DW1000_PAN)
-    dw1000_extension_callbacks_t pan_cbs;
     dw1000_pan_init(inst, &pan_config);
-    dw1000_pan_set_postprocess(inst, pan_postprocess);
-    dw1000_remove_extension_callbacks(inst, DW1000_PAN);
-    pan_cbs.tx_complete_cb = pan_tx_complete_cb;
-    pan_cbs.rx_complete_cb = pan_rx_complete_cb;
-    pan_cbs.rx_timeout_cb = pan_rx_timeout_cb;
-    pan_cbs.rx_error_cb = pan_rx_error_cb;
-    pan_cbs.tx_error_cb = pan_tx_error_cb;
-    dw1000_pan_set_ext_callbacks(inst, pan_cbs);
     dw1000_pan_start(inst, DWT_NONBLOCKING);
 #endif
 #if MYNEWT_VAL(N_RANGES_NPLUS_TWO_MSGS)
