@@ -38,6 +38,7 @@
 #include <dw1000/dw1000_provision.h>
 #endif
 
+#if MYNEWT_VAL(DW1000_PAN)
 #include <dw1000/dw1000_pan.h>
 
 /*! 
@@ -179,3 +180,4 @@ pan_rx_timeout_cb(dw1000_dev_instance_t * inst){
     }
     return true;
 }
+#endif

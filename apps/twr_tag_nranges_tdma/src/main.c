@@ -281,7 +281,7 @@ complete_cb(struct _dw1000_dev_instance_t * inst){
     }
     return true;
 }
-
+/*
 static void
 pan_postprocess(struct os_event* ev){
     dw1000_dev_instance_t* inst = (dw1000_dev_instance_t*)ev->ev_arg;
@@ -298,7 +298,7 @@ pan_postprocess(struct os_event* ev){
     dw1000_set_rx_timeout(inst, 0);
     dw1000_start_rx(inst);
 }
-
+*/
 #define SLOT MYNEWT_VAL(SLOT_ID)
 #define ALT_SLOT 0
 int main(int argc, char **argv){
