@@ -54,8 +54,8 @@
 
 
 static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x0600,         // Send Time delay in usec.
-    .rx_timeout_period = 0x0800         // Receive response timeout in usec
+    .tx_holdoff_delay = 0x0400,         // Send Time delay in usec.
+    .rx_timeout_period = 0x0         // Receive response timeout in usec
 };
 
 #if MYNEWT_VAL(DW1000_PAN)
@@ -91,8 +91,7 @@ static twr_frame_t twr[] = {
 
 #define NSLOTS MYNEWT_VAL(TDMA_NSLOTS)
 #if MYNEWT_VAL(TDMA_ENABLED)
-static uint16_t g_slot[NSLOTS] = {0};//{0,1,126,127};//,4,5,6,7,8,9,10,11,12,13,14,15,18,19,20,21,22,23,24,25,26,27,28,29,30,
-       // 31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62};
+static uint16_t g_slot[NSLOTS] = {0};
 #endif
 
 static bool timeout_cb(struct _dw1000_dev_instance_t * inst);
@@ -130,12 +129,12 @@ slot_timer_cb(struct os_event *ev){
     dx_time = dx_time  & 0xFFFFFFFE00UL;
 
 //    uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
-    if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_DS_TWR).start_tx_error){
+    if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_SS_TWR).start_tx_error){
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
         printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\"}\n",utime,idx);
     }else{
-//        uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
-//        printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %lu}\n",toc,toc-tic);
+ //       uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
+ //       printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %lu}\n",toc,toc-tic);
     }
 }
 

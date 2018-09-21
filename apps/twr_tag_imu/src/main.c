@@ -51,8 +51,8 @@
 #endif
 
 static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x0800,          // Send Time delay in usec.
-    .rx_timeout_period = 0x4000         // Receive response timeout in usec.
+    .tx_holdoff_delay = 0x0400,          // Send Time delay in usec.
+    .rx_timeout_period = 0x0         // Receive response timeout in usec.
 };
 
 static twr_frame_t twr[] = {
