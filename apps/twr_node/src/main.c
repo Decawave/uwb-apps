@@ -107,10 +107,10 @@ static void timer_ev_cb(struct os_event *ev) {
     
     os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/SAMPLE_FREQ);
 
-    uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
+    //uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
     dw1000_rng_request(inst, 0x4321, DWT_DS_TWR);
-    uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
-    printf("{\"dw1000_rng_request_tic_toc\": %lu}\n",toc-tic);
+    //uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
+    //printf("{\"dw1000_rng_request_tic_toc\": %lu}\n",toc-tic);
 
     twr_frame_t * previous_frame = rng->frames[(rng->idx-1)%rng->nframes];
     twr_frame_t * frame = rng->frames[(rng->idx)%rng->nframes];
