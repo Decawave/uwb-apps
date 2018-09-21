@@ -50,8 +50,8 @@
 
 
 static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x0500,         // Send Time delay in usec.
-    .rx_timeout_period = 0x0001         // Receive response timeout in usec
+    .tx_holdoff_delay = 0x0400,         // Send Time delay in usec.
+    .rx_timeout_period = 0x0            // timeout delta usec
 };
 
 #if MYNEWT_VAL(DW1000_PAN)
@@ -115,8 +115,7 @@ static void timer_ev_cb(struct os_event *ev) {
     if (inst->status.rx_timeout_error)
         printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_timeout_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
    
-    if (inst->status.start_tx_error || inst->status.start_rx_error || inst->status.rx_error 
-        ||  inst->status.rx_timeout_error){
+    if (inst->status.start_tx_error || inst->status.start_rx_error || inst->status.rx_error ||  inst->status.rx_timeout_error){
         inst->status.start_tx_error = inst->status.start_rx_error = inst->status.rx_error = inst->status.rx_timeout_error = 0;
         dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst); 
