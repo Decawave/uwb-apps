@@ -50,8 +50,8 @@
 
 
 static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x0600,         // Send Time delay in usec.
-    .rx_timeout_period = 0x0800         // Receive response timeout in usec
+    .tx_holdoff_delay = 0x0500,         // Send Time delay in usec.
+    .rx_timeout_period = 0x0001         // Receive response timeout in usec
 };
 
 #if MYNEWT_VAL(DW1000_PAN)
@@ -90,7 +90,7 @@ void print_frame(const char * name, twr_frame_t *twr ){
 /* The timer callout */
 static struct os_callout blinky_callout;
 
-#define SAMPLE_FREQ 25.0
+#define SAMPLE_FREQ 100.0
 static void timer_ev_cb(struct os_event *ev) {
     assert(ev != NULL);
     assert(ev->ev_arg != NULL);
