@@ -47,9 +47,12 @@
 #if MYNEWT_VAL(DW1000_PAN)
 #include <dw1000/dw1000_pan.h>
 #endif
+#ifdef NRF52
+#include "system_nrf52.h"
+#endif
 
 static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x0400,      // Send Time delay in usec.
+    .tx_holdoff_delay = 0x0380,      // Send Time delay in usec.
     .rx_timeout_period = 0x0         // timeout delta usec
 };
 
@@ -107,10 +110,10 @@ static void timer_ev_cb(struct os_event *ev) {
     
     os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/SAMPLE_FREQ);
 
-    //uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
+//    uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
     dw1000_rng_request(inst, 0x4321, DWT_DS_TWR);
-    //uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
-    //printf("{\"dw1000_rng_request_tic_toc\": %lu}\n",toc-tic);
+//    uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
+//    printf("{\"dw1000_rng_request_tic_toc\": %lu}\n",toc-tic);
 
     twr_frame_t * previous_frame = rng->frames[(rng->idx-1)%rng->nframes];
     twr_frame_t * frame = rng->frames[(rng->idx)%rng->nframes];
@@ -176,8 +179,6 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_3, 1);
     
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    dw1000_softreset(inst);
-    dw1000_phy_init(inst, NULL);   
 
     inst->PANID = 0xDECA;
     inst->my_short_address = MYNEWT_VAL(DEVICE_ID);
@@ -204,7 +205,9 @@ int main(int argc, char **argv){
     printf("partID = 0x%lX\n",inst->partID);
     printf("lotID = 0x%lX\n",inst->lotID);
     printf("xtal_trim = 0x%X\n",inst->xtal_trim);
-  
+    printf("frame_duration = %d usec\n",dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t)));
+    printf("holdoff = %ld usec\n",rng_config.tx_holdoff_delay);
+
     init_timer(inst);
 
     while (1) {
