@@ -47,9 +47,9 @@ The remainder of this README.md shows how to bring up the elementary twr_node/tw
 
 1. Download and install Apache Newt.
 
-You will need to download the Apache Newt tool, as documented in the [Getting Started Guide](http://mynewt.apache.org/latest/os/get_started/get_started/). 
+You will need to download the Apache Newt tool, as documented in the [Getting Started Guide](http://mynewt.apache.org/latest/get_started/index.html). 
 
-Prerequisites: You should follow the generic tutorials at https://mynewt.apache.org/latest/os/tutorials/tutorials/, particularly the basic Blinky example that will guide you through the basic setup.
+Prerequisites: You should follow the generic tutorials at http://mynewt.apache.org/latest/tutorials/tutorials.html, particularly the basic Blinky example that will guide you through the basic setup.
 
 2. Download the DW1000 Mynewt apps.
 
