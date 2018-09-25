@@ -82,7 +82,7 @@ int main(int argc, char **argv){
     
     dw1000_ccp_init(inst, 2, inst->my_long_address);   
     dw1000_ccp_start(inst);
-
+    
     while (1) {
         printf("here\n");
         os_eventq_run(os_eventq_dflt_get());
