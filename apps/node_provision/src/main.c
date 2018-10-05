@@ -37,7 +37,11 @@
 #include <dw1000/dw1000_mac.h>
 #include <dw1000/dw1000_rng.h>
 #include <dw1000/dw1000_ftypes.h>
-#include <dw1000/dw1000_provision.h>
+
+#if MYNEWT_VAL(DW1000_PAN)
+#include <pan/dw1000_provision.h>
+#include <pan/dw1000_pan.h>
+#endif
 
 #define NUM_FRAMES 2
 #define NUM_NODES 32

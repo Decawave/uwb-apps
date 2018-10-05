@@ -148,8 +148,6 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_3, 1);
 
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    dw1000_softreset(inst);
-    dw1000_phy_init(inst, NULL);    
  
     inst->PANID = 0xDECA;
     inst->my_short_address = MYNEWT_VAL(DEVICE_ID);

@@ -33,6 +33,8 @@ pkg.deps:
     - "@apache-mynewt-core/sys/shell"
     - "@apache-mynewt-core/encoding/json"
     - "@mynewt-dw1000-core/hw/drivers/dw1000"
+    - "@mynewt-dw1000-core/lib/tdma"
+    - "@mynewt-dw1000-core/lib/ccp"
     - "@mynewt-timescale-lib/lib/clkcal"
     - "@mynewt-timescale-lib/lib/timescale"
     

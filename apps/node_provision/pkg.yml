@@ -34,6 +34,7 @@ pkg.deps:
     - "@mynewt-dw1000-core/hw/drivers/dw1000"
     - "@apache-mynewt-core/encoding/json"
     - "@mynewt-dw1000-core/net/ip/lwip_base"
+    - "@mynewt-dw1000-core/lib/pan"
 
 pkg.cflags:
     - "-std=gnu99"

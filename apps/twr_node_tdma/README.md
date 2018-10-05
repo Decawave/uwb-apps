@@ -22,7 +22,9 @@
 # Decawave TDMA Example
 
 ## Overview
-The twr_node_tdma and twr_tag_tdma are simple examples that showcase the TDMA features within the core library. These examples work in conjunction with the clock_mster example which established the timebase for the system. The default behavior divides the CCP_PERIOD into TDMA_NSLOTS and allocates slots to tasks. In practice the PAN/Provision services assign the system for the system, in this example, this is step omitted. The default behavior here is that each slot is consumed by the one TAG.
+The twr_node_tdma and twr_tag_tdma are simple examples that showcase the TDMA features within the core library. The default behavior divides the TDMA_PERIOD into TDMA_NSLOTS and allocates slots to a single ranging task. Clock calibration and timescale compensation are enabled within the twr_tag_tdma application; this has the advantage of permitting single-sided two range exchange thus reducing the channel utilization. 
+
+Another advantege of wireless synchronization is the ability to turn-on transeiver is a just-in-time fashion thereby reducing the power comsumption. In these examples transeiver is turned on for approximatly 190 usec per tdma slot. 
 
 1. To erase the default flash image that shipped with the DWM1001 boards.
 
@@ -33,18 +35,7 @@ J-Link>exit
 $ 
 ```
 
-2. On the first dwm1001-dev board build the clock_master applications. 
-
-```no-highlight
-newt target create clock_master
-newt target set clock_master app=apps/clock_master
-newt target set clock_master bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target set clock_master build_profile=debug 
-newt run clock_master 0
-
-```
-
-3. On 2nd dwm1001-dev board build the TDMA node (twr_node_tdma) applications for the DWM1001 module. 
+2. On 1st dwm1001-dev board build the TDMA node (twr_node_tdma) applications for the DWM1001 module. 
 
 ```no-highlight
 
@@ -56,7 +47,7 @@ newt run twr_node_tdma 0
 
 ```
 
-4. On 3rd dwm1001-dev board build the TDMA tag (twr_tag_tdma) applications for the DWM1001 module. 
+3. On 2nd dwm1001-dev board build the TDMA tag (twr_tag_tdma) applications for the DWM1001 module. 
 
 ```no-highlight
 

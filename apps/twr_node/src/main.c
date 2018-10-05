@@ -27,9 +27,6 @@
 #include "bsp/bsp.h"
 #include "hal/hal_gpio.h"
 #include "hal/hal_bsp.h"
-#ifdef ARCH_sim
-#include "mcu/mcu_sim.h"
-#endif
 
 #include <dw1000/dw1000_dev.h>
 #include <dw1000/dw1000_hal.h>
@@ -39,13 +36,13 @@
 #include <dw1000/dw1000_ftypes.h>
 
 #if MYNEWT_VAL(DW1000_CCP_ENABLED)
-#include <dw1000/dw1000_ccp.h>
+#include <ccp/dw1000_ccp.h>
 #endif
 #if MYNEWT_VAL(DW1000_LWIP)
 #include <dw1000/dw1000_lwip.h>
 #endif
 #if MYNEWT_VAL(DW1000_PAN)
-#include <dw1000/dw1000_pan.h>
+#include <pan/dw1000_pan.h>
 #endif
 #ifdef NRF52
 #include "system_nrf52.h"

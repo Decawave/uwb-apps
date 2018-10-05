@@ -37,13 +37,13 @@
 #include <dw1000/dw1000_mac.h>
 #include <dw1000/dw1000_rng.h>
 #include <dw1000/dw1000_ftypes.h>
-#include <dw1000/dw1000_provision.h>
 
 #if MYNEWT_VAL(DW1000_CCP_ENABLED)
-#include <dw1000/dw1000_ccp.h>
+#include <ccp/dw1000_ccp.h>
 #endif
 #if MYNEWT_VAL(DW1000_PAN)
-#include <dw1000/dw1000_pan.h>
+#include <pan/dw1000_provision.h>
+#include <pan/dw1000_pan.h>
 #endif
 
 #define NUM_NODES 32 

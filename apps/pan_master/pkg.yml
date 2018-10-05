@@ -35,6 +35,7 @@ pkg.deps:
     - "@apache-mynewt-core/sys/shell"
     - "@apache-mynewt-core/encoding/json"
     - "@mynewt-dw1000-core/hw/drivers/dw1000"
+    - "@mynewt-dw1000-core/lib/pan"
 
 pkg.cflags:
     - "-std=gnu99"

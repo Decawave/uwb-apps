@@ -47,8 +47,8 @@
 
 
 static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x0400,         // Send Time delay in usec.
-    .rx_timeout_period = 0x0            // timeout delta usec
+    .tx_holdoff_delay = 0x0320,         // Send Time delay in usec.
+    .rx_timeout_period = 0x10           // timeout delta usec
 };
 
 static twr_frame_t twr[] = {
@@ -141,8 +141,6 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_3, 1);
 
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    dw1000_softreset(inst);
-    dw1000_phy_init(inst, NULL);
     
     inst->PANID = 0xDECA;
     inst->my_short_address = MYNEWT_VAL(DEVICE_ID);

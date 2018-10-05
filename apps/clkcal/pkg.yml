@@ -6,7 +6,7 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-#
+# 
 #  http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing,
@@ -17,28 +17,34 @@
 # under the License.
 #
 
-pkg.name: apps/tag_provision
+pkg.name: apps/clkcal
 pkg.type: app
-pkg.description: "Basic TWR tag example"
+pkg.description: "clkcal example"
 pkg.author: "Paul Kettle <paul.kettle@decawave.com>"
 pkg.homepage: "http://www.decawave.com/"
 pkg.keywords:
   - dw1000
   - twr
+  - ccp
 
 pkg.deps:
     - "@apache-mynewt-core/kernel/os"
     - "@apache-mynewt-core/hw/hal"
-    - "@apache-mynewt-core/sys/console/full"
+    - "@apache-mynewt-core/sys/console/full" 
     - "@apache-mynewt-core/sys/shell"
-    - "@mynewt-dw1000-core/hw/drivers/dw1000"
     - "@apache-mynewt-core/encoding/json"
-    - "@mynewt-dw1000-core/net/ip/lwip_base"
-    - "@mynewt-dw1000-core/lib/pan"
+    - "@mynewt-dw1000-core/hw/drivers/dw1000"
+    - "@mynewt-dw1000-core/lib/dsp"
+    - "@mynewt-dw1000-core/lib/ccp"
+    - "@mynewt-dw1000-core/lib/tdma"
+    - "@mynewt-timescale-lib/lib/timescale"
+    - "@mynewt-timescale-lib/lib/clkcal"
 
 pkg.cflags:
     - "-std=gnu99"
     - "-fms-extensions"
-
+    - "-DNRF52"
+    
 pkg.lflags:
     - "-lm"
+    

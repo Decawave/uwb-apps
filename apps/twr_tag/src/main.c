@@ -41,9 +41,6 @@
 #if MYNEWT_VAL(DW1000_LWIP)
 #include <dw1000/dw1000_lwip.h>
 #endif
-#if MYNEWT_VAL(DW1000_CCP_ENABLED)
-#include <dw1000/dw1000_ccp.h>
-#endif
 #if MYNEWT_VAL(DW1000_PAN)
 #include <dw1000/dw1000_pan.h>
 #endif
@@ -195,13 +192,15 @@ int main(int argc, char **argv){
         os_cputime_delay_usecs(5000);
     } 
 #endif
-    printf("device_id=%lX\n",inst->device_id);
-    printf("PANID=%X\n",inst->PANID);
-    printf("DeviceID =%X\n",inst->my_short_address);
-    printf("partID =%lX\n",inst->partID);
-    printf("lotID =%lX\n",inst->lotID);
-    printf("xtal_trim =%X\n",inst->xtal_trim);
-    
+    printf("device_id = 0x%lX\n",inst->device_id);
+    printf("PANID = 0x%X\n",inst->PANID);
+    printf("DeviceID = 0x%X\n",inst->my_short_address);
+    printf("partID = 0x%lX\n",inst->partID);
+    printf("lotID = 0x%lX\n",inst->lotID);
+    printf("xtal_trim = 0x%X\n",inst->xtal_trim);
+    printf("frame_duration = %d usec\n",dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t)));
+    printf("holdoff = %ld usec\n",rng_config.tx_holdoff_delay);
+
     init_timer(inst);
 
     dw1000_set_rx_timeout(inst, 0);
