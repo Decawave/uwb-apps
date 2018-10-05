@@ -84,7 +84,7 @@ main(int argc, char **argv){
 	dw1000_lwip_context_t *cntxt;
 
 	sysinit();
-	dw1000_softreset(inst);
+
 	inst->PANID = MYNEWT_VAL(DEVICE_PAN_ID);
 	inst->my_short_address = MYNEWT_VAL(SHORT_ADDRESS);
 

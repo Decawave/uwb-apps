@@ -137,7 +137,7 @@ int main(int argc, char **argv){
 	dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
 	
 	sysinit();
-	dw1000_softreset(inst);
+
 	inst->PANID = MYNEWT_VAL(DEVICE_PAN_ID);
 	inst->my_short_address = MYNEWT_VAL(SHORT_ADDRESS);
 
