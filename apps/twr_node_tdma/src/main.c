@@ -273,8 +273,7 @@ int main(int argc, char **argv){
     printf("lotID = 0x%lX\n",inst->lotID);
     printf("xtal_trim = 0x%X\n",inst->xtal_trim);
     printf("frame_duration = %d usec\n",dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t)));
-    printf("holdoff = %ld usec\n",rng_config.tx_holdoff_delay);
-
+    printf("holdoff = %d usec\n",(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(rng_config.tx_holdoff_delay))); 
 
     dw1000_extension_callbacks_t cbs = {
         .id = DW1000_RANGE,

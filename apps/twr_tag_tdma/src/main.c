@@ -129,19 +129,19 @@ slot_timer_cb(struct os_event *ev){
     dx_time = dx_time & 0xFFFFFFFE00UL;
 
 //    uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
-    if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_DS_TWR).start_tx_error){
+    if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_SS_TWR).start_tx_error){
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
         printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\",\"%s\":%d}\n",utime,idx,__FILE__, __LINE__); 
     }else{
-//        uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
-//        printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %lu}\n",toc,toc-tic);
+ //       uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
+ //       printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %lu}\n",toc,toc-tic);
     }
 
 #ifdef VERBOSE
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
         printf("{\"utime\": %lu,\"slot\": %d, \"dx_time\": %lX%08lX, \"epoch\": %lX%08lX}\n",utime, idx, 
-            (uint32_t)(dx_time >> 32),(uint32_t)(dx_time & 0xFFFFFFFFUL),
-            (uint32_t)(ccp->epoch  >> 32),(uint32_t)(ccp->epoch & 0xFFFFFFFFUL)
+        (uint32_t)(dx_time >> 32),(uint32_t)(dx_time & 0xFFFFFFFFUL),
+        (uint32_t)(ccp->epoch  >> 32),(uint32_t)(ccp->epoch & 0xFFFFFFFFUL)
         );
 #endif
 }
@@ -157,7 +157,7 @@ slot_timer_cb(struct os_event *ev){
  */
 static void 
 slot0_timer_cb(struct os_event *ev){
-    printf("{\"utime\": %lu,\"msg\": \"%s:[%d]:slot0_timer_cb\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()),__FILE__, __LINE__); 
+  //  printf("{\"utime\": %lu,\"msg\": \"%s:[%d]:slot0_timer_cb\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()),__FILE__, __LINE__); 
 }
 
 /*! 
@@ -243,13 +243,15 @@ error_cb(struct _dw1000_dev_instance_t * inst) {
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
     }   
+
+    return true;
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
     if (inst->status.start_rx_error)
-        printf("{\"utime\": %lu,\"msg\": \"start_rx_error\",\"%s\":%d}\n",utime, __FILE__, __LINE__);
+        printf("{\"utime\": %lu,\"msg\": \"start_rx_error,%s:%d\"}\n",utime, __FILE__, __LINE__);
     if (inst->status.start_tx_error)
-        printf("{\"utime\": %lu,\"msg\": \"start_tx_error\",\"%s\":%d}\n",utime, __FILE__, __LINE__);
+        printf("{\"utime\": %lu,\"msg\": \"start_tx_error,%s:%d\"}\n",utime, __FILE__, __LINE__);
     if (inst->status.rx_error)
-        printf("{\"utime\": %lu,\"msg\": \"rx_error\",\"%s\":%d}\n",utime, __FILE__, __LINE__);
+        printf("{\"utime\": %lu,\"msg\": \"rx_error\",%s:%d\"}\n",utime, __FILE__, __LINE__);
 
     return true;
 }
@@ -326,7 +328,7 @@ int main(int argc, char **argv){
     printf("xtal_trim = 0x%X\n",inst->xtal_trim);  
     printf("frame_duration = %d usec\n",dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t))); 
     printf("SHR_duration = %d usec\n",dw1000_phy_SHR_duration(&inst->attrib)); 
-    printf("holdoff = %ld usec\n",rng_config.tx_holdoff_delay); 
+    printf("holdoff = %d usec\n",(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(rng_config.tx_holdoff_delay))); 
 
    for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
         g_slot[i] = i;
