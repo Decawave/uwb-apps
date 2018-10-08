@@ -55,8 +55,8 @@
 #endif
 
 static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x0320,      // Send Time delay in usec.
-    .rx_timeout_period = 0x10        // Receive response timeout in usec
+    .tx_holdoff_delay = 0x0300,      // Send Time delay in usec.
+    .rx_timeout_period = 0x1        // Receive response timeout in usec
 };
 
 #if MYNEWT_VAL(DW1000_PAN)
@@ -122,19 +122,19 @@ slot_timer_cb(struct os_event *ev){
     
 #if MYNEWT_VAL(CLOCK_CALIBRATION_ENABLED)
     clkcal_instance_t * clk = ccp->clkcal;
-    uint64_t dx_time = (ccp->epoch + (uint64_t)  roundf(clk->skew * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
+    uint64_t dx_time = (ccp->epoch + (uint64_t) roundf(clk->skew * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
 #else
     uint64_t dx_time = (ccp->epoch + (uint64_t) (idx * ((uint64_t)tdma->period << 16)/tdma->nslots));
 #endif
     dx_time = dx_time & 0xFFFFFFFE00UL;
 
-    //uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
-    if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_SS_TWR).start_tx_error){
+//    uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
+    if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_DS_TWR).start_tx_error){
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
         printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\",\"%s\":%d}\n",utime,idx,__FILE__, __LINE__); 
     }else{
-    //    uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
-    //    printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %lu}\n",toc,toc-tic);
+//        uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
+//        printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %lu}\n",toc,toc-tic);
     }
 
 #ifdef VERBOSE
@@ -325,6 +325,7 @@ int main(int argc, char **argv){
     printf("lotID = 0x%lX\n",inst->lotID);
     printf("xtal_trim = 0x%X\n",inst->xtal_trim);  
     printf("frame_duration = %d usec\n",dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t))); 
+    printf("SHR_duration = %d usec\n",dw1000_phy_SHR_duration(&inst->attrib)); 
     printf("holdoff = %ld usec\n",rng_config.tx_holdoff_delay); 
 
    for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)

@@ -44,7 +44,7 @@
 
 static dw1000_rng_config_t rng_config = {
     .tx_holdoff_delay = 0x0380,      // Send Time delay in usec.
-    .rx_timeout_period = 0         // Receive response timeout in usec
+    .rx_timeout_period = 0x10        // Receive response timeout in usec
 };
 
 
@@ -97,10 +97,10 @@ int main(int argc, char **argv){
     
     dw1000_ccp_init(inst, 2, inst->my_long_address);  
 
-    tdma_instance_t * tdma = tdma_init(inst, MYNEWT_VAL(TDMA_SUPERFRAME_PERIOD), MYNEWT_VAL(TDMA_NSLOTS)); 
+
+    tdma_instance_t * tdma = tdma_init(inst, MYNEWT_VAL(TDMA_PERIOD), MYNEWT_VAL(TDMA_NSLOTS)); 
     for (uint16_t i=1; i < MYNEWT_VAL(TDMA_NSLOTS); i++) 
         tdma_assign_slot(tdma, slot0_event_cb, i, NULL);
-
     dw1000_ccp_start(inst, CCP_ROLE_SLAVE);
 
     while (1) {

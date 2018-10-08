@@ -66,8 +66,8 @@
 static uint16_t g_slot[MYNEWT_VAL(TDMA_NSLOTS)] = {0};
 
 static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x0320,      // Send Time delay in usec.
-    .rx_timeout_period = 0x10        // Receive response timeout in usec
+    .tx_holdoff_delay = 0x0300,    // Send Time delay in usec.
+    .rx_timeout_period = 0x1       // Receive response timeout in usec
 };
 
 
@@ -217,13 +217,15 @@ slot_timer_cb(struct os_event * ev){
 #else
     uint64_t dx_time = (ccp->epoch + (uint64_t) ((idx * ((uint64_t)tdma->period << 16)/tdma->nslots)));
 #endif
-    dx_time = (dx_time - (MYNEWT_VAL(DW1000_IDLE_TO_RX_LATENCY) << 16)) & 0xFFFFFFFE00UL;
-    
+    //Note: Time is referenced to the Rmarker symbol, to it is necessary to advance the rxtime by the SHR_duration such that the preamble is received.
+    dx_time = (dx_time - ((uint64_t)ceilf(dw1000_usecs_to_dwt_usecs(dw1000_phy_SHR_duration(&inst->attrib))) << 16)) & 0xFFFFFFFE00UL;
+
     dw1000_set_delay_start(inst, dx_time);
-    uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(ieee_rng_response_frame_t)) 
-                    
-                    + rng_config.tx_holdoff_delay;         // Remote side turn arroud time. 
+
+    uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(ieee_rng_response_frame_t))                 
+                            + rng_config.tx_holdoff_delay;         // Remote side turn arroud time. 
     dw1000_set_rx_timeout(inst, timeout);
+
     dw1000_set_on_error_continue(inst, true);
     if(dw1000_start_rx(inst).start_rx_error){
         printf("{\"utime\": %lu,\"msg\": \"main::slot_timer_cb:start_rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
