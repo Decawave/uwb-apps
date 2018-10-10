@@ -104,13 +104,12 @@ int main(int argc, char **argv){
     dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
     dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));  
     
-    dw1000_ccp_init(inst, 2, inst->my_long_address);  
-#if MYNEWT_VAL(TDMA_ENABLED)
+    dw1000_ccp_init(inst, 2, inst->my_long_address);
+    dw1000_ccp_start(inst, CCP_ROLE_MASTER);  
+
     tdma_instance_t * tdma = tdma_init(inst, MYNEWT_VAL(TDMA_PERIOD), NSLOTS); 
     for (uint16_t i=0; i < NSLOTS; i++) 
         tdma_assign_slot(tdma, slot0_event_cb, i, NULL);
-#endif
-    dw1000_ccp_start(inst, CCP_ROLE_MASTER);
 
     while (1) {
         os_eventq_run(os_eventq_dflt_get());

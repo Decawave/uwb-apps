@@ -16,7 +16,7 @@ syscfg.defs:
     DEVICE_ID:
         description: >
             Device ID
-        value: ((uint16_t){0x8000})
+        value: ((uint16_t){0x1234})
     DEVICE_UUID:
         description: >
             UUID

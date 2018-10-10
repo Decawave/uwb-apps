@@ -56,7 +56,7 @@
 
 static dw1000_rng_config_t rng_config = {
     .tx_holdoff_delay = 0x0300,      // Send Time delay in usec.
-    .rx_timeout_period = 0x1        // Receive response timeout in usec
+    .rx_timeout_period = 0x10        // Receive response timeout in usec
 };
 
 #if MYNEWT_VAL(DW1000_PAN)
@@ -99,7 +99,7 @@ static bool error_cb(struct _dw1000_dev_instance_t * inst);
 /*! 
  * @fn slot_timer_cb(struct os_event * ev)
  *
- * @brief This function each 
+ * @brief In this example slot_cb is used to initiate a request begining of each slot.
  *
  * input parameters
  * @param inst - struct os_event *  
@@ -128,13 +128,13 @@ slot_timer_cb(struct os_event *ev){
 #endif
     dx_time = dx_time & 0xFFFFFFFE00UL;
 
-//    uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
+   // uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
     if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_SS_TWR).start_tx_error){
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
         printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\",\"%s\":%d}\n",utime,idx,__FILE__, __LINE__); 
     }else{
- //       uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
- //       printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %lu}\n",toc,toc-tic);
+   //     uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
+   //     printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %lu}\n",toc,toc-tic);
     }
 
 #ifdef VERBOSE
@@ -161,7 +161,7 @@ slot0_timer_cb(struct os_event *ev){
 }
 
 /*! 
- * @fn frame_complete_cb(struct os_event * ev)
+ * @fn slot_complete_cb(struct os_event * ev)
  *
  * @brief This function each 
  * input parameters

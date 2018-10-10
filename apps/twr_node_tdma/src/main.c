@@ -62,12 +62,11 @@
 #define VERBOSE0
 
 
-
 static uint16_t g_slot[MYNEWT_VAL(TDMA_NSLOTS)] = {0};
 
 static dw1000_rng_config_t rng_config = {
     .tx_holdoff_delay = 0x0300,    // Send Time delay in usec.
-    .rx_timeout_period = 0x1       // Receive response timeout in usec
+    .rx_timeout_period = 0x10       // Receive response timeout in usec
 };
 
 
@@ -282,12 +281,10 @@ int main(int argc, char **argv){
     };
 
     dw1000_add_extension_callbacks(inst, cbs);
-
-#if MYNEWT_VAL(DW1000_CCP_ENABLED)
+    
     dw1000_ccp_init(inst, 2, MYNEWT_VAL(UUID_CCP_MASTER));
     dw1000_ccp_start(inst, CCP_ROLE_MASTER);
-#endif
-    
+
     for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
         g_slot[i] = i;
 
