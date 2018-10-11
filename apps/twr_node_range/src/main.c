@@ -50,7 +50,7 @@
 #include <dw1000/dw1000_pan.h>
 #endif
 #if MYNEWT_VAL(DW1000_RANGE)
-#include <dw1000/dw1000_range.h>
+#include <range/dw1000_range.h>
 #endif
 
 
