@@ -15,7 +15,7 @@ syscfg.defs:
     DEVICE_ID:
         description: >
             Device ID
-        value: ((uint16_t){0x6003})
+        value: ((uint16_t){0xDEC1})
     UUID_CCP_MASTER:
         description: >
             Clock Master UUID
