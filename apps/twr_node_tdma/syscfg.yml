@@ -13,6 +13,7 @@ syscfg.vals:
     FS_XTALT_AUTOTUNE_ENABLED: 0
     DW1000_BIAS_CORRECTION_ENABLED: 0
     DW1000_PAN: 0
+    TDMA_NSLOTS: 256
  
 syscfg.defs:
     DEVICE_ID:

@@ -128,13 +128,13 @@ slot_timer_cb(struct os_event *ev){
 #endif
     dx_time = dx_time & 0xFFFFFFFE00UL;
 
-   // uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
-    if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_SS_TWR).start_tx_error){
+  //  uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
+    if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_DS_TWR).start_tx_error){
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
         printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\",\"%s\":%d}\n",utime,idx,__FILE__, __LINE__); 
     }else{
    //     uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
-   //     printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %lu}\n",toc,toc-tic);
+   //     printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %lu}\n",toc,toc-tic - MYNEWT_VAL(OS_LATENCY));
     }
 
 #ifdef VERBOSE
@@ -244,7 +244,6 @@ error_cb(struct _dw1000_dev_instance_t * inst) {
         return false;
     }   
 
-    return true;
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
     if (inst->status.start_rx_error)
         printf("{\"utime\": %lu,\"msg\": \"start_rx_error,%s:%d\"}\n",utime, __FILE__, __LINE__);
@@ -259,7 +258,7 @@ error_cb(struct _dw1000_dev_instance_t * inst) {
 
 
 /*! 
- * @fn rx_complete_cb(dw1000_dev_instance_t * inst)
+ * @fn complete_cb(dw1000_dev_instance_t * inst)
  *
  * @brief This callback is in the interrupt context and is uses to schedule an rx_complete event on the default event queue.  
  * Processing should be kept to a minimum giving the context. All algorithms should be deferred to a thread on an event queue. 
@@ -274,14 +273,14 @@ error_cb(struct _dw1000_dev_instance_t * inst) {
 /* The timer callout */
 static struct os_callout slot_complete_callout;
 
-static bool 
-rx_complete_cb(struct _dw1000_dev_instance_t * inst){
+static bool
+complete_cb(struct _dw1000_dev_instance_t * inst){
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
     }
     os_callout_init(&slot_complete_callout, os_eventq_dflt_get(), slot_complete_cb, inst);
     os_eventq_put(os_eventq_dflt_get(), &slot_complete_callout.c_ev);
-    return false;
+    return true;
 }
 
 
@@ -304,13 +303,14 @@ int main(int argc, char **argv){
     dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
     dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));
     
-    dw1000_extension_callbacks_t cbs = {
+    dw1000_mac_interface_t cbs = {
+        .id = DW1000_APPLAYER_CBS,
         .tx_error_cb = error_cb,
         .rx_error_cb = error_cb,
-        .rx_complete_cb = rx_complete_cb
+        .complete_cb = complete_cb
     };
-    dw1000_add_extension_callbacks(inst, cbs);
-
+    dw1000_mac_append_interface(inst, &cbs);
+    
 #if MYNEWT_VAL(DW1000_CCP_ENABLED)
     dw1000_ccp_init(inst, 2, MYNEWT_VAL(UUID_CCP_MASTER));
     dw1000_ccp_start(inst, CCP_ROLE_SLAVE);
