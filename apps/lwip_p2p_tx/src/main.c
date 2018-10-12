@@ -37,6 +37,7 @@
 #include <dw1000/dw1000_mac.h>
 #include <dw1000/dw1000_rng.h>
 #include <dw1000/dw1000_ftypes.h>
+#include <lwip/dw1000_lwip.h>
 
 #if MYNEWT_VAL(DW1000_CLOCK_CALIBRATION)
 #include <dw1000/dw1000_ccp.h>

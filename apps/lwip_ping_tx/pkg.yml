@@ -33,7 +33,7 @@ pkg.deps:
     - "@apache-mynewt-core/sys/shell"
     - "@mynewt-dw1000-core/hw/drivers/dw1000"
     - "@apache-mynewt-core/encoding/json"
-    - "@mynewt-dw1000-core/net/ip/lwip_base"
+    - "@mynewt-dw1000-core/lib/lwip"
 
 
 pkg.cflags:

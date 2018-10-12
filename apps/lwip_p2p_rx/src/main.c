@@ -43,7 +43,7 @@
 #include <dw1000/dw1000_ccp.h>
 #endif
 #if MYNEWT_VAL(DW1000_LWIP)
-#include <dw1000/dw1000_lwip.h>
+#include <lwip/dw1000_lwip.h>
 #endif
 
 #if MYNEWT_VAL(DW1000_LWIP_P2P)

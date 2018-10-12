@@ -36,8 +36,8 @@
 #include <dw1000/dw1000_phy.h>
 #include <dw1000/dw1000_mac.h>
 #include <dw1000/dw1000_rng.h>
-#include <dw1000/dw1000_lwip.h>
 #include <dw1000/dw1000_ftypes.h>
+#include <lwip/dw1000_lwip.h>
 
 #include <lwip/init.h>
 #include <lwip/ethip6.h>
