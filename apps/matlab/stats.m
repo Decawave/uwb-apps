@@ -27,7 +27,7 @@ for j=1:ntimes
             if (isstruct(line)) 
                 if (isfield(line,'utime') && isfield(line,'tof') && isfield(line,'range'))
                     utime(end+1) = line.utime;
-                    tof(end+1) = line.tof;
+                    tof(end+1) = typecast(uint32(line.tof),'single');
                     range(end+1) = typecast(uint32(line.range),'single');
                 end
             end

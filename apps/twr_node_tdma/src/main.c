@@ -37,11 +37,17 @@
 #include <dw1000/dw1000_hal.h>
 #include <dw1000/dw1000_phy.h>
 #include <dw1000/dw1000_mac.h>
-#include <dw1000/dw1000_rng.h>
 #include <dw1000/dw1000_ftypes.h>
-#include <tdma/dw1000_tdma.h>
-#include <ccp/dw1000_ccp.h>
 
+#if MYNEWT_VAL(RNG_ENABLED)
+#include <rng/rng.h>
+#endif
+#if MYNEWT_VAL(TDMA_ENABLED)
+#include <tdma/dw1000_tdma.h>
+#endif
+#if MYNEWT_VAL(CCP_ENABLED)
+#include <ccp/dw1000_ccp.h>
+#endif
 #if MYNEWT_VAL(DW1000_LWIP)
 #include <dw1000/dw1000_lwip.h>
 #endif
@@ -61,14 +67,7 @@
 
 #define VERBOSE0
 
-
 static uint16_t g_slot[MYNEWT_VAL(TDMA_NSLOTS)] = {0};
-
-static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x0300,    // Send Time delay in usec.
-    .rx_timeout_period = 0x10       // Receive response timeout in usec
-};
-
 
 #if MYNEWT_VAL(DW1000_PAN)
 static dw1000_pan_config_t pan_config = {
@@ -77,31 +76,7 @@ static dw1000_pan_config_t pan_config = {
 };
 #endif
 
-static twr_frame_t twr[] = {
-    [0] = {
-        .fctrl = 0x8841,                // frame control (0x8841 to indicate a data frame using 16-bit addressing).
-        .PANID = 0xDECA,                 // PAN ID (0xDECA)
-        .code = DWT_TWR_INVALID
-    },
-    [1] = {
-        .fctrl = 0x8841,                // frame control (0x8841 to indicate a data frame using 16-bit addressing).
-        .PANID = 0xDECA,                 // PAN ID (0xDECA)
-        .code = DWT_TWR_INVALID,
-    },
-    [2] = {
-        .fctrl = 0x8841,                // frame control (0x8841 to indicate a data frame using 16-bit addressing).
-        .PANID = 0xDECA,                 // PAN ID (0xDECA)
-        .code = DWT_TWR_INVALID
-    },
-    [3] = {
-        .fctrl = 0x8841,                // frame control (0x8841 to indicate a data frame using 16-bit addressing).
-        .PANID = 0xDECA,                 // PAN ID (0xDECA)
-        .code = DWT_TWR_INVALID,
-    }
-};
-
 cir_t g_cir;
-
 
 static void slot_ev_cb(struct os_event *ev)
 {
@@ -151,14 +126,14 @@ static void slot_ev_cb(struct os_event *ev)
 
 
 /*! 
- * @fn rx_complete_cb(dw1000_dev_instance_t * inst)
+ * @fn complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
  *
  * @brief This callback is in the interrupt context and is uses to schedule an pdoa_complete event on the default event queue.  
  * Processing should be kept to a minimum giving the context. All algorithms should be deferred to a thread on an event queue. 
  * In this example all postprocessing is performed in the pdoa_ev_cb.
  * input parameters
  * @param inst - dw1000_dev_instance_t * 
- *
+ * @param inst - dw1000_mac_interface_t *
  * output parameters
  *
  * returns none 
@@ -168,7 +143,7 @@ static void slot_ev_cb(struct os_event *ev)
 static struct os_callout slot_callout;
 
 static bool
-rx_complete_cb(struct _dw1000_dev_instance_t * inst){
+complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
     }
@@ -177,14 +152,13 @@ rx_complete_cb(struct _dw1000_dev_instance_t * inst){
     return true;
 }
 
-
+/*
 static bool
-rx_timeout_cb(struct _dw1000_dev_instance_t * inst){
-    /* Place holder */
+rx_timeout_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
         printf("{\"utime\": %lu,\"log\": \"rx_timeout_cb\",\"%s\":%d}\n",os_cputime_ticks_to_usecs(os_cputime_get32()),__FILE__, __LINE__); 
     return false;
 }
-
+*/
 
 /*! 
  * @fn slot_timer_cb(struct os_event * ev)
@@ -201,7 +175,7 @@ rx_timeout_cb(struct _dw1000_dev_instance_t * inst){
 
     
 static void 
-slot_timer_cb(struct os_event * ev){
+slot_cb(struct os_event * ev){
     assert(ev);
 
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
@@ -222,12 +196,12 @@ slot_timer_cb(struct os_event * ev){
     dw1000_set_delay_start(inst, dx_time);
 
     uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(ieee_rng_response_frame_t))                 
-                            + rng_config.tx_holdoff_delay;         // Remote side turn arroud time. 
+                            + inst->rng->config.tx_holdoff_delay;         // Remote side turn arroud time. 
     dw1000_set_rx_timeout(inst, timeout);
 
     dw1000_set_on_error_continue(inst, true);
     if(dw1000_start_rx(inst).start_rx_error){
-        printf("{\"utime\": %lu,\"msg\": \"main::slot_timer_cb:start_rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
+        printf("{\"utime\": %lu,\"msg\": \"main::slot_cb:start_rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
     }    
 
 #ifdef VERBOSE
@@ -248,15 +222,6 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_3, 1);
 
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    
-    inst->PANID = 0xDECA;
-    inst->my_short_address = MYNEWT_VAL(DEVICE_ID);
-    inst->my_long_address = ((uint64_t) inst->device_id << 32) + inst->partID;
-
-    dw1000_set_panid(inst,inst->PANID);
-    dw1000_mac_init(inst, NULL);
-    dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
-    dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));
 
 #if MYNEWT_VAL(DW1000_PAN)
         dw1000_pan_init(inst, &pan_config);   
@@ -265,6 +230,16 @@ int main(int argc, char **argv){
             os_eventq_run(os_eventq_dflt_get());
         }  
 #endif
+    dw1000_mac_interface_t cbs = (dw1000_mac_interface_t){
+        .id =  DW1000_APP0,
+      //  .rx_timeout_cb = rx_timeout_cb,
+        .complete_cb = complete_cb
+    };
+    dw1000_mac_append_interface(inst, &cbs);
+
+#if MYNEWT_VAL(CCP_ENABLED)
+    dw1000_ccp_start(inst, CCP_ROLE_MASTER);
+#endif
     printf("device_id = 0x%lX\n",inst->device_id);
     printf("PANID = 0x%X\n",inst->PANID);
     printf("DeviceID = 0x%X\n",inst->my_short_address);
@@ -272,24 +247,15 @@ int main(int argc, char **argv){
     printf("lotID = 0x%lX\n",inst->lotID);
     printf("xtal_trim = 0x%X\n",inst->xtal_trim);
     printf("frame_duration = %d usec\n",dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t)));
-    printf("holdoff = %d usec\n",(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(rng_config.tx_holdoff_delay))); 
+    printf("SHR_duration = %d usec\n",dw1000_phy_SHR_duration(&inst->attrib)); 
+    printf("holdoff = %d usec\n",(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst->rng->config.tx_holdoff_delay))); 
 
-
-    dw1000_mac_interface_t cbs = (dw1000_mac_interface_t){
-        .rx_timeout_cb = rx_timeout_cb,
-        .complete_cb = rx_complete_cb
-    };
-    dw1000_mac_append_interface(inst, &cbs);
-    
-    dw1000_ccp_init(inst, 2, MYNEWT_VAL(UUID_CCP_MASTER));
-    dw1000_ccp_start(inst, CCP_ROLE_MASTER);
 
     for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
         g_slot[i] = i;
 
-    tdma_instance_t * tdma = tdma_init(inst, MYNEWT_VAL(TDMA_PERIOD), MYNEWT_VAL(TDMA_NSLOTS)); 
     for (uint16_t i = 1; i < sizeof(g_slot)/sizeof(uint16_t); i++)
-        tdma_assign_slot(tdma, slot_timer_cb,  g_slot[i], &g_slot[i]);
+        tdma_assign_slot(inst->tdma, slot_cb,  g_slot[i], &g_slot[i]);
 
     while (1) {
         os_eventq_run(os_eventq_dflt_get());
