@@ -27,49 +27,16 @@
 #include "bsp/bsp.h"
 #include "hal/hal_gpio.h"
 #include "hal/hal_bsp.h"
-#ifdef ARCH_sim
-#include "mcu/mcu_sim.h"
-#endif
 
 #include "dw1000/dw1000_dev.h"
 #include "dw1000/dw1000_hal.h"
 #include "dw1000/dw1000_phy.h"
 #include "dw1000/dw1000_mac.h"
-#include "dw1000/dw1000_rng.h"
 #include "dw1000/dw1000_ftypes.h"
 
-#if MYNEWT_VAL(DW1000_LWIP)
-#include <dw1000/dw1000_lwip.h>
+#if MYNEWT_VAL(RNG_ENABLED)
+#include "rng/rng.h"
 #endif
-#if MYNEWT_VAL(DW1000_PAN)
-#include <dw1000/dw1000_pan.h>
-#endif
-
-
-static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x0380,         // Send Time delay in usec.
-    .rx_timeout_period = 0x0            // timeout delta usec
-};
-
-#if MYNEWT_VAL(DW1000_PAN)
-static dw1000_pan_config_t pan_config = {
-    .tx_holdoff_delay = 0x0C00,         // Send Time delay in usec.
-    .rx_timeout_period = 0x8000         // Receive response timeout in usec.
-};
-#endif
-
-static twr_frame_t twr[] = {
-    [0] = {
-        .fctrl = 0x8841,                // frame control (0x8841 to indicate a data frame using 16-bit addressing).
-        .PANID = 0xDECA,                // PAN ID (0xDECA)
-        .code = DWT_TWR_INVALID
-    },
-    [1] = {
-        .fctrl = 0x8841,                // frame control (0x8841 to indicate a data frame using 16-bit addressing).
-        .PANID = 0xDECA,                // PAN ID (0xDECA)
-        .code = DWT_TWR_INVALID
-    }
-};
 
 void print_frame(const char * name, twr_frame_t *twr ){
     printf("%s{\n\tfctrl:0x%04X,\n", name, twr->fctrl);
@@ -172,26 +139,6 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_3, 1);
 
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);  
- 
-    inst->PANID = 0xDECA;
-    inst->my_short_address = MYNEWT_VAL(DEVICE_ID);
-    inst->my_long_address = ((uint64_t) inst->device_id << 32) + inst->partID;
-
-    dw1000_set_panid(inst,inst->PANID);
-    dw1000_mac_init(inst, NULL);
-    dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
-    dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));
-#if MYNEWT_VAL(DW1000_CCP_ENABLED)
-    dw1000_ccp_init(inst, 2, MYNEWT_VAL(UUID_CCP_MASTER));
-#endif
-#if MYNEWT_VAL(DW1000_PAN)
-    dw1000_pan_init(inst, &pan_config); 
-    dw1000_pan_start(inst, DWT_NONBLOCKING); // Don't block on the eventq_dflt
-    while(inst->pan->status.valid != true){ 
-        os_eventq_run(os_eventq_dflt_get());
-        os_cputime_delay_usecs(5000);
-    } 
-#endif
     printf("device_id = 0x%lX\n",inst->device_id);
     printf("PANID = 0x%X\n",inst->PANID);
     printf("DeviceID = 0x%X\n",inst->my_short_address);
@@ -199,7 +146,6 @@ int main(int argc, char **argv){
     printf("lotID = 0x%lX\n",inst->lotID);
     printf("xtal_trim = 0x%X\n",inst->xtal_trim);
     printf("frame_duration = %d usec\n",dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t)));
-    printf("holdoff = %ld usec\n",rng_config.tx_holdoff_delay);
 
     init_timer(inst);
 

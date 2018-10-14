@@ -42,31 +42,16 @@
 #include "dw1000/dw1000_hal.h"
 #include "dw1000/dw1000_phy.h"
 #include "dw1000/dw1000_mac.h"
-#include "dw1000/dw1000_rng.h"
 
 #define IMU_READ_RATE (OS_TICKS_PER_SEC/10)
 
-#if MYNEWT_VAL(DW1000_LWIP)
-#include <dw1000/dw1000_lwip.h>
+#if MYNEWT_VAL(CCP_ENABLE)
+#include "rng/rng.h"
 #endif
 
-static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x0380,          // Send Time delay in usec.
-    .rx_timeout_period = 0x0         // Receive response timeout in usec.
-};
-
-static twr_frame_t twr[] = {
-    [0] = {
-        .fctrl = 0x8841,                // frame control (0x8841 to indicate a data frame using 16-bit addressing).
-        .PANID = 0xDECA,                // PAN ID (0xDECA)
-        .code = DWT_TWR_INVALID
-    },
-    [1] = {
-        .fctrl = 0x8841,                // frame control (0x8841 to indicate a data frame using 16-bit addressing).
-        .PANID = 0xDECA,                // PAN ID (0xDECA)
-        .code = DWT_TWR_INVALID
-    }
-};
+#if MYNEWT_VAL(DW1000_LWIP)
+#include <lwip/lwip.h>
+#endif
 
 void print_frame(const char * name, twr_frame_t twr){
     printf("%s{\n\tfctrl:0x%04X,\n", name, twr.fctrl);
@@ -80,7 +65,6 @@ void print_frame(const char * name, twr_frame_t twr){
     printf("\trequest_timestamp:0x%08lX,\n", twr.request_timestamp); 
     printf("\tresponse_timestamp:0x%08lX\n}\n", twr.response_timestamp);
 }
-
 
 /* The timer callout */
 static struct os_callout twr_callout;
@@ -282,14 +266,6 @@ int main(int argc, char **argv){
 
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
  
-    inst->PANID = 0xDECA;
-    inst->my_short_address = 0x4321;
-    dw1000_set_panid(inst,inst->PANID);
-    dw1000_mac_init(inst, NULL);
-    dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
-    dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));
-
-
     printf("device_id=%lX\n",inst->device_id);
     printf("PANID=%X\n",inst->PANID);
     printf("DeviceID =%X\n",inst->my_short_address);

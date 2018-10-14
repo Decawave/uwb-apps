@@ -30,8 +30,10 @@
 
 #include "json/json.h"
 #include <dw1000/dw1000_ftypes.h>
-#include <dw1000/dw1000_rng.h>
 
+#if MYNEWT_VAL(RNG_ENABLED)
+#include <rng/rng.h>
+#endif
 
 #define CIR_SIZE (64)
 
