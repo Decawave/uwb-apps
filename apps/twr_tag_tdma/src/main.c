@@ -41,16 +41,13 @@
 #include <rng/rng.h>
 #endif
 #if MYNEWT_VAL(TDMA_ENABLED)
-#include <tdma/dw1000_tdma.h>
+#include <tdma/tdma.h>
 #endif
 #if MYNEWT_VAL(CCP_ENABLED)
-#include <ccp/dw1000_ccp.h>
+#include <ccp/ccp.h>
 #endif
 #if MYNEWT_VAL(DW1000_LWIP)
-#include <dw1000/dw1000_lwip.h>
-#endif
-#if MYNEWT_VAL(DW1000_PAN)
-#include <dw1000/dw1000_pan.h>
+#include <lwip/lwip.h>
 #endif
 
 //#define DIAGMSG(s,u) printf(s,u)
@@ -58,21 +55,24 @@
 #define DIAGMSG(s,u)
 #endif
 
-#if MYNEWT_VAL(DW1000_PAN)
-static dw1000_pan_config_t pan_config = {
-    .tx_holdoff_delay = 0x0C00,         // Send Time delay in usec.
-    .rx_timeout_period = 0x8000         // Receive response timeout in usec.
-};
-#endif
- 
+#ifndef TICTOC
+#undef TICTOC 
+#endif 
 
 static uint16_t g_slot[MYNEWT_VAL(TDMA_NSLOTS)] = {0};
 static bool error_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs);
+static void slot_complete_cb(struct os_event * ev);
 
 /*! 
  * @fn slot_cb(struct os_event * ev)
  *
- * @brief In this example slot_cb is used to initiate a request begining of each slot. 
+ * @brief In this example slot_cb is used to initiate a range request. The slot_cb is scheduled 
+ * MYNEWT_VAL(OS_LATENCY) in advance of the transmit epoch and a delayed start request is issued in advance of 
+ * the required epoch. The transmission timing is controlled precisely by the DW1000 with the transmission time 
+ * defined by the value of the dw_time variable. If the OS_LATENCY value is set too small the range request 
+ * function will report a start_tx_error. In a synchronized network, the node device switches the transceiver 
+ * to receiver mode for the same epoch; and will either receive the inbound frame or timeout after the frame 
+ * duration as elapsed. This ensures that the transceiver is in receive mode for the minimum time required.   
  *
  * input parameters
  * @param inst - struct os_event *  
@@ -104,7 +104,7 @@ slot_cb(struct os_event *ev){
 #ifdef TICTOC
     uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
 #endif
-    if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_DS_TWR).start_tx_error){
+    if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_SS_TWR).start_tx_error){
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
         printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\",\"%s\":%d}\n",utime,idx,__FILE__, __LINE__); 
     }else{
@@ -113,19 +113,11 @@ slot_cb(struct os_event *ev){
         printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %lu}\n",toc,toc-tic - MYNEWT_VAL(OS_LATENCY));
 #endif
     }
-
-#ifdef VERBOSE0
-        uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
-        printf("{\"utime\": %lu,\"slot\": %d, \"dx_time\": %lX%08lX, \"epoch\": %lX%08lX}\n",utime, idx, 
-        (uint32_t)(dx_time >> 32),(uint32_t)(dx_time & 0xFFFFFFFFUL),
-        (uint32_t)(ccp->epoch  >> 32),(uint32_t)(ccp->epoch & 0xFFFFFFFFUL)
-        );
-#endif
 }
 
 /*! 
  * @fn slot0_cb(struct os_event * ev)
- * @brief This function is a place holder
+ * @brief This function is a place holder for PAN or other Slot0 related housekeeping.
  *
  * input parameters
  * @param inst - struct os_event *  
@@ -137,10 +129,46 @@ slot0_cb(struct os_event *ev){
   //  printf("{\"utime\": %lu,\"msg\": \"%s:[%d]:slot0_timer_cb\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()),__FILE__, __LINE__); 
 }
 
+
+/*! 
+ * @fn complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
+ *
+ * @brief This callback is part of the  dw1000_mac_interface_t extension interface and invoked of the completion of a range request 
+ * in the context of this example. The dw1000_mac_interface_t is in the interrupt context and is used to schedule events an event queue. 
+ * Processing should be kept to a minimum giving the interrupt context. All algorithms activities should be deferred to a thread on an event queue. 
+ * The callback should return true if and only if it can determine if it is the sole recipient of this event. 
+ * 
+ * NOTE: The MAC extension interface is a link-list of callbacks, subsequent callbacks on the list will be not be called in the 
+ * event of returning true. 
+ *
+ * @param inst  - dw1000_dev_instance_t *
+ * @param cbs   - dw1000_mac_interface_t *
+ *
+ * output parameters
+ *
+ * returns bool
+ */
+/* The timer callout */
+static struct os_callout slot_complete_callout;
+
+static bool
+complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
+    if(inst->fctrl != FCNTL_IEEE_RANGE_16){
+        return false;
+    }
+    os_callout_init(&slot_complete_callout, os_eventq_dflt_get(), slot_complete_cb, inst);
+    os_eventq_put(os_eventq_dflt_get(), &slot_complete_callout.c_ev);
+    return true;
+}
+
+
 /*! 
  * @fn slot_complete_cb(struct os_event * ev)
  *
- * @brief This function each 
+ * @brief In the example this function represents the event context processing of the received range request. 
+ * In this case, a JSON string is constructed and written to stdio. See the ./apps/matlab or ./apps/python folders for examples on 
+ * how to parse and render these results. 
+ * 
  * input parameters
  * @param inst - struct os_event *  
  * output parameters
@@ -235,32 +263,7 @@ error_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
 
 
 
-/*! 
- * @fn complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
- *
- * @brief This callback is in the interrupt context and is uses to schedule an rx_complete event on the default event queue.  
- * Processing should be kept to a minimum giving the context. All algorithms should be deferred to a thread on an event queue. 
- * In this example all postprocessing is performed in the pdoa_ev_cb.
- * input parameters
- * @param inst - dw1000_dev_instance_t *
- * @param cbs - dw1000_mac_interface_t *
- *
- * output parameters
- *
- * returns none 
- */
-/* The timer callout */
-static struct os_callout slot_complete_callout;
 
-static bool
-complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
-    if(inst->fctrl != FCNTL_IEEE_RANGE_16){
-        return false;
-    }
-    os_callout_init(&slot_complete_callout, os_eventq_dflt_get(), slot_complete_cb, inst);
-    os_eventq_put(os_eventq_dflt_get(), &slot_complete_callout.c_ev);
-    return true;
-}
 
 
 int main(int argc, char **argv){
@@ -283,10 +286,6 @@ int main(int argc, char **argv){
     
 #if MYNEWT_VAL(CCP_ENABLED)
     dw1000_ccp_start(inst, CCP_ROLE_SLAVE);
-#endif
-#if MYNEWT_VAL(DW1000_PAN)
-    dw1000_pan_init(inst, &pan_config);   
-    dw1000_pan_start(inst, DWT_NONBLOCKING);  
 #endif
 
     printf("device_id = 0x%lX\n",inst->device_id);

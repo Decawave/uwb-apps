@@ -43,16 +43,13 @@
 #include <rng/rng.h>
 #endif
 #if MYNEWT_VAL(TDMA_ENABLED)
-#include <tdma/dw1000_tdma.h>
+#include <tdma/tdma.h>
 #endif
 #if MYNEWT_VAL(CCP_ENABLED)
-#include <ccp/dw1000_ccp.h>
+#include <ccp/ccp.h>
 #endif
 #if MYNEWT_VAL(DW1000_LWIP)
-#include <dw1000/dw1000_lwip.h>
-#endif
-#if MYNEWT_VAL(DW1000_PAN)
-#include <dw1000/dw1000_pan.h>
+#include <lwip/lwip.h>
 #endif
 #if MYNEWT_VAL(TIMESCALE)
 #include <timescale/timescale.h> 
@@ -60,25 +57,66 @@
 #include <clkcal/clkcal.h>  
 #include "json_encode.h"
 
-#define DIAGMSG(s,u) printf(s,u)
+//#define DIAGMSG(s,u) printf(s,u)
 #ifndef DIAGMSG
 #define DIAGMSG(s,u)
 #endif
 
-#define VERBOSE0
+static void slot_complete_cb(struct os_event *ev);
 
 static uint16_t g_slot[MYNEWT_VAL(TDMA_NSLOTS)] = {0};
 
-#if MYNEWT_VAL(DW1000_PAN)
-static dw1000_pan_config_t pan_config = {
-    .tx_holdoff_delay = 0x0C00,         // Send Time delay in usec.
-    .rx_timeout_period = 0x8000         // Receive response timeout in usec.
-};
-#endif
 
 cir_t g_cir;
 
-static void slot_ev_cb(struct os_event *ev)
+
+
+/*! 
+ * @fn complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
+ *
+ * @brief This callback is part of the  dw1000_mac_interface_t extension interface and invoked of the completion of a range request. 
+ * The dw1000_mac_interface_t is in the interrupt context and is used to schedule events an event queue. Processing should be kept 
+ * to a minimum giving the interrupt context. All algorithms activities should be deferred to a thread on an event queue. 
+ * The callback should return true if and only if it can determine if it is the sole recipient of this event. 
+ *
+ * NOTE: The MAC extension interface is a link-list of callbacks, subsequent callbacks on the list will be not be called in the 
+ * event of returning true. 
+ *
+ * @param inst  - dw1000_dev_instance_t *
+ * @param cbs   - dw1000_mac_interface_t *
+ *
+ * output parameters
+ *
+ * returns bool
+ */
+/* The timer callout */
+
+static struct os_callout slot_callout;
+
+static bool
+complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
+    if(inst->fctrl != FCNTL_IEEE_RANGE_16){
+        return false;
+    }
+    os_callout_init(&slot_callout, os_eventq_dflt_get(), slot_complete_cb, inst);
+    os_eventq_put(os_eventq_dflt_get(), &slot_callout.c_ev);
+    return true;
+}
+
+/*! 
+ * @fn slot_complete_cb(struct os_event * ev)
+ *
+ * @brief In the example this function represents the event context processing of the received range request. 
+ * In this case, a JSON string is constructed and written to stdio. See the ./apps/matlab or ./apps/python folders for examples on 
+ * how to parse and render these results. 
+ * 
+ * input parameters
+ * @param inst - struct os_event *  
+ * output parameters
+ * returns none 
+ */
+
+static void slot_complete_cb(struct os_event *ev)
 {
     assert(ev != NULL);
     assert(ev->ev_arg != NULL);
@@ -124,46 +162,15 @@ static void slot_ev_cb(struct os_event *ev)
 }
 
 
-
 /*! 
- * @fn complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
- *
- * @brief This callback is in the interrupt context and is uses to schedule an pdoa_complete event on the default event queue.  
- * Processing should be kept to a minimum giving the context. All algorithms should be deferred to a thread on an event queue. 
- * In this example all postprocessing is performed in the pdoa_ev_cb.
- * input parameters
- * @param inst - dw1000_dev_instance_t * 
- * @param inst - dw1000_mac_interface_t *
- * output parameters
- *
- * returns none 
- */
-/* The timer callout */
-
-static struct os_callout slot_callout;
-
-static bool
-complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
-    if(inst->fctrl != FCNTL_IEEE_RANGE_16){
-        return false;
-    }
-    os_callout_init(&slot_callout, os_eventq_dflt_get(), slot_ev_cb, inst);
-    os_eventq_put(os_eventq_dflt_get(), &slot_callout.c_ev);
-    return true;
-}
-
-/*
-static bool
-rx_timeout_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
-        printf("{\"utime\": %lu,\"log\": \"rx_timeout_cb\",\"%s\":%d}\n",os_cputime_ticks_to_usecs(os_cputime_get32()),__FILE__, __LINE__); 
-    return false;
-}
-*/
-
-/*! 
- * @fn slot_timer_cb(struct os_event * ev)
- *
- * @brief In this example this timer callback is used to start_rx.
+ * @fn slot_cb(struct os_event * ev)
+ * 
+ * In this example, slot_cb schedules the turning of the transceiver to receive mode at the desired epoch. 
+ * The precise timing is under the control of the DW1000, and the dw_time variable defines this epoch. 
+ * Note the slot_cb itself is scheduled MYNEWT_VAL(OS_LATENCY) in advance of the epoch to set up the transceiver accordingly.
+ * 
+ * Note: The epoch time is referenced to the Rmarker symbol, it is therefore necessary to advance the rxtime by the SHR_duration such 
+ * that the preamble are received. The transceiver, when transmitting adjust the txtime accordingly.
  *
  * input parameters
  * @param inst - struct os_event *  
@@ -172,8 +179,7 @@ rx_timeout_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
  *
  * returns none 
  */
-
-    
+   
 static void 
 slot_cb(struct os_event * ev){
     assert(ev);
@@ -190,11 +196,9 @@ slot_cb(struct os_event * ev){
 #else
     uint64_t dx_time = (ccp->epoch + (uint64_t) ((idx * ((uint64_t)tdma->period << 16)/tdma->nslots)));
 #endif
-    //Note: Time is referenced to the Rmarker symbol, to it is necessary to advance the rxtime by the SHR_duration such that the preamble is received.
     dx_time = (dx_time - ((uint64_t)ceilf(dw1000_usecs_to_dwt_usecs(dw1000_phy_SHR_duration(&inst->attrib))) << 16)) & 0xFFFFFFFE00UL;
 
     dw1000_set_delay_start(inst, dx_time);
-
     uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(ieee_rng_response_frame_t))                 
                             + inst->rng->config.tx_holdoff_delay;         // Remote side turn arroud time. 
     dw1000_set_rx_timeout(inst, timeout);
@@ -203,14 +207,6 @@ slot_cb(struct os_event * ev){
     if(dw1000_start_rx(inst).start_rx_error){
         printf("{\"utime\": %lu,\"msg\": \"main::slot_cb:start_rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
     }    
-
-#ifdef VERBOSE
-        uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
-        printf("{\"utime\": %lu,\"slot\": %d, \"dx_time\": %lX%08lX, \"epoch\": %lX%08lX}\n",utime, idx, 
-            (uint32_t)(dx_time >> 32),(uint32_t)(dx_time & 0xFFFFFFFFUL),
-            (uint32_t)(ccp->epoch  >> 32),(uint32_t)(ccp->epoch & 0xFFFFFFFFUL)
-        );
-#endif
 }
 
 int main(int argc, char **argv){
@@ -222,17 +218,8 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_3, 1);
 
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-
-#if MYNEWT_VAL(DW1000_PAN)
-        dw1000_pan_init(inst, &pan_config);   
-        dw1000_pan_start(inst, DWT_NONBLOCKING); 
-        while(inst->pan->status.valid != true){ 
-            os_eventq_run(os_eventq_dflt_get());
-        }  
-#endif
     dw1000_mac_interface_t cbs = (dw1000_mac_interface_t){
         .id =  DW1000_APP0,
-      //  .rx_timeout_cb = rx_timeout_cb,
         .complete_cb = complete_cb
     };
     dw1000_mac_append_interface(inst, &cbs);
