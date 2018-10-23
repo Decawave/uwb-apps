@@ -48,13 +48,15 @@
 #if MYNEWT_VAL(CCP_ENABLED)
 #include <ccp/ccp.h>
 #endif
+#if MYNEWT_VAL(WCS_ENABLED)
+#include <wcs/wcs.h>
+#endif
 #if MYNEWT_VAL(DW1000_LWIP)
 #include <lwip/lwip.h>
 #endif
 #if MYNEWT_VAL(TIMESCALE)
 #include <timescale/timescale.h> 
 #endif
-#include <clkcal/clkcal.h>  
 #include "json_encode.h"
 
 //#define DIAGMSG(s,u) printf(s,u)
@@ -66,10 +68,7 @@ static void slot_complete_cb(struct os_event *ev);
 
 static uint16_t g_slot[MYNEWT_VAL(TDMA_NSLOTS)] = {0};
 
-
 cir_t g_cir;
-
-
 
 /*! 
  * @fn complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
@@ -190,9 +189,9 @@ slot_cb(struct os_event * ev){
     dw1000_ccp_instance_t * ccp = inst->ccp;
     uint16_t idx = slot->idx;
 
-#if MYNEWT_VAL(CLOCK_CALIBRATION_ENABLED)
-    clkcal_instance_t * clk = ccp->clkcal;
-    uint64_t dx_time = (ccp->epoch + (uint64_t) roundf(clk->skew * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
+#if MYNEWT_VAL(WCS_ENABLED)
+    wcs_instance_t * wcs = ccp->wcs;
+    uint64_t dx_time = (ccp->epoch + (uint64_t) roundf((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
 #else
     uint64_t dx_time = (ccp->epoch + (uint64_t) ((idx * ((uint64_t)tdma->period << 16)/tdma->nslots)));
 #endif
