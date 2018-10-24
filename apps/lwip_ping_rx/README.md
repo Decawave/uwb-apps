@@ -27,14 +27,14 @@ payloads to and from a node. In this sample application, we are receiving a ping
 
 ## Pre-Requisites
 Repo 	:	mynewt-dw1000-apps
-Branch	:	master
+Branch	:	refactor
 
 Repo	:	mynewt-dw1000-core
-Branch	:	master
+Branch	:	refactor
 
 Repo	:	apache-mynewt-core
 Branch	:	master
-Tag 	:	1.3.0
+Tag 	:	1.4.1
 
 ## Building
 1. Build and flash the lwip_ping_rx app.
@@ -53,9 +53,10 @@ newt load lwip_ping_rx
 1. Flash lwip_ping_tx into Node A.
 2. Build and flash lwip_ping_rx in Node B.
 3. Connect both the nodes to Dev PC and monitor the logs of the nodes in serial comm application.
-4. The expected output is as shown below,
+4. The sample output is as shown below,
 	On Node B:
 
 ```no-highlight
-Ping Received
+[Ping Received]
+Seq # - 1234
 ```
