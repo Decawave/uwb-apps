@@ -1,6 +1,6 @@
 tcp = tcpclient('127.0.0.1', 19021);
 
-ntimes = 3000
+ntimes = 12000
 idx = [];
 data= [];
 utime =[];
@@ -10,7 +10,7 @@ range = [];
 skew = [];
 skew_wcs = [];
 utime_wcs = [];
-ccp = [];
+wcs = [];
 
 for j=1:ntimes
     
@@ -29,7 +29,7 @@ for j=1:ntimes
         if (line(1) == '{')
             line = jsondecode(line);
             if (isstruct(line)) 
-                if (isfield(line,'utime') && isfield(line,'tof') && isfield(line,'range') && isfield(line,'dkew'))
+                if (isfield(line,'utime') && isfield(line,'tof') && isfield(line,'range') )
                     utime(end+1) = line.utime;
                     tof(end+1) = typecast(uint32(line.tof),'single');
                     range(end+1) = typecast(uint32(line.range),'single');
@@ -37,7 +37,7 @@ for j=1:ntimes
                 end
                 if (isfield(line,'utime') && isfield(line,'wcs') )
                         utime_wcs(end+1) = line.utime;
-                        ccp(end+1,:) = line.wcs;
+                        wcs(end+1,:) = line.wcs;
                         skew_wcs(end+1) = typecast(uint64(line.skew),'double') * 1e6;
                 end
             end
@@ -51,13 +51,14 @@ for j=1:ntimes
         pause(0.001)
         refreshdata;
      end
-     if (mod(j,16) == 0)
+     if (mod(j,4) == 0)
             [mu,sigma,~,~] = normfit(range);
             subplot(211);
             yyaxis right
-            plot(utime,skew, utime_wcs,skew_wcs,'r');
+            plot(utime,skew,utime_wcs,skew_wcs,'o-m');
             yyaxis left
             plot(utime,range);
+%            plot(utime_wcs,wcs)
             title(sprintf("tof mu=%f tof sigma=%f (dwt unit)",mu,sigma))
      end
      if (mod(j,4) == 0)
@@ -72,19 +73,7 @@ for j=1:ntimes
             [mu,sigma,~,~] = normfit(skew_wcs);
             subplot(236);histfit(skew_wcs,16,'normal');title(sprintf("wcs mu=%f (usec) sigma=%f (usec)",mu,sigma))
      end
-%     if (mod(j,64) == 0)
-%            [mu,sigma,~,~] = normfit(skew * 1e6);
-%            subplot(222);title(sprintf("mu=%f (usec) sigma=%f (usec)",mu,sigma))
-%     end
 
-%    if (j==10)
-%        linkdata off
-%        subplot(211);plot(utime,skew,'b', utime_wcs,skew_wcs,'r');
-%        xlabel('utime')
-%        ylabel('range(m)')
-%        linkdata on
-%    end
-    
 end
  
 
