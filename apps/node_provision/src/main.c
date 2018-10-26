@@ -47,7 +47,7 @@
 #include <pan/pan.h>
 #endif
 #if MYNEWT_VAL(PROVISION_ENABLED)
-#include <pan/provision.h>
+#include <provision/provision.h>
 #endif
 
 static struct os_callout blinky_callout;
