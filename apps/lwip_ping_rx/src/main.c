@@ -35,8 +35,7 @@
 #include <dw1000/dw1000_hal.h>
 #include <dw1000/dw1000_phy.h>
 #include <dw1000/dw1000_mac.h>
-#include <dw1000/dw1000_rng.h>
-#include <dw1000/dw1000_lwip.h>
+#include <lwip/lwip.h>
 #include <dw1000/dw1000_ftypes.h>
 
 #include <lwip/init.h>
@@ -80,16 +79,20 @@ main(int argc, char **argv){
 
 	int rc;
 
+	sysinit();
+    hal_gpio_init_out(LED_BLINK_PIN, 1);
+
 	dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+
 	dw1000_lwip_context_t *cntxt;
 
-	sysinit();
-
-	inst->PANID = MYNEWT_VAL(DEVICE_PAN_ID);
-	inst->my_short_address = MYNEWT_VAL(SHORT_ADDRESS);
+	inst->PANID = MYNEWT_VAL(PANID);
+	inst->my_short_address = MYNEWT_VAL(DEVICE_ID);
+	inst->fctrl_array[0] = 'L';
+	inst->fctrl_array[1] = 'W';
 
 	dw1000_set_panid(inst,inst->PANID);
-	dw1000_low_level_init(inst, NULL, NULL);
+
 	dw1000_lwip_init(inst, &lwip_config, MYNEWT_VAL(NUM_FRAMES), MYNEWT_VAL(BUFFER_SIZE));
     dw1000_netif_config(inst, &inst->lwip->lwip_netif, &my_ip_addr, RX_STATUS);
 	lwip_init();
