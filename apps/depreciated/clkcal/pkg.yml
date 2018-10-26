@@ -17,7 +17,7 @@
 # under the License.
 #
 
-pkg.name: apps/clkcal
+pkg.name: apps/depreciated/clkcal
 pkg.type: app
 pkg.description: "clkcal example"
 pkg.author: "Paul Kettle <paul.kettle@decawave.com>"
@@ -47,4 +47,3 @@ pkg.cflags:
     
 pkg.lflags:
     - "-lm"
-    

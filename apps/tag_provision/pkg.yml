@@ -33,9 +33,11 @@ pkg.deps:
     - "@apache-mynewt-core/sys/shell"
     - "@mynewt-dw1000-core/hw/drivers/dw1000"
     - "@apache-mynewt-core/encoding/json"
-    - "@mynewt-dw1000-core/net/ip/lwip_base"
-    - "@mynewt-dw1000-core/lib/pan"
+    - "@mynewt-dw1000-core/lib/provision"
+    - "@mynewt-dw1000-core/lib/rng"
 
+pkg.deps.PAN_ENABLED:
+    - "@mynewt-dw1000-core/lib/pan"
 pkg.cflags:
     - "-std=gnu99"
     - "-fms-extensions"

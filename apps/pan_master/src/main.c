@@ -35,38 +35,18 @@
 #include <dw1000/dw1000_hal.h>
 #include <dw1000/dw1000_phy.h>
 #include <dw1000/dw1000_mac.h>
-#include <dw1000/dw1000_rng.h>
 #include <dw1000/dw1000_ftypes.h>
-#include <pan/dw1000_pan.h>
 
-#if MYNEWT_VAL(DW1000_CCP_ENABLED)
-#include <dw1000/dw1000_ccp.h>
+#if MYNEWT_VAL(RNG_ENABLED)
+#include <rng/rng.h>
+#endif
+#if MYNEWT_VAL(PAN_ENABLED)
+#include <pan/pan.h>
+#endif
+#if MYNEWT_VAL(CCP_ENABLED)
+#include <ccp/ccp.h>
 #endif
 
-static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x0C00,         // Send Time delay in usec.
-    .rx_timeout_period = 0x0800         // Receive response timeout in usec.
-};
-
-static dw1000_pan_config_t pan_config = {
-    .tx_holdoff_delay = 0x0C00,         // Send Time delay in usec.
-    .rx_timeout_period = 0x2000         // Receive response timeout in usec.
-};
-
-static twr_frame_t twr[] = {
-    [0] = {
-        .fctrl = 0x8841,                // frame control (0x8841 to indicate a data frame using 16-bit addressing).
-        .PANID = 0xDECA,                // PAN ID (0xDECA)
-        .code = DWT_TWR_INVALID
-    },
-    [1] = {
-        .fctrl = 0x8841,                // frame control (0x8841 to indicate a data frame using 16-bit addressing).
-        .PANID = 0xDECA,                // PAN ID (0xDECA)
-        .code = DWT_TWR_INVALID,
-    }
-};
-
-#if 1
 #define PAN_SIZE 16
 static uint16_t g_device_idx = 0;
 typedef struct _pan_db {
@@ -134,7 +114,6 @@ pan_master(struct os_event * ev){
     dw1000_set_rx_timeout(inst, 0);
     pan->status.start_tx_error = dw1000_start_tx(inst).start_tx_error;
 }
-#endif
 
 int main(int argc, char **argv){
     int rc;
@@ -146,19 +125,6 @@ int main(int argc, char **argv){
     
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
 
-    inst->PANID = 0xDECA;
-    inst->my_short_address = MYNEWT_VAL(DEVICE_ID); 
-    inst->my_long_address = ((uint64_t) inst->device_id << 32) + inst->partID;
-    
-    dw1000_set_panid(inst,inst->PANID);
-    dw1000_mac_init(inst, NULL);
-    dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
-    dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));  
-#if MYNEWT_VAL(DW1000_CCP_ENABLED)
-    dw1000_ccp_init(inst, 2, inst->my_long_address);
-    dw1000_ccp_start(inst);
-#endif
-    dw1000_pan_init(inst, &pan_config);  
     dw1000_pan_set_postprocess(inst, pan_master);
     dw1000_set_rx_timeout(inst, 0);
     dw1000_start_rx(inst);  
@@ -170,4 +136,3 @@ int main(int argc, char **argv){
     assert(0);
     return rc;
 }
-
