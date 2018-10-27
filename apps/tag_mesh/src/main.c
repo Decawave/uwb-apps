@@ -46,6 +46,9 @@
 #if MYNEWT_VAL(CCP_ENABLED)
 #include <ccp/ccp.h>
 #endif
+#if MYNEWT_VAL(WCS_ENABLED)
+#include <wcs/wcs.h>
+#endif
 #if MYNEWT_VAL(DW1000_LWIP)
 #include <lwip/lwip.h>
 #endif
@@ -96,16 +99,16 @@ slot_cb(struct os_event *ev){
 
     hal_gpio_toggle(LED_BLINK_PIN);  
     
-#if MYNEWT_VAL(CLOCK_CALIBRATION_ENABLED)
-    clkcal_instance_t * clk = ccp->clkcal;
-    uint64_t dx_time = (ccp->epoch + (uint64_t) roundf(clk->skew * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
+#if MYNEWT_VAL(WCS_ENABLED)
+    wcs_instance_t * wcs = ccp->wcs;
+    uint64_t dx_time = (ccp->epoch + (uint64_t) round((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
 #else
     uint64_t dx_time = (ccp->epoch + (uint64_t) (idx * ((uint64_t)tdma->period << 16)/tdma->nslots));
 #endif
-    dx_time = dx_time & 0xFFFFFFFE00UL;
-
+    dx_time = dx_time & 0xFFFFFFFFFE00UL;
+  
 #ifdef TICTOC
-    uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
+   uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
 #endif
     if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_SS_TWR).start_tx_error){
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
@@ -113,7 +116,7 @@ slot_cb(struct os_event *ev){
     }else{
 #ifdef TICTOC
         uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
-        printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %lu}\n",toc,toc-tic - MYNEWT_VAL(OS_LATENCY));
+        printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %ld}\n",toc, (toc - tic) - MYNEWT_VAL(OS_LATENCY));
 #endif
     }
 }
@@ -187,17 +190,19 @@ slot_complete_cb(struct os_event * ev){
     dw1000_rng_instance_t * rng = inst->rng;
     
     twr_frame_t * frame = rng->frames[(rng->idx)%rng->nframes];
+    float skew = dw1000_calc_clock_offset_ratio(inst, frame->carrier_integrator);
     
     if (frame->code == DWT_SS_TWR_FINAL) {
         float time_of_flight = (float) dw1000_rng_twr_to_tof(rng);
         float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
         printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": \"%lX\","
-                " \"rec_tra\": \"%lX\"}\n",
+                " \"rec_tra\": \"%lX\", \"skew\": %lu}\n",
                 os_cputime_ticks_to_usecs(os_cputime_get32()),
                 *(uint32_t *)(&time_of_flight), 
                 *(uint32_t *)(&range),
                 (frame->response_timestamp - frame->request_timestamp),
-                (frame->transmission_timestamp - frame->reception_timestamp)
+                (frame->transmission_timestamp - frame->reception_timestamp),
+                *(uint32_t *)(&skew)
         );
         frame->code = DWT_SS_TWR_END;
     }
