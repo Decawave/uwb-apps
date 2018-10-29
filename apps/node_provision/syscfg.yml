@@ -6,8 +6,7 @@ syscfg.vals:
     DW1000_DEVICE_0: 1
     SHELL_TASK: 0
     PROVISION_ENABLED: 1
-    PAN_ENABLED: 1
-    CCP_ENABLED: 0
+    INCLUDE_PAN_LIB: 0
 
 syscfg.defs:
     SLOT_ID:
@@ -23,3 +22,6 @@ syscfg.defs:
     PANID:
         description: PANID
         value: ((uint16_t){0xDECA})
+    INCLUDE_PAN_LIB:
+        description: Enable to add the pan library to the app.
+        value: 1
