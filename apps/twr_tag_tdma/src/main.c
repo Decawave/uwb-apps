@@ -208,13 +208,14 @@ slot_complete_cb(struct os_event * ev){
         float time_of_flight = dw1000_rng_twr_to_tof(rng);
         float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
         printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"azimuth\": %lu,\"res_req\":\"%lX\","
-                " \"rec_tra\": \"%lX\"}\n",
+                " \"rec_tra\": \"%lX\", \"skew\": %lu}\n",
                 os_cputime_ticks_to_usecs(os_cputime_get32()), 
                 *(uint32_t *)(&time_of_flight), 
                 *(uint32_t *)(&range),
                 *(uint32_t *)(&frame->spherical.azimuth),
                 (frame->response_timestamp - frame->request_timestamp),
-                (frame->transmission_timestamp - frame->reception_timestamp)
+                (frame->transmission_timestamp - frame->reception_timestamp),
+                *(uint32_t *)(&skew)
         );
         frame->code = DWT_DS_TWR_END;
     } 
@@ -222,13 +223,14 @@ slot_complete_cb(struct os_event * ev){
     else if (frame->code == DWT_DS_TWR_EXT_FINAL) {
         float time_of_flight = dw1000_rng_twr_to_tof(rng);
         printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"azimuth\": %lu,\"res_req\":\"%lX\","
-                " \"rec_tra\": \"%lX\"}\n",
+                " \"rec_tra\": \"%lX\" \"skew\": %lu}\n",
                 os_cputime_ticks_to_usecs(os_cputime_get32()), 
                 *(uint32_t *)(&time_of_flight), 
                 *(uint32_t *)(&frame->spherical.range),
                 *(uint32_t *)(&frame->spherical.azimuth),
                 (frame->response_timestamp - frame->request_timestamp),
-                (frame->transmission_timestamp - frame->reception_timestamp)
+                (frame->transmission_timestamp - frame->reception_timestamp),
+                *(uint32_t *)(&skew)
         );
         frame->code = DWT_DS_TWR_END;
     } 
@@ -288,16 +290,17 @@ int main(int argc, char **argv){
 #if MYNEWT_VAL(CCP_ENABLED)
     dw1000_ccp_start(inst, CCP_ROLE_SLAVE);
 #endif
-
-    printf("device_id = 0x%lX\n",inst->device_id);
-    printf("PANID = 0x%X\n",inst->PANID);
-    printf("DeviceID = 0x%X\n",inst->my_short_address);
-    printf("partID = 0x%lX\n",inst->partID);
-    printf("lotID = 0x%lX\n",inst->lotID);
-    printf("xtal_trim = 0x%X\n",inst->xtal_trim);  
-    printf("frame_duration = %d usec\n",dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t))); 
-    printf("SHR_duration = %d usec\n",dw1000_phy_SHR_duration(&inst->attrib)); 
-    printf("holdoff = %d usec\n",(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst->rng->config.tx_holdoff_delay))); 
+    uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
+    printf("{\"utime\": %lu,\"exce\":\"%s\"}\n",utime,__FILE__); 
+    printf("{\"utime\": %lu,\"msg\": \"device_id = 0x%lX\"}\n",utime,inst->device_id);
+    printf("{\"utime\": %lu,\"msg\": \"PANID = 0x%X\"}\n",utime,inst->PANID);
+    printf("{\"utime\": %lu,\"msg\": \"DeviceID = 0x%X\"}\n",utime,inst->my_short_address);
+    printf("{\"utime\": %lu,\"msg\": \"partID = 0x%lX\"}\n",utime,inst->partID);
+    printf("{\"utime\": %lu,\"msg\": \"lotID = 0x%lX\"}\n",utime,inst->lotID);
+    printf("{\"utime\": %lu,\"msg\": \"xtal_trim = 0x%X\"}\n",utime,inst->xtal_trim);  
+    printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime,dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t))); 
+    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,dw1000_phy_SHR_duration(&inst->attrib)); 
+    printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst->rng->config.tx_holdoff_delay))); 
 
    for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
         g_slot[i] = i;

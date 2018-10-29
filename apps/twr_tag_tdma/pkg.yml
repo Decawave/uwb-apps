@@ -24,7 +24,6 @@ pkg.author: "Paul Kettle <paul.kettle@decawave.com>"
 pkg.homepage: "http://www.decawave.com/"
 pkg.keywords:
   - dw1000
-  - superres
 
 pkg.deps:
     - "@apache-mynewt-core/kernel/os"
