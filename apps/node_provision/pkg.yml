@@ -19,7 +19,7 @@
 
 pkg.name: apps/node_provision
 pkg.type: app
-pkg.description: "Basic TWR node example"
+pkg.description: "Basic Provision example"
 pkg.author: "Paul Kettle <paul.kettle@decawave.com>"
 pkg.homepage: "http://www.decawave.com/"
 pkg.keywords:
@@ -36,7 +36,7 @@ pkg.deps:
     - "@mynewt-dw1000-core/lib/provision"
     - "@mynewt-dw1000-core/lib/rng"
 
-pkg.deps.PAN_ENABLED:
+pkg.deps.INCLUDE_PAN_LIB:
     - "@mynewt-dw1000-core/lib/pan"
 
 pkg.cflags:
@@ -45,5 +45,3 @@ pkg.cflags:
 
 pkg.lflags:
     - "-lm"
-
-
