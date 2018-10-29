@@ -26,19 +26,6 @@ The node_mesh and tag_mesh are simple examples that showcase the TDMA features a
 
 To run the below applications which are configured with UART, change the pins in hw/bsp/dwm1001/syscfg.yml
 
-## NOTE:This application works for below commits 
-```
- mynewt-dw1000-apps: commit id - 130f248017fa5400fcac569f43c8b68bf951abd5 
-
- mynewt-timescale-lib: commit id - f5ece2d26c5dca2b27bc808b4bc30f24b31ebb88
-
- apache-mynewt-core: commit id - f0ce13e45c51825c35963fb13f2562d5911ef1ed
-
- mynewt-dw1000-core: commit id - ba520df387fb54e5eb1d05cec1d310353cbf2d53
-
- apache-mynewt-nimble: commit id - a85b65d97ecd062d8ea88c1a151f649e35e47420
-```
-
 1. To erase the default flash image that shipped with the DWM1001 boards.
 
 ```no-highlight

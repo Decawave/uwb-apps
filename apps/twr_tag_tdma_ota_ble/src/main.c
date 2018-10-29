@@ -37,6 +37,7 @@
 #include <dw1000/dw1000_phy.h>
 #include <dw1000/dw1000_mac.h>
 #include <dw1000/dw1000_ftypes.h>
+
 #if MYNEWT_VAL(RNG_ENABLED)
 #include <rng/rng.h>
 #endif
@@ -65,9 +66,7 @@
 static uint16_t g_slot[MYNEWT_VAL(TDMA_NSLOTS)] = {0};
 static bool error_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs);
 static void slot_complete_cb(struct os_event * ev);
-
-void mesh_init(void);
-
+void prph_init(void);
 
 /*! 
  * @fn slot_cb(struct os_event * ev)
@@ -282,9 +281,9 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
     
-    mesh_init();
-    
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+
+    prph_init();
     
     dw1000_mac_interface_t cbs = {
         .id = DW1000_APP0,

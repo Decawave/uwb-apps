@@ -65,10 +65,9 @@
 #endif
 
 static void slot_complete_cb(struct os_event *ev);
-
+void prph_init(void);
 static uint16_t g_slot[MYNEWT_VAL(TDMA_NSLOTS)] = {0};
 
-void mesh_init(void);
 
 cir_t g_cir;
 
@@ -219,10 +218,9 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_BLINK_PIN, 1);
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
-    
-    mesh_init();
-    
+
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+    prph_init();
     dw1000_mac_interface_t cbs = (dw1000_mac_interface_t){
         .id =  DW1000_APP0,
         .complete_cb = complete_cb
