@@ -40,7 +40,6 @@ newt run tag 0
 
 ```
 **NOTE:** The value of NRNG_FRAMES must be atleast NRNG_NODES*2
-**NOTE:** To test twr_ds or twr_ds_ext change the package accordingly in the pkg.yml
 
 The number of nodes to range with can be configured by setting the **N_NODES** on tag app during build time,
    (ex: for 3 nodes, use this command while building tag app **newt target amend tag syscfg=NRNG_NODES=3** )
