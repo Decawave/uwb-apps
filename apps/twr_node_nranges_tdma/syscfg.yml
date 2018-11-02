@@ -11,11 +11,9 @@ syscfg.vals:
     TDMA_NSLOTS: 10
     NRNG_DEVICE_TYPE: 1
     HARDFLOAT: 1
+    DEVICE_ID: ((uint16_t){0x2222})
+
 syscfg.defs:
-    DEVICE_ID:
-        description: >
-            Device ID
-        value: ((uint16_t){0x2222})
     UUID_CCP_MASTER:
         description: >
             Clock Master UUID
@@ -24,5 +22,3 @@ syscfg.defs:
         description: >
             SLOT_ID for the Device
         value: 1
-    PANID:
-        value: 0xDECA

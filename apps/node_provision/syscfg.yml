@@ -13,15 +13,9 @@ syscfg.defs:
         value: 0
     DEVICE_TYPE:
         value: 1
-    DEVICE_ID:
-        description: Device ID
-        value: ((uint16_t){0x1234})
     UUID_CCP_MASTER:
         description: Clock Master UUID
         value: ((uint64_t){0x8000})
-    PANID:
-        description: PANID
-        value: ((uint16_t){0xDECA})
     INCLUDE_PAN_LIB:
         description: Enable to add the pan library to the app.
         value: 1

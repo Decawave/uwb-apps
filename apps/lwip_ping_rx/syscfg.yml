@@ -5,15 +5,9 @@ syscfg.vals:
     DW1000_DEVICE_0: 1
     RNG_ENABLED: 0
     LWIP_ENABLED: 1
+    DEVICE_ID: ((uint16_t){0x4321})
 
 syscfg.defs:
-    DEVICE_ID:
-        description: Device ID
-        value: ((uint16_t){0x4321})  
-    PANID:
-        description: PANID
-        value: ((uint16_t){0xDECA})         
-
     DEV_IP6_ADDR_1:
         value: 0x5040302
     DEV_IP6_ADDR_2:
