@@ -91,7 +91,7 @@ slot_timer_cb(struct os_event *ev){
 #endif
     dx_time = dx_time & 0xFFFFFFFFFE00UL;
     uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
-    if(dw1000_nrng_request_delay_start(inst, 0xffff, dx_time, DWT_SS_TWR_NRNG, MYNEWT_VAL(NODE_START_SLOT_ID), MYNEWT_VAL(NODE_END_SLOT_ID)).start_tx_error){
+    if(dw1000_nrng_request_delay_start(inst, 0xffff, dx_time, DWT_DS_TWR_NRNG, MYNEWT_VAL(NODE_START_SLOT_ID), MYNEWT_VAL(NODE_END_SLOT_ID)).start_tx_error){
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
         printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\"}\n",utime,idx);
     }
@@ -111,7 +111,6 @@ slot_timer_cb(struct os_event *ev){
         }else if(prev_frame->code == DWT_SS_TWR_NRNG_FINAL){
             float range = dw1000_rng_tof_to_meters(dw1000_nrng_twr_to_tof_frames(inst, prev_frame, prev_frame));
             printf("  src_addr= 0x%X  dst_addr= 0x%X  range= %lu\n",prev_frame->src_address,prev_frame->dst_address, (uint32_t)(range*1000));
-            printf("Trans = %lu, Recp = %lu, Resp = %lu, Req = %lu \n",prev_frame->transmission_timestamp, prev_frame->reception_timestamp, prev_frame->response_timestamp, prev_frame->request_timestamp);
             prev_frame->code = DWT_DS_TWR_NRNG_END;
         }
     }

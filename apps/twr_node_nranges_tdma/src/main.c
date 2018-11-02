@@ -157,7 +157,6 @@ slot_timer_cb(struct os_event * ev){
     uint16_t idx = slot->idx;
 
 #if MYNEWT_VAL(WCS_ENABLED)
-    printf("wcs \n");
     wcs_instance_t * wcs = ccp->wcs;
     uint64_t dx_time = (ccp->epoch + (uint64_t) roundf((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
 #else

@@ -14,12 +14,9 @@ syscfg.vals:
     NRNG_NFRAMES: 14
     #Device_type (0 -> tag, 1 -> node)
     NRNG_DEVICE_TYPE: 0
+    DEVICE_ID: ((uint16_t){0xAAAA})
     
 syscfg.defs:
-    DEVICE_ID:
-        description: >
-            Device ID
-        value: ((uint16_t){0xAAAA})
     UUID_CCP_MASTER:
         description: >
             Clock Master UUID
@@ -40,7 +37,4 @@ syscfg.defs:
         description: >
             Slot ID till which the nodes should respond
         value: 7
-    PANID:
-        description: PANID
-        value: ((uint16_t){0xDECA})
     

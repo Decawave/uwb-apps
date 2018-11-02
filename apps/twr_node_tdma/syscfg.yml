@@ -8,17 +8,10 @@ syscfg.vals:
     FS_XTALT_AUTOTUNE_ENABLED: 0
     DW1000_BIAS_CORRECTION_ENABLED: 0
     TDMA_NSLOTS: 128
+    DEVICE_ID: ((uint16_t){0x4321})
  
 syscfg.defs:
-    DEVICE_ID:
-        description: >
-            Device ID
-        value: ((uint16_t){0x4321}) 
     UUID_CCP_MASTER:
         description: >
             Clock Master UUID
         value: ((uint64_t){0x8000})  
-    PANID:
-        description: >
-           PANID
-        value: ((uint16_t){0xDECA}) 

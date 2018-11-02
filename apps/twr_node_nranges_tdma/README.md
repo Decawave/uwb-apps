@@ -41,7 +41,6 @@ newt run tag 0
 
 ```
 **NOTE:** The NRNG_NFRAMES must be atleast NRNG_NNODES*2
-**NOTE:** To test the twr_ss or twr_ds_ext change the library accordingly in the pkg.yml and change the code inside twr_tag_nranges_tdma/src/main.c
 
 The number of nodes to range with can be configured by setting the **N_NODES** on tag app during build time,
    (ex: for 3 nodes, use this command while building tag app **newt target amend tag syscfg=N_NODES=3** )

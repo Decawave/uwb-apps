@@ -10,14 +10,11 @@ syscfg.vals:
     DW1000_PAN: 0
     DW1000_RANGE: 1
     DW1000_LWIP: 1
+    DEVICE_ID: ((uint16_t){0x5001})
 
 syscfg.defs:
     DW1000_LWIP_P2P:
         value: 1
-    DEVICE_ID:
-        description: >
-            Device ID
-        value: ((uint16_t){0x5001})
     UUID_CCP_MASTER:
         description: >
             Clock Master UUID

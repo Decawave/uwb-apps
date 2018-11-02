@@ -39,10 +39,6 @@ syscfg.defs:
     PAYLOAD_STRING:
         value: 'Lucky'
 
-    DEVICE_ID:
-        description: >
-            Device ID
-        value: ((uint16_t){0x1234})
     UUID_CCP_MASTER:
         description: >
             Clock Master UUID
