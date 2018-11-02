@@ -5,18 +5,12 @@ syscfg.vals:
     DW1000_DEVICE_0: 1
     PAN_ENABLED: 1
     PROVISION_ENABLED: 0
+    DEVICE_ID: ((uint16_t){0x8000})
 
 syscfg.defs:
-    DEVICE_ID:
-        description: >
-            Device ID
-        value: ((uint16_t){0x8000})
     UUID_CCP_MASTER:
         description: Clock Master UUID
         value: ((uint64_t){0x8000})
-    PANID:
-        description: PANID
-        value: ((uint16_t){0xDECA})
 
 
 
