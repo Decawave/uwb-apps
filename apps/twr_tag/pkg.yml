@@ -32,8 +32,9 @@ pkg.deps:
     - "@apache-mynewt-core/sys/console/full" 
     - "@apache-mynewt-core/sys/shell"
     - "@mynewt-dw1000-core/hw/drivers/dw1000"
+    - "@mynewt-dw1000-core/lib/twr_ss"
+    - "@mynewt-dw1000-core/lib/twr_ds"
 
-    
 pkg.cflags:
     - "-std=gnu99"
     - "-fms-extensions"

@@ -29,13 +29,17 @@ pkg.keywords:
 pkg.deps:
     - "@apache-mynewt-core/kernel/os"
     - "@apache-mynewt-core/hw/hal"
-    - "@apache-mynewt-core/sys/console/full" 
+    - "@apache-mynewt-core/sys/console/full"
     - "@apache-mynewt-core/sys/shell"
     - "@apache-mynewt-core/encoding/json"
     - "@mynewt-dw1000-core/hw/drivers/dw1000"
-    - "@mynewt-timescale-lib/lib/clkcal"
+    - "@mynewt-dw1000-core/lib/tdma"
+    - "@mynewt-dw1000-core/lib/ccp"
+    - "@mynewt-dw1000-core/lib/wcs"
+    - "@mynewt-dw1000-core/lib/nranges"
+    - "@mynewt-dw1000-core/lib/twr_ss_nrng"
     - "@mynewt-timescale-lib/lib/timescale"
-    
+
 pkg.cflags:
     - "-std=gnu99"
     - "-fms-extensions"

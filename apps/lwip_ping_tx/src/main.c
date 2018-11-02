@@ -35,10 +35,9 @@
 #include <dw1000/dw1000_hal.h>
 #include <dw1000/dw1000_phy.h>
 #include <dw1000/dw1000_mac.h>
-#include <dw1000/dw1000_rng.h>
 #include <dw1000/dw1000_ftypes.h>
-#include <lwip/dw1000_lwip.h>
 
+#include <lwip/lwip.h>
 #include <lwip/init.h>
 #include <lwip/ethip6.h>
 #include <netif/lowpan6.h>
@@ -92,7 +91,7 @@ static void timer_ev_cb(struct os_event *ev) {
     os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/SAMPLE_FREQ);
 
 	struct ping_payload *ping_pl = (struct ping_payload*)payload;
-	ping_pl->src_addr = MYNEWT_VAL(SHORT_ADDRESS);
+	ping_pl->src_addr = MYNEWT_VAL(DEVICE_ID);
 	ping_pl->dst_addr = 0x4321;
 	ping_pl->ping_id = PING_ID;
 	ping_pl->seq_no  = seq_no++;
@@ -134,22 +133,24 @@ static void init_timer(dw1000_dev_instance_t * inst) {
 int main(int argc, char **argv){
 	int rc;
 
-	dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-	
 	sysinit();
+    hal_gpio_init_out(LED_BLINK_PIN, 1);
 
-	inst->PANID = MYNEWT_VAL(DEVICE_PAN_ID);
-	inst->my_short_address = MYNEWT_VAL(SHORT_ADDRESS);
+	dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+	inst->PANID = MYNEWT_VAL(PANID);
+	inst->my_short_address = MYNEWT_VAL(DEVICE_ID);
+	inst->fctrl_array[0] = 'L';
+	inst->fctrl_array[1] = 'W';
 
 	dw1000_set_panid(inst,inst->PANID);
-	dw1000_low_level_init(inst, NULL, NULL);
+
 	dw1000_lwip_init(inst, &lwip_config, MYNEWT_VAL(NUM_FRAMES), MYNEWT_VAL(BUFFER_SIZE));
     dw1000_netif_config(inst, &inst->lwip->lwip_netif, &my_ip_addr, RX_STATUS);
 	lwip_init();
     lowpan6_if_init(&inst->lwip->lwip_netif);
 
     inst->lwip->lwip_netif.flags |= NETIF_FLAG_UP | NETIF_FLAG_LINK_UP;
-	lowpan6_set_pan_id(MYNEWT_VAL(DEVICE_PAN_ID));
+	lowpan6_set_pan_id(MYNEWT_VAL(PANID));
 
     dw1000_pcb_init(inst);
 

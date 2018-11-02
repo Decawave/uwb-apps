@@ -35,32 +35,20 @@
 #include <dw1000/dw1000_hal.h>
 #include <dw1000/dw1000_phy.h>
 #include <dw1000/dw1000_mac.h>
-#include <dw1000/dw1000_rng.h>
 #include <dw1000/dw1000_ftypes.h>
 
-#if MYNEWT_VAL(DW1000_PAN)
-#include <pan/dw1000_provision.h>
-#include <pan/dw1000_pan.h>
+#if MYNEWT_VAL(RNG_ENABLED)
+#include <rng/rng.h>
 #endif
-
-#define NUM_FRAMES 2
-#define NUM_NODES 32
-static twr_frame_t twr[] = {
-    [0] = {
-        .fctrl = 0x8841,                // frame control (0x8841 to indicate a data frame using 16-bit addressing).
-        .PANID = 0xDECA,                 // PAN ID (0xDECA)
-        .code = DWT_TWR_INVALID
-    },
-    [1] = {
-        .fctrl = 0x8841,                // frame control (0x8841 to indicate a data frame using 16-bit addressing).
-        .PANID = 0xDECA,                 // PAN ID (0xDECA)
-        .code = DWT_TWR_INVALID,
-    }
-};
-static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x0800,         // Send Time delay in usec.
-    .rx_timeout_period = 0xC000         // Receive response timeout in usec.
-};
+#if MYNEWT_VAL(CCP_ENABLED)
+#include <ccp/ccp.h>
+#endif
+#if MYNEWT_VAL(PAN_ENABLED)
+#include <pan/pan.h>
+#endif
+#if MYNEWT_VAL(PROVISION_ENABLED)
+#include <provision/provision.h>
+#endif
 
 static struct os_callout blinky_callout;
 
@@ -87,8 +75,6 @@ static void init_timer(dw1000_dev_instance_t* inst) {
 
 int main(int argc, char **argv){
     int rc;
-    dw1000_provision_config_t config;
-
     sysinit();
     hal_gpio_init_out(LED_BLINK_PIN, 1);
     hal_gpio_init_out(LED_1, 1);
@@ -96,25 +82,19 @@ int main(int argc, char **argv){
 
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
 
-    inst->PANID =  MYNEWT_VAL(DEVICE_PAN_ID);
-    inst->my_short_address =  MYNEWT_VAL(DEVICE_ID);
+
     inst->slot_id = MYNEWT_VAL(SLOT_ID);
     inst->dev_type = MYNEWT_VAL(DEVICE_TYPE);
 
-    config.tx_holdoff_delay = rng_config.tx_holdoff_delay;
-    config.rx_timeout_period = rng_config.rx_timeout_period;
-    config.period = MYNEWT_VAL(PROVISION_PERIOD)*1e-3;
-    config.postprocess = false;
-    config.max_node_count = NUM_NODES;
-
-    dw1000_set_panid(inst,inst->PANID);
-    dw1000_mac_init(inst, NULL);
-    dw1000_rng_init(inst, &rng_config, NUM_FRAMES);
-    dw1000_rng_set_frames(inst, twr, NUM_FRAMES);
-
+#if MYNEWT_VAL(PAN_ENABLED)
+    dw1000_pan_start(inst, DWT_NONBLOCKING); // Don't block on the eventq_dflt
+    while(inst->pan->status.valid != true){
+        os_eventq_run(os_eventq_dflt_get());
+        os_cputime_delay_usecs(5000);
+    }
+#endif
     printf("\nNODE:%d_______Address:0x%04X\n",inst->slot_id,inst->my_short_address);
 
-    dw1000_provision_init(inst,config);
     dw1000_set_rx_timeout(inst, 0);
     dw1000_start_rx(inst);
     init_timer(inst);

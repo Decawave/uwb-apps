@@ -5,13 +5,23 @@ syscfg.vals:
     # Enable DW1000
     DW1000_DEVICE_0: 1
     SHELL_TASK: 0
-    DW1000_PROVISION: 1
+    PROVISION_ENABLED: 1
+    INCLUDE_PAN_LIB: 0
+
 syscfg.defs:
     SLOT_ID:
         value: 0
     DEVICE_TYPE:
         value: 1
     DEVICE_ID:
-        value: 0x1234
-    DEVICE_PAN_ID:
-        value: 0xDECA
+        description: Device ID
+        value: ((uint16_t){0x1234})
+    UUID_CCP_MASTER:
+        description: Clock Master UUID
+        value: ((uint64_t){0x8000})
+    PANID:
+        description: PANID
+        value: ((uint16_t){0xDECA})
+    INCLUDE_PAN_LIB:
+        description: Enable to add the pan library to the app.
+        value: 1

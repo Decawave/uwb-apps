@@ -3,17 +3,20 @@ syscfg.vals:
     CONSOLE_UART: 0
     CONSOLE_RTT: 1
     DW1000_DEVICE_0: 1
-    DW1000_SS_TWR_ENABLED: 0
-    DW1000_DS_TWR_ENABLED: 1
-    DW1000_DS_TWR_EXT_ENABLED: 0
-    DW1000_PAN: 1
-    DW1000_CLOCK_CALIBRATION: 0
+    PAN_ENABLED: 1
+    PROVISION_ENABLED: 0
 
 syscfg.defs:
     DEVICE_ID:
         description: >
             Device ID
         value: ((uint16_t){0x8000})
+    UUID_CCP_MASTER:
+        description: Clock Master UUID
+        value: ((uint64_t){0x8000})
+    PANID:
+        description: PANID
+        value: ((uint16_t){0xDECA})
 
-        
-           
+
+

@@ -3,13 +3,16 @@ syscfg.vals:
     CONSOLE_UART: 0
     CONSOLE_RTT: 1
     DW1000_DEVICE_0: 1
-    DW1000_LWIP: 1
+    RNG_ENABLED: 0
+    LWIP_ENABLED: 1
 
 syscfg.defs:
-    SHORT_ADDRESS:
-        value: 0x4321
-    DEVICE_PAN_ID:
-        value: 0xDECA
+    DEVICE_ID:
+        description: Device ID
+        value: ((uint16_t){0x4321})  
+    PANID:
+        description: PANID
+        value: ((uint16_t){0xDECA})         
 
     DEV_IP6_ADDR_1:
         value: 0x5040302

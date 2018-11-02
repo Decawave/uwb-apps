@@ -28,47 +28,27 @@
 #include "bsp/bsp.h"
 #include "hal/hal_gpio.h"
 #include "hal/hal_bsp.h"
-#ifdef ARCH_sim
-#include "mcu/mcu_sim.h"
-#endif
+
 
 #include <dw1000/dw1000_dev.h>
 #include <dw1000/dw1000_hal.h>
 #include <dw1000/dw1000_phy.h>
 #include <dw1000/dw1000_mac.h>
-#include <dw1000/dw1000_rng.h>
 #include <dw1000/dw1000_ftypes.h>
 
 #if MYNEWT_VAL(DW1000_LWIP)
 #include <dw1000/dw1000_lwip.h>
 #endif
+#if MYNEWT_VAL(RNG_ENABLED)
+#include <rng/rng.h>
+#endif
 
 #include <json_encode.h>
-
-
-static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x0320,         // Send Time delay in usec.
-    .rx_timeout_period = 0x10           // timeout delta usec
-};
-
-static twr_frame_t twr[] = {
-    [0] = {
-        .fctrl = 0x8841,                // frame control (0x8841 to indicate a data frame using 16-bit addressing).
-        .PANID = 0xDECA,                // PAN ID (0xDECA)
-        .code = DWT_TWR_INVALID
-    },
-    [1] = {
-        .fctrl = 0x8841,                // frame control (0x8841 to indicate a data frame using 16-bit addressing).
-        .PANID = 0xDECA,                // PAN ID (0xDECA)
-        .code = DWT_TWR_INVALID
-    }
-};
-
 
 /* The timer callout */
 static struct os_callout blinky_callout;
 
-#define SAMPLE_FREQ 50.0
+#define SAMPLE_FREQ 10.0
 static void timer_ev_cb(struct os_event *ev) {
     assert(ev != NULL);
     assert(ev->ev_arg != NULL);
@@ -78,11 +58,10 @@ static void timer_ev_cb(struct os_event *ev) {
      
     dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *)ev->ev_arg;
     dw1000_rng_instance_t * rng = inst->rng; 
-    rng->idx = 0xFFFF;
+
     dw1000_rng_request(inst, 0x4321, DWT_DS_TWR);
 
     twr_frame_t * frame = rng->frames[(rng->idx)%rng->nframes];
-    
     if (inst->status.start_rx_error)
         printf("{\"utime\": %lu,\"timer_ev_cb\": \"start_rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
     if (inst->status.start_tx_error)
@@ -141,15 +120,6 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_3, 1);
 
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    
-    inst->PANID = 0xDECA;
-    inst->my_short_address = MYNEWT_VAL(DEVICE_ID);
-
-    dw1000_set_panid(inst,inst->PANID);
-    dw1000_mac_init(inst, NULL);
-    dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
-    dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));
-
     init_timer(inst);
 
     while (1) {

@@ -29,7 +29,7 @@ newt target create tag
 newt target set tag app=apps/twr_tag_nranges_tdma
 newt target set tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target set tag build_profile=debug
-newt target amend tag syscfg=N_NODES=7
+newt target amend tag syscfg=NRNG_NNODES=7:NRNG_NFRAMES=14:NODE_START_SLOT_ID=1:NODE_END_SLOT_ID=7
 
 newt target amend tag syscfg=DEVICE_ID=0x1111:SLOT_ID=1
 newt run tag 0
@@ -39,17 +39,11 @@ newt target amend tag syscfg=DEVICE_ID=0x3333:SLOT_ID=3
 newt run tag 0
 
 ```
-### Building target for Clock master
-```no-highlight
-newt target create clock
-newt target set clock app=apps/clock_master
-newt target set clock bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target set clock build_profile=debug
-newt run clock 0
-```
+**NOTE:** The value of NRNG_FRAMES must be atleast NRNG_NODES*2
+**NOTE:** To test twr_ss or twr_ds_ext change the package accordingly in the pkg.yml and change the code in the twr_tag_nranges_tdma/src/main.c
 
-The number of nodes to range with can be configured by setting the **N_NODES** on tag app during build time,
-   (ex: for 3 nodes, use this command while building tag app **newt target amend tag syscfg=N_NODES=3** )
+The number of nodes to range with can be configured by setting the **NRNG_NNODES** on tag app during build time,
+   (ex: for 3 nodes, use this command while building tag app **newt target amend tag syscfg=NRNG_NNODES=3** )
 
 **NOTE:** To monitor the logs from the multiple tags in same PC, Do the following changes in the apps/twr_tag_tdma_nranges/syscfg.yml
 ```
@@ -59,3 +53,4 @@ The number of nodes to range with can be configured by setting the **N_NODES** o
 ```
   Rebuild the app and run again.
   Use Any serial Console app with 1000000 baudrate on PC to monitor the Logs.
+
