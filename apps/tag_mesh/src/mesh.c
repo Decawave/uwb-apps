@@ -39,10 +39,10 @@
 #define STANDARD_TEST_ID 0x00
 #define TEST_ID 0x01
 static int recent_test_id = STANDARD_TEST_ID;
+void mesh_init(void);
 
 #define FAULT_ARR_SIZE 2
 
-void mesh_init(void);
 static bool has_reg_fault = true;
 
 static struct bt_mesh_cfg_srv cfg_srv = {
@@ -137,7 +137,7 @@ fault_test(struct bt_mesh_model *model, uint8_t test_id, uint16_t company_id)
 
     recent_test_id = test_id;
     has_reg_fault = true;
-    bt_mesh_fault_update(model->elem);
+    bt_mesh_fault_update(bt_mesh_model_elem(model));
 
     return 0;
 }
@@ -406,6 +406,14 @@ blemesh_on_sync(void)
 #endif
 
     console_printf("Mesh initialized\n");
+
+    if (IS_ENABLED(CONFIG_SETTINGS)) {
+        settings_load();
+    }
+
+    if (bt_mesh_is_provisioned()) {
+        printk("Mesh network restored from flash\n");
+    }
 }
 
 void
@@ -413,8 +421,6 @@ mesh_init(void)
 {
 
     /* Initialize the NimBLE host configuration. */
-    log_register("ble_hs", &ble_hs_log, &log_console_handler, NULL,
-                 LOG_SYSLEVEL);
     ble_hs_cfg.reset_cb = blemesh_on_reset;
     ble_hs_cfg.sync_cb = blemesh_on_sync;
     ble_hs_cfg.store_status_cb = ble_store_util_status_rr;
