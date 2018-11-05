@@ -198,11 +198,11 @@ slot_complete_cb(struct os_event * ev){
         printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": \"%lX\","
                 " \"rec_tra\": \"%lX\", \"skew\": %lu}\n",
                 os_cputime_ticks_to_usecs(os_cputime_get32()),
-                *(uint32_t *)(&time_of_flight), 
-                *(uint32_t *)(&range),
+                (uint32_t )(time_of_flight), 
+                (uint32_t )(range),
                 (frame->response_timestamp - frame->request_timestamp),
                 (frame->transmission_timestamp - frame->reception_timestamp),
-                *(uint32_t *)(&skew)
+                (uint32_t )(&skew)
         );
         frame->code = DWT_SS_TWR_END;
     }
@@ -213,9 +213,9 @@ slot_complete_cb(struct os_event * ev){
         printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"azimuth\": %lu,\"res_req\":\"%lX\","
                 " \"rec_tra\": \"%lX\"}\n",
                 os_cputime_ticks_to_usecs(os_cputime_get32()), 
-                *(uint32_t *)(&time_of_flight), 
-                *(uint32_t *)(&range),
-                *(uint32_t *)(&frame->spherical.azimuth),
+                (uint32_t )(&time_of_flight), 
+                (uint32_t )(&range),
+                (uint32_t )(&frame->spherical.azimuth),
                 (frame->response_timestamp - frame->request_timestamp),
                 (frame->transmission_timestamp - frame->reception_timestamp)
         );
@@ -227,9 +227,9 @@ slot_complete_cb(struct os_event * ev){
         printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"azimuth\": %lu,\"res_req\":\"%lX\","
                 " \"rec_tra\": \"%lX\"}\n",
                 os_cputime_ticks_to_usecs(os_cputime_get32()), 
-                *(uint32_t *)(&time_of_flight), 
-                *(uint32_t *)(&frame->spherical.range),
-                *(uint32_t *)(&frame->spherical.azimuth),
+                (uint32_t )(&time_of_flight), 
+                (uint32_t )(&frame->spherical.range),
+                (uint32_t )(&frame->spherical.azimuth),
                 (frame->response_timestamp - frame->request_timestamp),
                 (frame->transmission_timestamp - frame->reception_timestamp)
         );
