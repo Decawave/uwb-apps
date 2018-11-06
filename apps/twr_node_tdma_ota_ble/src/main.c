@@ -220,8 +220,6 @@ slot_cb(struct os_event * ev){
     dw1000_rng_listen(inst, DWT_BLOCKING);
 }
 
-<<<<<<< HEAD
-=======
 /**
  * @fn uwb_config_update
  * 
@@ -239,7 +237,6 @@ struct uwbcfg_cbs uwb_cb = {
     .uc_update = uwb_config_updated
 };
 
->>>>>>> 9b632df384da8309b5b6ba9f4971852078d886f8
 
 int main(int argc, char **argv){
     int rc;
