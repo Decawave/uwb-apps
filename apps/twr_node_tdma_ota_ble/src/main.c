@@ -220,6 +220,7 @@ slot_cb(struct os_event * ev){
     dw1000_rng_listen(inst, DWT_BLOCKING);
 }
 
+#if 0
 /**
  * @fn uwb_config_update
  * 
@@ -236,6 +237,7 @@ uwb_config_updated()
 struct uwbcfg_cbs uwb_cb = {
     .uc_update = uwb_config_updated
 };
+#endif
 
 
 int main(int argc, char **argv){
@@ -246,10 +248,12 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
 
+#if 0
     /* Register callback for UWB configuration changes */
     uwbcfg_register(&uwb_cb);
     /* Load config from flash */
     conf_load();
+#endif
 
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     char name[32]={0};
