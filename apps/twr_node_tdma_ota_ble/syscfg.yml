@@ -1,13 +1,16 @@
 syscfg.vals:
     # Route console to RTT
-    CONSOLE_UART: 1
+    CONSOLE_UART: 0
     CONSOLE_UART_BAUD: '9600' 
     CONSOLE_UART_TX_BUF_SIZE: '1024'
-    CONSOLE_RTT: 0
+    CONSOLE_RTT: 1
     DW1000_DEVICE_0: 1
     FS_XTALT_AUTOTUNE_ENABLED: 0
     DW1000_BIAS_CORRECTION_ENABLED: 0
-    TDMA_NSLOTS: 3
+    DEVICE_ID: ((uint16_t){0x4321})
+    TDMA_NSLOTS: 16
+    STATS_NAMES: 1
+    STATS_CLI: 1
 
     # Disable central and observer roles.
     BLE_ROLE_BROADCASTER: 1
@@ -35,15 +38,9 @@ syscfg.vals:
 
     
 syscfg.defs:
-    DEVICE_ID:
-        description: Device ID
-        value: ((uint16_t){0x4321}) 
     UUID_CCP_MASTER:
         description: Clock Master UUID
         value: ((uint64_t){0x8000}) 
-    PANID:
-        description: PANID
-        value: ((uint16_t){0xDECA}) 
 
     BLEPRPH_LE_PHY_SUPPORT:
         description: >

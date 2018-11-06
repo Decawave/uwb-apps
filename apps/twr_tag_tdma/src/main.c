@@ -105,15 +105,19 @@ slot_cb(struct os_event *ev){
     dx_time = dx_time & 0xFFFFFFFFFE00UL;
   
 #ifdef TICTOC
-   uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
+    uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
 #endif
     if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_SS_TWR).start_tx_error){
-        uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
-        printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\",\"%s\":%d}\n",utime,idx,__FILE__, __LINE__); 
+        //uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
+        //printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\",\"%s\":%d}\n",utime,idx,__FILE__, __LINE__); 
     }else{
 #ifdef TICTOC
+        os_error_t err = os_sem_pend(&inst->rng->sem, OS_TIMEOUT_NEVER); // Wait for completion of transactions 
+        assert(err == OS_OK);
+        err = os_sem_release(&inst->rng->sem);
+        assert(err == OS_OK);
         uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
-        printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %ld}\n",toc, (toc - tic) - MYNEWT_VAL(OS_LATENCY));
+        printf("{\"utime\": %lu,\"dw1000_rng_request_delay_start_tic_toc\": %ld}\n",toc, (toc - tic));
 #endif
     }
 }
@@ -301,6 +305,26 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime,dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t))); 
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,dw1000_phy_SHR_duration(&inst->attrib)); 
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst->rng->config.tx_holdoff_delay))); 
+
+#ifdef TICTOC
+    twr_frame_t frame ={0};
+    {
+        uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
+        dw1000_write_tx(inst, &frame.array[0], 0, sizeof(ieee_rng_request_frame_t));
+        os_error_t err = os_sem_pend(&inst->spi_nb_sem, OS_TIMEOUT_NEVER);
+        assert(err == OS_OK);
+        err = os_sem_release(&inst->spi_nb_sem);
+        assert(err == OS_OK);
+        uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
+        printf("{\"utime\": %lu,\"msg\": \"dw1000_write_tx(sizeof(ieee_rng_request_frame_t)) = %ld usec\"}\n",toc, (toc - tic));
+    }
+    {
+        uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
+        dw1000_read_rx(inst, &frame.array[0], 0, sizeof(ieee_rng_response_frame_t));
+        uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
+        printf("{\"utime\": %lu,\"msg\": \"dw1000_read_rx(sizeof(ieee_rng_response_frame_t)) = %ld usec\"}\n",toc, (toc - tic));
+    }
+#endif
 
    for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
         g_slot[i] = i;

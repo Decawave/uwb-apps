@@ -66,7 +66,7 @@
 static uint16_t g_slot[MYNEWT_VAL(TDMA_NSLOTS)] = {0};
 static bool error_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs);
 static void slot_complete_cb(struct os_event * ev);
-void prph_init(void);
+void prph_init(char *);
 
 /*! 
  * @fn slot_cb(struct os_event * ev)
@@ -268,11 +268,6 @@ error_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
     return true;
 }
 
-
-
-
-
-
 int main(int argc, char **argv){
     int rc;
 
@@ -282,9 +277,9 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_3, 1);
     
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-
-    prph_init();
-    
+    char name[32]={0};
+    sprintf(name,"%X-%X",inst->PANID,inst->my_short_address);
+    prph_init(name);
     dw1000_mac_interface_t cbs = {
         .id = DW1000_APP0,
         .tx_error_cb = error_cb,
@@ -297,15 +292,17 @@ int main(int argc, char **argv){
     dw1000_ccp_start(inst, CCP_ROLE_SLAVE);
 #endif
 
-    printf("device_id = 0x%lX\n",inst->device_id);
-    printf("PANID = 0x%X\n",inst->PANID);
-    printf("DeviceID = 0x%X\n",inst->my_short_address);
-    printf("partID = 0x%lX\n",inst->partID);
-    printf("lotID = 0x%lX\n",inst->lotID);
-    printf("xtal_trim = 0x%X\n",inst->xtal_trim);  
-    printf("frame_duration = %d usec\n",dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t))); 
-    printf("SHR_duration = %d usec\n",dw1000_phy_SHR_duration(&inst->attrib)); 
-    printf("holdoff = %d usec\n",(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst->rng->config.tx_holdoff_delay))); 
+    uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
+    printf("{\"utime\": %lu,\"exce\":\"%s\"}\n",utime,__FILE__); 
+    printf("{\"utime\": %lu,\"msg\": \"device_id = 0x%lX\"}\n",utime,inst->device_id);
+    printf("{\"utime\": %lu,\"msg\": \"PANID = 0x%X\"}\n",utime,inst->PANID);
+    printf("{\"utime\": %lu,\"msg\": \"DeviceID = 0x%X\"}\n",utime,inst->my_short_address);
+    printf("{\"utime\": %lu,\"msg\": \"partID = 0x%lX\"}\n",utime,inst->partID);
+    printf("{\"utime\": %lu,\"msg\": \"lotID = 0x%lX\"}\n",utime,inst->lotID);
+    printf("{\"utime\": %lu,\"msg\": \"xtal_trim = 0x%X\"}\n",utime,inst->xtal_trim);  
+    printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime,dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t))); 
+    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,dw1000_phy_SHR_duration(&inst->attrib)); 
+    printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst->rng->config.tx_holdoff_delay))); 
 
    for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
         g_slot[i] = i;

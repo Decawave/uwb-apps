@@ -59,6 +59,7 @@
 #endif
 #include "json_encode.h"
 
+
 //#define DIAGMSG(s,u) printf(s,u)
 #ifndef DIAGMSG
 #define DIAGMSG(s,u)
@@ -123,7 +124,8 @@ static void slot_complete_cb(struct os_event *ev)
     hal_gpio_toggle(LED_BLINK_PIN);
     dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *)ev->ev_arg;
     dw1000_rng_instance_t * rng = inst->rng; 
-    twr_frame_t * frame = rng->frames[(rng->idx)%rng->nframes];
+    uint16_t idx = rng->idx;
+    twr_frame_t * frame = rng->frames[(idx)%rng->nframes];
 
     if (frame->code == DWT_DS_TWR_FINAL || frame->code == DWT_DS_TWR_EXT_FINAL) {
         float time_of_flight = dw1000_rng_twr_to_tof(rng);
@@ -203,11 +205,7 @@ slot_cb(struct os_event * ev){
     uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(ieee_rng_response_frame_t))                 
                             + inst->rng->config.tx_holdoff_delay;         // Remote side turn arroud time. 
     dw1000_set_rx_timeout(inst, timeout);
-
-    dw1000_set_on_error_continue(inst, true);
-    if(dw1000_start_rx(inst).start_rx_error){
-        printf("{\"utime\": %lu,\"msg\": \"main::slot_cb:start_rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
-    }    
+    dw1000_rng_listen(inst, DWT_BLOCKING);
 }
 
 int main(int argc, char **argv){
@@ -239,7 +237,7 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime,dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t))); 
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,dw1000_phy_SHR_duration(&inst->attrib)); 
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst->rng->config.tx_holdoff_delay))); 
-
+    
 
     for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
         g_slot[i] = i;
