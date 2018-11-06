@@ -40,6 +40,9 @@
 #include <dw1000/dw1000_mac.h>
 #include <dw1000/dw1000_ftypes.h>
 
+#include <config/config.h>
+#include "uwbcfg/uwbcfg.h"
+
 #if MYNEWT_VAL(RNG_ENABLED)
 #include <rng/rng.h>
 #endif
@@ -65,6 +68,7 @@
 #define DIAGMSG(s,u)
 #endif
 
+static bool dw1000_config_updated = false;
 static void slot_complete_cb(struct os_event *ev);
 void prph_init(char *);
 static uint16_t g_slot[MYNEWT_VAL(TDMA_NSLOTS)] = {0};
@@ -195,6 +199,12 @@ slot_cb(struct os_event * ev){
     dw1000_ccp_instance_t * ccp = inst->ccp;
     uint16_t idx = slot->idx;
 
+    if (dw1000_config_updated) {
+        dw1000_mac_init(inst, NULL);
+        dw1000_phy_config_txrf(inst, &inst->config.txrf);
+        dw1000_config_updated = false;
+    }
+
 #if MYNEWT_VAL(WCS_ENABLED)
     wcs_instance_t * wcs = ccp->wcs;
     uint64_t dx_time = (ccp->epoch + (uint64_t) roundf((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
@@ -210,6 +220,26 @@ slot_cb(struct os_event * ev){
     dw1000_rng_listen(inst, DWT_BLOCKING);
 }
 
+<<<<<<< HEAD
+=======
+/**
+ * @fn uwb_config_update
+ * 
+ * Called from the main event queue as a result of the uwbcfg packet
+ * having received a commit/load of new uwb configuration.
+ */
+int
+uwb_config_updated()
+{
+    dw1000_config_updated = true;
+    return 0;
+}
+
+struct uwbcfg_cbs uwb_cb = {
+    .uc_update = uwb_config_updated
+};
+
+>>>>>>> 9b632df384da8309b5b6ba9f4971852078d886f8
 
 int main(int argc, char **argv){
     int rc;
@@ -218,6 +248,11 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_BLINK_PIN, 1);
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
+
+    /* Register callback for UWB configuration changes */
+    uwbcfg_register(&uwb_cb);
+    /* Load config from flash */
+    conf_load();
 
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     char name[32]={0};

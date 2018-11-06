@@ -22,6 +22,8 @@ syscfg.vals:
     REBOOT_LOG_FCB: 1
     LOG_FCB: 1
     CONFIG_FCB: 1
+    SHELL_TASK: 1
+    CONFIG_CLI: 1
 
     # Enable newtmgr commands.
     STATS_NEWTMGR: 1
@@ -36,6 +38,7 @@ syscfg.vals:
     MSYS_1_BLOCK_COUNT: 22
     MSYS_1_BLOCK_SIZE: 110
 
+    DEVICE_ID: ((uint16_t){0x4321})
     
 syscfg.defs:
     UUID_CCP_MASTER:
