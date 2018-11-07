@@ -200,7 +200,7 @@ slot_cb(struct os_event * ev){
     uint16_t idx = slot->idx;
 
     if (dw1000_config_updated) {
-        dw1000_mac_init(inst, NULL);
+        dw1000_mac_config(inst, NULL);
         dw1000_phy_config_txrf(inst, &inst->config.txrf);
         dw1000_config_updated = false;
     }
