@@ -99,12 +99,15 @@ cir_t g_cir;
 /* The timer callout */
 
 static struct os_callout slot_callout;
+uint16_t g_idx_latest;
 
 static bool
 complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
     }
+    dw1000_rng_instance_t * rng = inst->rng; 
+    g_idx_latest = (rng->idx)%rng->nframes; // Store valid frame pointer
     os_callout_init(&slot_callout, os_eventq_dflt_get(), slot_complete_cb, inst);
     os_eventq_put(os_eventq_dflt_get(), &slot_callout.c_ev);
     return true;
@@ -131,11 +134,10 @@ static void slot_complete_cb(struct os_event *ev)
     hal_gpio_toggle(LED_BLINK_PIN);
     dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *)ev->ev_arg;
     dw1000_rng_instance_t * rng = inst->rng; 
-    uint16_t idx = rng->idx;
-    twr_frame_t * frame = rng->frames[(idx)%rng->nframes];
+    twr_frame_t * frame = rng->frames[(g_idx_latest)%rng->nframes];
 
-    if (frame->code == DWT_DS_TWR_FINAL || frame->code == DWT_DS_TWR_EXT_FINAL) {
-        float time_of_flight = dw1000_rng_twr_to_tof(rng);
+    if (frame->code == DWT_DS_TWR_T2 || frame->code ==  DWT_DS_TWR_FINAL || frame->code == DWT_DS_TWR_EXT_T2 || frame->code == DWT_DS_TWR_EXT_FINAL) {
+        float time_of_flight = dw1000_rng_twr_to_tof(rng, g_idx_latest);
         uint32_t utime =os_cputime_ticks_to_usecs(os_cputime_get32()); 
         float rssi = dw1000_get_rssi(inst);
 
@@ -152,8 +154,8 @@ static void slot_complete_cb(struct os_event *ev)
         //json_cir_encode(&g_cir, utime, "cir", CIR_SIZE);
         frame->code = DWT_DS_TWR_END;
     }    
-    else if (frame->code == DWT_SS_TWR_FINAL) {
-        float time_of_flight = dw1000_rng_twr_to_tof(rng);
+    else if (frame->code == DWT_SS_TWR_T1) {
+        float time_of_flight = dw1000_rng_twr_to_tof(rng, g_idx_latest);
         float range = dw1000_rng_tof_to_meters(time_of_flight);
         uint32_t utime =os_cputime_ticks_to_usecs(os_cputime_get32()); 
         float rssi = dw1000_get_rssi(inst);

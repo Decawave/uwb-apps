@@ -43,6 +43,7 @@ pkg.deps:
     - "@mynewt-dw1000-core/lib/ccp"
     - "@mynewt-dw1000-core/lib/wcs"
     - "@mynewt-timescale-lib/lib/timescale"
+    - "@mynewt-dw1000-core/lib/rng"
     - "@mynewt-dw1000-core/lib/twr_ss"
     - "@mynewt-dw1000-core/lib/twr_ds"
     - "@mynewt-dw1000-core/lib/twr_ds_ext"
