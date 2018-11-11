@@ -42,7 +42,10 @@
 #if MYNEWT_VAL(CCP_ENABLED)
 #include <ccp/ccp.h>
 #endif
+#if MYNEWT_VAL(NRNG_ENABLED)
+//#include <nrng/nrng.h>
 #include <nranges/nranges.h>
+#endif
 #if MYNEWT_VAL(TIMESCALE)
 #include <timescale/timescale.h> 
 #endif
@@ -94,8 +97,8 @@ static void nrange_complete_cb(struct os_event *ev) {
         uint32_t time_of_flight = (uint32_t) dw1000_nrng_twr_to_tof_frames(inst, previous_frame, frame);
         float range = dw1000_rng_tof_to_meters(dw1000_nrng_twr_to_tof_frames(inst, previous_frame, frame));
         float rssi = dw1000_get_rssi(inst);
-        //print_frame("1st=", previous_frame);
-        //print_frame("2nd=", frame);
+        print_frame("1st=", previous_frame);
+        print_frame("2nd=", frame);
         frame->code = DWT_DS_TWR_NRNG_END;
             printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": %lX,"
                    " \"rec_tra\": %lX, \"rssi\": %d}\n",
@@ -147,7 +150,7 @@ static bool complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * c
 
     
 static void 
-slot_timer_cb(struct os_event * ev){
+slot_cb(struct os_event * ev){
     assert(ev);
 
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
@@ -157,7 +160,6 @@ slot_timer_cb(struct os_event * ev){
     uint16_t idx = slot->idx;
 
 #if MYNEWT_VAL(WCS_ENABLED)
-    printf("wcs \n");
     wcs_instance_t * wcs = ccp->wcs;
     uint64_t dx_time = (ccp->epoch + (uint64_t) roundf((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
 #else
@@ -167,14 +169,12 @@ slot_timer_cb(struct os_event * ev){
 
     dw1000_set_delay_start(inst, dx_time);
     uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(nrng_request_frame_t))
-                            + inst->nrng->config.tx_holdoff_delay
-                            + inst->nrng->config.tx_guard_delay;         // Remote side turn arroud time. 
+                            + inst->nrng->config.tx_holdoff_delay     // Remote side turn arroud time. 
+                            + inst->nrng->config.tx_guard_delay;        
+                            
     dw1000_set_rx_timeout(inst, timeout);
-
-    dw1000_set_on_error_continue(inst, true);
-    if(dw1000_start_rx(inst).start_rx_error){
-         printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb:start_rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
-    }
+    dw1000_start_rx(inst);
+    //dw1000_nrng_listen(inst, DWT_BLOCKING);
 
 #ifdef VERBOSE
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
@@ -198,12 +198,19 @@ int main(int argc, char **argv){
     };
     dw1000_mac_append_interface(inst, &cbs);
 
-    printf("device_id = 0x%lX\n",inst->device_id);
-    printf("PANID = 0x%X\n",inst->PANID);
-    printf("DeviceID = 0x%X\n",inst->my_short_address);
-    printf("partID = 0x%lX\n",inst->partID);
-    printf("lotID = 0x%lX\n",inst->lotID);
-    printf("xtal_trim = 0x%X\n",inst->xtal_trim);
+    uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
+    printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 
+    printf("{\"utime\": %lu,\"msg\": \"device_id = 0x%lX\"}\n",utime,inst->device_id);
+    printf("{\"utime\": %lu,\"msg\": \"PANID = 0x%X\"}\n",utime,inst->PANID);
+    printf("{\"utime\": %lu,\"msg\": \"DeviceID = 0x%X\"}\n",utime,inst->my_short_address);
+    printf("{\"utime\": %lu,\"msg\": \"partID = 0x%lX\"}\n",utime,inst->partID);
+    printf("{\"utime\": %lu,\"msg\": \"lotID = 0x%lX\"}\n",utime,inst->lotID);
+    printf("{\"utime\": %lu,\"msg\": \"xtal_trim = 0x%X\"}\n",utime,inst->xtal_trim);  
+    printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime,dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t))); 
+    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,dw1000_phy_SHR_duration(&inst->attrib)); 
+    printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst->rng->config.tx_holdoff_delay))); 
+    
+
     inst->slot_id = MYNEWT_VAL(SLOT_ID);
 #if MYNEWT_VAL(CCP_ENABLED)
     if(inst->slot_id ==1)
@@ -216,7 +223,7 @@ int main(int argc, char **argv){
         g_slot[i] = i;
 
     for (uint16_t i = 1; i < NSLOTS; i++)
-        tdma_assign_slot(inst->tdma, slot_timer_cb,  g_slot[i], &g_slot[i]);
+        tdma_assign_slot(inst->tdma, slot_cb,  g_slot[i], &g_slot[i]);
 
     while (1) {
         os_eventq_run(os_eventq_dflt_get());

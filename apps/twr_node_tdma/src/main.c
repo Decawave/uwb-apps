@@ -129,11 +129,10 @@ static void slot_complete_cb(struct os_event *ev)
     dw1000_rng_instance_t * rng = inst->rng; 
     twr_frame_t * frame = rng->frames[(g_idx_latest)%rng->nframes];
 
-    if (frame->code == DWT_DS_TWR_T2 || frame->code == DWT_DS_TWR_EXT_T2) {
+    if (frame->code == DWT_DS_TWR_FINAL || frame->code == DWT_DS_TWR_EXT_FINAL) {
         float time_of_flight = dw1000_rng_twr_to_tof(rng, g_idx_latest);
         uint32_t utime =os_cputime_ticks_to_usecs(os_cputime_get32()); 
         float rssi = dw1000_get_rssi(inst);
-
         printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"azimuth\": %lu,\"res_tra\":\"%lX\","
                     " \"rec_tra\":\"%lX\", \"rssi\":%lu}\n",
                 utime,
@@ -147,7 +146,7 @@ static void slot_complete_cb(struct os_event *ev)
         //json_cir_encode(&g_cir, utime, "cir", CIR_SIZE);
         frame->code = DWT_DS_TWR_END;
     }    
-    else if (frame->code == DWT_SS_TWR_T1) {
+    else if (frame->code == DWT_SS_TWR_FINAL) {
         float time_of_flight = dw1000_rng_twr_to_tof(rng,g_idx_latest);
         float range = dw1000_rng_tof_to_meters(time_of_flight);
         uint32_t utime =os_cputime_ticks_to_usecs(os_cputime_get32()); 
@@ -206,6 +205,7 @@ slot_cb(struct os_event * ev){
     dw1000_set_delay_start(inst, dx_time);
     uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(ieee_rng_response_frame_t))                 
                             + inst->rng->config.tx_holdoff_delay;         // Remote side turn arroud time. 
+                            
     dw1000_set_rx_timeout(inst, timeout);
     dw1000_rng_listen(inst, DWT_BLOCKING);
 }
@@ -229,7 +229,7 @@ int main(int argc, char **argv){
     dw1000_ccp_start(inst, CCP_ROLE_MASTER);
 #endif
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
-    printf("{\"utime\": %lu,\"exce\":\"%s\"}\n",utime,__FILE__); 
+    printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 
     printf("{\"utime\": %lu,\"msg\": \"device_id = 0x%lX\"}\n",utime,inst->device_id);
     printf("{\"utime\": %lu,\"msg\": \"PANID = 0x%X\"}\n",utime,inst->PANID);
     printf("{\"utime\": %lu,\"msg\": \"DeviceID = 0x%X\"}\n",utime,inst->my_short_address);

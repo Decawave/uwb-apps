@@ -38,6 +38,7 @@ Project discussion board, http://decawave.slack.com
 * DWM1001   from https://www.decawave.com/products/dwm1001-module
 * DWM1002   from https://decawave.com (coming soon)
 * DWM1003   from https://decawave.com (coming soon)
+* locomo    from http://www.ubitraq.com
 * lps2mini  from https://loligoelectronics.com
 * lps2nano  from https://loligoelectronics.com
 

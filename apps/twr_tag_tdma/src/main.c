@@ -106,7 +106,7 @@ slot_cb(struct os_event *ev){
 #ifdef TICTOC
     uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
 #endif
-    if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_DS_TWR_EXT).start_tx_error){
+    if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_DS_TWR).start_tx_error){
     }else{
 #ifdef TICTOC
         os_error_t err = os_sem_pend(&inst->rng->sem, OS_TIMEOUT_NEVER); // Wait for completion of transactions 
@@ -227,7 +227,7 @@ slot_complete_cb(struct os_event * ev){
     else if (frame->code == DWT_DS_TWR_EXT_FINAL) {
         float time_of_flight = dw1000_rng_twr_to_tof(rng, g_idx_latest);
         printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"azimuth\": %lu,\"res_req\":\"%lX\","
-                " \"rec_tra\": \"%lX\" \"skew\": %lu}\n",
+                " \"rec_tra\": \"%lX\", \"skew\": %lu}\n",
                 os_cputime_ticks_to_usecs(os_cputime_get32()), 
                 *(uint32_t *)(&time_of_flight), 
                 *(uint32_t *)(&frame->spherical.range),
@@ -295,7 +295,7 @@ int main(int argc, char **argv){
     dw1000_ccp_start(inst, CCP_ROLE_SLAVE);
 #endif
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
-    printf("{\"utime\": %lu,\"exce\":\"%s\"}\n",utime,__FILE__); 
+    printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 
     printf("{\"utime\": %lu,\"msg\": \"device_id = 0x%lX\"}\n",utime,inst->device_id);
     printf("{\"utime\": %lu,\"msg\": \"PANID = 0x%X\"}\n",utime,inst->PANID);
     printf("{\"utime\": %lu,\"msg\": \"DeviceID = 0x%X\"}\n",utime,inst->my_short_address);

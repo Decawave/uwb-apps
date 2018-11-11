@@ -105,11 +105,15 @@ slot_cb(struct os_event *ev){
 #ifdef TICTOC
    uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
 #endif
-    if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_DS_TWR_EXT).start_tx_error){
+    if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_DS_TWR).start_tx_error){
     }else{
 #ifdef TICTOC
+        os_error_t err = os_sem_pend(&inst->rng->sem, OS_TIMEOUT_NEVER); // Wait for completion of transactions 
+        assert(err == OS_OK);
+        err = os_sem_release(&inst->rng->sem);
+        assert(err == OS_OK);
         uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
-        printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %ld}\n",toc, (toc - tic) - MYNEWT_VAL(OS_LATENCY));
+        printf("{\"utime\": %lu,\"dw1000_rng_request_delay_start_tic_toc\": %ld}\n",toc, (toc - tic));
 #endif
     }
 }
@@ -158,6 +162,7 @@ complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
     }
     dw1000_rng_instance_t * rng = inst->rng; 
     g_idx_latest = (rng->idx)%rng->nframes; // Store valid frame pointer
+
     os_callout_init(&slot_callout, os_eventq_dflt_get(), slot_complete_cb, inst);
     os_eventq_put(os_eventq_dflt_get(), &slot_callout.c_ev);
     return true;
@@ -275,7 +280,7 @@ int main(int argc, char **argv){
     
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     char name[32]={0};
-    sprintf(name,"%X-%X",inst->PANID,inst->my_short_address);
+    sprintf(name,"%X-%04X",inst->PANID,inst->my_short_address);
     prph_init(name);
     dw1000_mac_interface_t cbs = {
         .id = DW1000_APP0,
@@ -304,9 +309,9 @@ int main(int argc, char **argv){
    for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
         g_slot[i] = i;
     tdma_assign_slot(inst->tdma, slot0_cb, g_slot[0], &g_slot[0]);
-    for (uint16_t i = 1; i < sizeof(g_slot)/sizeof(uint16_t); i++)
-        tdma_assign_slot(inst->tdma, slot_cb, g_slot[i], &g_slot[i]);
-
+    for (uint16_t i = 1; i < sizeof(g_slot)/sizeof(uint16_t); i++){
+            tdma_assign_slot(inst->tdma, slot_cb, g_slot[i], &g_slot[i]);
+    }
     while (1) {
         os_eventq_run(os_eventq_dflt_get());
     }

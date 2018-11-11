@@ -259,7 +259,7 @@ int main(int argc, char **argv){
 
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     char name[32]={0};
-    sprintf(name,"%X-%X",inst->PANID,inst->my_short_address);
+    sprintf(name,"%X-%04X",inst->PANID,inst->my_short_address);
     prph_init(name);
     dw1000_mac_interface_t cbs = (dw1000_mac_interface_t){
         .id =  DW1000_APP0,

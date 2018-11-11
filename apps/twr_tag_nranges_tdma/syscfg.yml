@@ -14,6 +14,8 @@ syscfg.vals:
     NRNG_NFRAMES: 8
     NRNG_DEVICE_TYPE: 0
     DEVICE_ID: ((uint16_t){0xAAAA})
+    STATS_NAMES: 1
+    STATS_CLI: 1
     
 syscfg.defs:
     UUID_CCP_MASTER:
