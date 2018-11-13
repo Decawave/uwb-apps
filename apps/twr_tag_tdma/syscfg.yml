@@ -9,7 +9,11 @@ syscfg.vals:
     DW1000_BIAS_CORRECTION_ENABLED: 0
     HARDFLOAT: 1
     TDMA_NSLOTS: 128
-    
+    WCS_VERBOSE: 1
+    RNG_VERBOSE: 0
+    STATS_NAMES: 1
+    STATS_CLI: 1
+    DEVICE_ID: ((uint16_t){0x1234})
 syscfg.defs:
     UUID_CCP_MASTER:
         description: Clock Master UUID

@@ -23,6 +23,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "json_encode.h"
+#include "cir.h"
 
 
 #if 0
@@ -100,7 +101,7 @@ json_cir_encode(cir_t * cir, char * name, uint16_t nsize){
     assert(rc == 0);
     json_fflush();
 }
-#endif
+
 
 void 
 json_cir_encode(cir_t * cir, uint32_t utime, char * name, uint16_t nsize){
@@ -118,5 +119,5 @@ json_cir_encode(cir_t * cir, uint32_t utime, char * name, uint16_t nsize){
 }
 
 
-
+#endif
 

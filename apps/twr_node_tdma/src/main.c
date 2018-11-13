@@ -38,10 +38,8 @@
 #include <dw1000/dw1000_phy.h>
 #include <dw1000/dw1000_mac.h>
 #include <dw1000/dw1000_ftypes.h>
-
-#if MYNEWT_VAL(RNG_ENABLED)
 #include <rng/rng.h>
-#endif
+
 #if MYNEWT_VAL(TDMA_ENABLED)
 #include <tdma/tdma.h>
 #endif
@@ -58,6 +56,7 @@
 #include <timescale/timescale.h> 
 #endif
 #include "json_encode.h"
+
 
 //#define DIAGMSG(s,u) printf(s,u)
 #ifndef DIAGMSG
@@ -91,16 +90,21 @@ cir_t g_cir;
 /* The timer callout */
 
 static struct os_callout slot_callout;
+static uint16_t g_idx_latest;
 
 static bool
 complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
     }
+    dw1000_rng_instance_t * rng = inst->rng; 
+
+    g_idx_latest = (rng->idx)%rng->nframes; // Store valid frame pointer
     os_callout_init(&slot_callout, os_eventq_dflt_get(), slot_complete_cb, inst);
     os_eventq_put(os_eventq_dflt_get(), &slot_callout.c_ev);
     return true;
 }
+
 
 /*! 
  * @fn slot_complete_cb(struct os_event * ev)
@@ -123,13 +127,12 @@ static void slot_complete_cb(struct os_event *ev)
     hal_gpio_toggle(LED_BLINK_PIN);
     dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *)ev->ev_arg;
     dw1000_rng_instance_t * rng = inst->rng; 
-    twr_frame_t * frame = rng->frames[(rng->idx)%rng->nframes];
+    twr_frame_t * frame = rng->frames[(g_idx_latest)%rng->nframes];
 
     if (frame->code == DWT_DS_TWR_FINAL || frame->code == DWT_DS_TWR_EXT_FINAL) {
-        float time_of_flight = dw1000_rng_twr_to_tof(rng);
+        float time_of_flight = dw1000_rng_twr_to_tof(rng, g_idx_latest);
         uint32_t utime =os_cputime_ticks_to_usecs(os_cputime_get32()); 
         float rssi = dw1000_get_rssi(inst);
-
         printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"azimuth\": %lu,\"res_tra\":\"%lX\","
                     " \"rec_tra\":\"%lX\", \"rssi\":%lu}\n",
                 utime,
@@ -144,7 +147,7 @@ static void slot_complete_cb(struct os_event *ev)
         frame->code = DWT_DS_TWR_END;
     }    
     else if (frame->code == DWT_SS_TWR_FINAL) {
-        float time_of_flight = dw1000_rng_twr_to_tof(rng);
+        float time_of_flight = dw1000_rng_twr_to_tof(rng,g_idx_latest);
         float range = dw1000_rng_tof_to_meters(time_of_flight);
         uint32_t utime =os_cputime_ticks_to_usecs(os_cputime_get32()); 
         float rssi = dw1000_get_rssi(inst);
@@ -202,12 +205,9 @@ slot_cb(struct os_event * ev){
     dw1000_set_delay_start(inst, dx_time);
     uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(ieee_rng_response_frame_t))                 
                             + inst->rng->config.tx_holdoff_delay;         // Remote side turn arroud time. 
+                            
     dw1000_set_rx_timeout(inst, timeout);
-
-    dw1000_set_on_error_continue(inst, true);
-    if(dw1000_start_rx(inst).start_rx_error){
-        printf("{\"utime\": %lu,\"msg\": \"main::slot_cb:start_rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
-    }    
+    dw1000_rng_listen(inst, DWT_BLOCKING);
 }
 
 int main(int argc, char **argv){
@@ -229,7 +229,7 @@ int main(int argc, char **argv){
     dw1000_ccp_start(inst, CCP_ROLE_MASTER);
 #endif
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
-    printf("{\"utime\": %lu,\"exce\":\"%s\"}\n",utime,__FILE__); 
+    printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 
     printf("{\"utime\": %lu,\"msg\": \"device_id = 0x%lX\"}\n",utime,inst->device_id);
     printf("{\"utime\": %lu,\"msg\": \"PANID = 0x%X\"}\n",utime,inst->PANID);
     printf("{\"utime\": %lu,\"msg\": \"DeviceID = 0x%X\"}\n",utime,inst->my_short_address);
@@ -239,7 +239,7 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime,dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t))); 
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,dw1000_phy_SHR_duration(&inst->attrib)); 
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst->rng->config.tx_holdoff_delay))); 
-
+    
 
     for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
         g_slot[i] = i;

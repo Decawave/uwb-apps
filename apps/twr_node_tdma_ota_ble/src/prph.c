@@ -40,10 +40,11 @@
 
 /** Log data. */
 struct log bleprph_log;
+struct log ble_hs_log;
 
 static int bleprph_gap_event(struct ble_gap_event *event, void *arg);
 
-void prph_init(void);
+void prph_init(char * name);
 
 /**
  * Logs information about a connection to the console.
@@ -303,7 +304,7 @@ bleprph_on_sync(void)
  * @return int NOTE: this function should never return!
  */
 void
-prph_init(void)
+prph_init(char * name)
 {
     int rc;
 
@@ -323,7 +324,7 @@ prph_init(void)
     assert(rc == 0);
 
     /* Set the default device name. */
-    rc = ble_svc_gap_device_name_set("nimble-bleprph-1");
+    rc = ble_svc_gap_device_name_set(name);
     assert(rc == 0);
 
 #if MYNEWT_VAL(BLEPRPH_LE_PHY_SUPPORT)

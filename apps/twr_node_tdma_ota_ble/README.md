@@ -72,7 +72,7 @@ newt load tag
 ### Create a newtmgr connection profile
 ```
 newtmgr conn add ble type=ble connstring="peer_name=nimble-bleprph"   (twr_tag_tdma_ota_ble)
-newtmgr conn add ble type=ble connstring="peer_name=nimble-bleprph-1" (twr_node_tdma_ota_ble)
+newtmgr conn add ble1 type=ble connstring="peer_name=nimble-bleprph-1" (twr_node_tdma_ota_ble)
 
 ```
 Now that connections are being established for tag and node.
@@ -87,8 +87,8 @@ With the above commands, you get the image slots of both the devices.
 
 ## Create one more image for both devices with version 2.0.0 which resides in secondary slots of tag and node.
 ```
-newtmgr create-image tag 2.0.0
-newtmgr create-image node 2.0.0
+newt create-image tag 2.0.0
+newt create-image node 2.0.0
 
 ```
 ### Uploading an image to device
@@ -136,7 +136,49 @@ Then check for image status in the devices, see
 You observe that images are upgraded over air and running successfully in their respective slots.
 For understanding newtmgr, please have a glance at https://mynewt.apache.org/latest/tutorials/devmgmt/ota_upgrade_nrf52.html
 
+# Changing the UWB configuration on the fly
 
+- Connect to the console of the board (CLI), either over RTT (telnet) or uart (screen/minicom/...) and
+issue commands that way. or,
+- Using the ```newtmgr config``` command line tools.
 
+## CLI: Dump the current config
 
+To dump the current config to screen by enter the command ```config dump```:
 
+```
+005769 compat> config dump
+023846 uwb/channel = 5
+023846 uwb/prf = 64
+023846 uwb/datarate = 6m8
+023846 uwb/rx_antdly = 0x4050
+023846 uwb/tx_antdly = 0x4050
+023846 uwb/rx_paclen = 8
+023846 uwb/rx_pream_cidx = 9
+023846 uwb/rx_sfdtype = 0
+023846 uwb/rx_phrmode = s
+023846 uwb/tx_pream_cidx = 9
+023846 uwb/tx_pream_len = 128
+023846 uwb/txrf_power_coarse = 12
+023846 uwb/txrf_power_fine = 18
+023846 split/status = 0
+...
+```
+
+## CLI: Change a config parameter
+
+The Mynewt config package has three levels of changing parameters:
+
+1. To change the parameter in memory but not commit to use. Several paramters can be changed and the committed at once. 
+2. Commit to use but do not save to flash
+3. Save to flash so these settings are preserved after reboot/power cycle
+
+For example, to change the uwb channel to 1:
+
+```
+023847 compat> config uwb/channel 1   # Step 1 change the parameter in memory
+061397 compat> config commit          # Step 2, commit changes to be used by the system
+061696 Done
+061696 compat> config save            # Step 3, save to flash
+061939 compat> 
+```

@@ -48,7 +48,7 @@ for j=1:ntimes
      [~,m] = size(utime);
      
      if (mod(j,4) == 0)
-        pause(0.001)
+        pause(0.04)
         refreshdata;
      end
      if (mod(j,4) == 0)
@@ -63,7 +63,7 @@ for j=1:ntimes
      end
      if (mod(j,4) == 0)
             [mu,sigma,~,~] = normfit(range);
-            subplot(234);histfit(range,16,'normal');title(sprintf("range mu=%f (usec) sigma=%f (usec)",mu,sigma))
+            subplot(234);histfit(range,16,'normal');title(sprintf("range mu=%f (m) sigma=%f (m)",mu,sigma))
      end
      if (mod(j,4) == 0)
             [mu,sigma,~,~] = normfit(skew);
