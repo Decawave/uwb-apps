@@ -39,6 +39,8 @@
 #include <dw1000/dw1000_mac.h>
 #include <dw1000/dw1000_ftypes.h>
 #include <rng/rng.h>
+#include <config/config.h>
+#include "uwbcfg/uwbcfg.h"
 
 #if MYNEWT_VAL(TDMA_ENABLED)
 #include <tdma/tdma.h>
@@ -63,6 +65,7 @@
 #define DIAGMSG(s,u)
 #endif
 
+static bool dw1000_config_updated = false;
 static void slot_complete_cb(struct os_event *ev);
 
 static uint16_t g_slot[MYNEWT_VAL(TDMA_NSLOTS)] = {0};
@@ -166,6 +169,19 @@ static void slot_complete_cb(struct os_event *ev)
 }
 
 
+/**
+ * @fn uwb_config_update
+ * 
+ * Called from the main event queue as a result of the uwbcfg packet
+ * having received a commit/load of new uwb configuration.
+ */
+int
+uwb_config_updated()
+{
+    dw1000_config_updated = true;
+    return 0;
+}
+
 /*! 
  * @fn slot_cb(struct os_event * ev)
  * 
@@ -194,6 +210,12 @@ slot_cb(struct os_event * ev){
     dw1000_ccp_instance_t * ccp = inst->ccp;
     uint16_t idx = slot->idx;
 
+    if (dw1000_config_updated) {
+        dw1000_mac_config(inst, NULL);
+        dw1000_phy_config_txrf(inst, &inst->config.txrf);
+        dw1000_config_updated = false;
+    }
+
 #if MYNEWT_VAL(WCS_ENABLED)
     wcs_instance_t * wcs = ccp->wcs;
     uint64_t dx_time = (ccp->epoch + (uint64_t) roundf((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
@@ -214,6 +236,14 @@ int main(int argc, char **argv){
     int rc;
 
     sysinit();
+    /* Register callback for UWB configuration changes */
+    struct uwbcfg_cbs uwb_cb = {
+        .uc_update = uwb_config_updated
+    };
+    uwbcfg_register(&uwb_cb);
+    /* Load config from flash */
+    conf_load();
+    
     hal_gpio_init_out(LED_BLINK_PIN, 1);
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
@@ -240,7 +270,6 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,dw1000_phy_SHR_duration(&inst->attrib)); 
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst->rng->config.tx_holdoff_delay))); 
     
-
     for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
         g_slot[i] = i;
 
