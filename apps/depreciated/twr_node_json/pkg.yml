@@ -17,9 +17,9 @@
 # under the License.
 #
 
-pkg.name: apps/twr_node
+pkg.name: apps/depreciated/twr_node_json
 pkg.type: app
-pkg.description: "Basic TWR node example"
+pkg.description: "Basic TWR tag example"
 pkg.author: "Paul Kettle <paul.kettle@decawave.com>"
 pkg.homepage: "http://www.decawave.com/"
 pkg.keywords:

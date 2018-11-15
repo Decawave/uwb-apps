@@ -17,7 +17,7 @@
 # under the License.
 #
 
-pkg.name: apps/node_mesh
+pkg.name: apps/depreciated/tag_mesh
 pkg.type: app
 pkg.description: "Basic reverse superres anchor node"
 pkg.author: "Paul Kettle <paul.kettle@decawave.com>"
@@ -33,9 +33,10 @@ pkg.deps:
     - "@apache-mynewt-core/sys/shell"
     - "@apache-mynewt-core/encoding/json"
     - "@mynewt-dw1000-core/hw/drivers/dw1000"
-    - "@mynewt-dw1000-core/lib/dsp"
     - "@mynewt-dw1000-core/lib/tdma"
     - "@mynewt-dw1000-core/lib/ccp"
+    - "@mynewt-dw1000-core/lib/wcs"
+    - "@mynewt-timescale-lib/lib/timescale"
     - "@mynewt-dw1000-core/lib/twr_ss"
     - "@mynewt-dw1000-core/lib/twr_ds"
     - "@mynewt-dw1000-core/lib/twr_ds_ext"
@@ -48,6 +49,7 @@ pkg.deps:
     - "@apache-mynewt-core/sys/log/full"
     - "@apache-mynewt-core/sys/stats/full"
 
+    
 pkg.cflags:
     - "-std=gnu99"
     - "-fms-extensions"
@@ -55,3 +57,5 @@ pkg.cflags:
 
 pkg.lflags:
     - "-lm"
+
+

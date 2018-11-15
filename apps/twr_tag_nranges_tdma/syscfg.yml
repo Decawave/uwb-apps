@@ -9,9 +9,9 @@ syscfg.vals:
     DW1000_BIAS_CORRECTION_ENABLED: 0
     HARDFLOAT: 1
     TDMA_NSLOTS: 128
-    NRNG_NNODES: 7
+    NRNG_NNODES: 4
     #N-frames should be atleast nnodes*2
-    NRNG_NFRAMES: 14
+    NRNG_NFRAMES: 8
     #Device_type (0 -> tag, 1 -> node)
     NRNG_DEVICE_TYPE: 0
     DEVICE_ID: ((uint16_t){0xAAAA})
@@ -23,14 +23,6 @@ syscfg.defs:
         description: >
             Clock Master UUID
         value: ((uint16_t){0x8000})
-    N_NODES:
-        description: >
-            Number of Nodes to range with
-        value: 4
-    SLOT_ID:
-        description: >
-            SLOT_ID for the Device
-        value: 1
     NODE_START_SLOT_ID:
         description: >
             Slot ID from which the nodes should respond
@@ -38,5 +30,5 @@ syscfg.defs:
     NODE_END_SLOT_ID:
         description: >
             Slot ID till which the nodes should respond
-        value: 7
+        value: 4
     

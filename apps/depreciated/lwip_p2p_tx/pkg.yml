@@ -17,7 +17,7 @@
 # under the License.
 #
 
-pkg.name: apps/lwip_p2p_tx
+pkg.name: apps/depreciated/lwip_p2p_tx
 pkg.type: app
 pkg.description: "Basic TWR Transmit Example"
 pkg.author: "Paul Kettle <paul.kettle@decawave.com>"

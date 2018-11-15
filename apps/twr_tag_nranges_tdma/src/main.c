@@ -137,8 +137,6 @@ slot0_timer_cb(struct os_event *ev){
 }
  */
 
-#define SLOT MYNEWT_VAL(SLOT_ID)
-
 int main(int argc, char **argv){
     int rc;
 
@@ -152,7 +150,6 @@ int main(int argc, char **argv){
 #if MYNEWT_VAL(CCP_ENABLED)
     dw1000_ccp_start(inst, CCP_ROLE_SLAVE);
 #endif
-    inst->slot_id = MYNEWT_VAL(SLOT_ID);
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
     printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 
     printf("{\"utime\": %lu,\"msg\": \"device_id = 0x%lX\"}\n",utime,inst->device_id);
