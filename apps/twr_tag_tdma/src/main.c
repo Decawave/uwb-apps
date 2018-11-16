@@ -267,7 +267,7 @@ error_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
     if (inst->status.start_tx_error)
         printf("{\"utime\": %lu,\"msg\": \"start_tx_error,%s:%d\"}\n",utime, __FILE__, __LINE__);
     if (inst->status.rx_error)
-        printf("{\"utime\": %lu,\"msg\": \"rx_error\",%s:%d\"}\n",utime, __FILE__, __LINE__);
+        printf("{\"utime\": %lu,\"msg\": \"rx_error,%s:%d\"}\n",utime, __FILE__, __LINE__);
 
     return true;
 }
