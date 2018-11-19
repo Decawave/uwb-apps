@@ -78,8 +78,6 @@ static void nrange_complete_cb(struct os_event *ev) {
     hal_gpio_toggle(LED_BLINK_PIN);
     dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *)ev->ev_arg;
     dw1000_nrng_instance_t *nranges = inst->nrng;
-
-    nrng_frame_t * previous_frame = nranges->frames[(nranges->idx-1)%(nranges->nframes/FRAMES_PER_RANGE)][FIRST_FRAME_IDX];
     nrng_frame_t * frame = nranges->frames[(nranges->idx)%(nranges->nframes/FRAMES_PER_RANGE)][SECOND_FRAME_IDX];
 
     if (inst->status.start_rx_error)
@@ -91,24 +89,8 @@ static void nrange_complete_cb(struct os_event *ev) {
     if (inst->status.rx_timeout_error)
         printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_timeout_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
 
-
     if (frame->code == DWT_DS_TWR_NRNG_FINAL || frame->code == DWT_DS_TWR_NRNG_EXT_FINAL){
-        previous_frame = previous_frame;
-        uint32_t time_of_flight = (uint32_t) dw1000_nrng_twr_to_tof_frames(inst, previous_frame, frame);
-        float range = dw1000_rng_tof_to_meters(dw1000_nrng_twr_to_tof_frames(inst, previous_frame, frame));
-        float rssi = dw1000_get_rssi(inst);
-        print_frame("1st=", previous_frame);
-        print_frame("2nd=", frame);
         frame->code = DWT_DS_TWR_NRNG_END;
-            printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": %lX,"
-                   " \"rec_tra\": %lX, \"rssi\": %d}\n",
-            os_cputime_ticks_to_usecs(os_cputime_get32()),
-            time_of_flight,
-            (uint32_t)(range * 1000),
-            (frame->response_timestamp - frame->request_timestamp),
-            (frame->transmission_timestamp - frame->reception_timestamp),
-            (int)(rssi)
-	    );
     }
 }
 /*! 
@@ -173,8 +155,7 @@ slot_cb(struct os_event * ev){
                             + inst->nrng->config.tx_guard_delay;        
                             
     dw1000_set_rx_timeout(inst, timeout);
-    dw1000_start_rx(inst);
-    //dw1000_nrng_listen(inst, DWT_BLOCKING);
+    dw1000_nrng_listen(inst, DWT_BLOCKING);
 
 #ifdef VERBOSE
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
@@ -197,7 +178,7 @@ int main(int argc, char **argv){
         .complete_cb = complete_cb
     };
     dw1000_mac_append_interface(inst, &cbs);
-
+    inst->slot_id = MYNEWT_VAL(SLOT_ID);
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
     printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 
     printf("{\"utime\": %lu,\"msg\": \"device_id = 0x%lX\"}\n",utime,inst->device_id);

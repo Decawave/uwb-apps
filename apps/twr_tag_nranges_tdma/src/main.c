@@ -53,6 +53,9 @@
 #ifndef DIAGMSG
 #define DIAGMSG(s,u)
 #endif
+#ifndef TICTOC
+#undef TICTOC
+#endif
 
 #define NSLOTS MYNEWT_VAL(TDMA_NSLOTS)
 
@@ -91,15 +94,18 @@ slot_cb(struct os_event *ev){
     uint64_t dx_time = (ccp->epoch + (uint64_t) (idx * ((uint64_t)tdma->period << 16)/tdma->nslots));
 #endif
     dx_time = dx_time & 0xFFFFFFFFFE00UL;
-    
+#ifdef TICTOC
     uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
-    if(dw1000_nrng_request_delay_start(inst, 0xffff, dx_time, DWT_SS_TWR_NRNG, MYNEWT_VAL(NODE_START_SLOT_ID), MYNEWT_VAL(NODE_END_SLOT_ID)).start_tx_error){
+#endif
+    if(dw1000_nrng_request_delay_start(inst, 0xffff, dx_time, DWT_DS_TWR_NRNG, MYNEWT_VAL(NODE_START_SLOT_ID), MYNEWT_VAL(NODE_END_SLOT_ID)).start_tx_error){
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
         printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\"}\n",utime,idx);
     }
+#ifdef TICTOC
     uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
     printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %lu}\n",toc,toc-tic);
-    
+#endif
+    printf("{\"utime\": %lu,\"slot_id\": %d}\n",os_cputime_ticks_to_usecs(os_cputime_get32()), idx);
     for(int i=0; i<nranges->nframes/FRAMES_PER_RANGE; i++){
         nrng_frame_t *prev_frame = nranges->frames[i][FIRST_FRAME_IDX];
         nrng_frame_t *frame = nranges->frames[i][SECOND_FRAME_IDX];
@@ -107,12 +113,12 @@ slot_cb(struct os_event *ev){
         if ((frame->code == DWT_DS_TWR_NRNG_FINAL && prev_frame->code == DWT_DS_TWR_NRNG_T2)\
              || (prev_frame->code == DWT_DS_TWR_NRNG_EXT_T2 && frame->code == DWT_DS_TWR_NRNG_EXT_FINAL)) {
             float range = dw1000_rng_tof_to_meters(dw1000_nrng_twr_to_tof_frames(inst, frame, prev_frame));
-            printf("  src_addr= 0x%X  dst_addr= 0x%X  range= %lu\n",prev_frame->src_address,prev_frame->dst_address, (uint32_t)(range*1000));
+            printf("\"dst_addr\": 0x%X,\"range\": %lu\n", prev_frame->dst_address, (uint32_t)(range*1000));
             frame->code = DWT_DS_TWR_NRNG_END;
             prev_frame->code = DWT_DS_TWR_NRNG_END;
         }else if(prev_frame->code == DWT_SS_TWR_NRNG_FINAL){
             float range = dw1000_rng_tof_to_meters(dw1000_nrng_twr_to_tof_frames(inst, prev_frame, prev_frame));
-            printf("  src_addr= 0x%X  dst_addr= 0x%X  range= %lu\n",prev_frame->src_address,prev_frame->dst_address, (uint32_t)(range*1000));
+            printf("\"slot_id\": %d,\"src_addr\": 0x%X,\"dst_addr\": 0x%X,\"range\": %lu\n",idx, prev_frame->src_address, prev_frame->dst_address, (uint32_t)(range*1000));
             prev_frame->code = DWT_DS_TWR_NRNG_END;
         }
     }
@@ -131,7 +137,6 @@ slot0_timer_cb(struct os_event *ev){
 }
  */
 
-#define SLOT MYNEWT_VAL(SLOT_ID)
 
 int main(int argc, char **argv){
     int rc;
@@ -159,11 +164,10 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst->rng->config.tx_holdoff_delay))); 
     
 
-   for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
-        g_slot[i] = i;
-    
-    tdma_assign_slot(inst->tdma, slot_cb, g_slot[SLOT], &g_slot[SLOT]);
-    
+   for (uint16_t i = 1; i < sizeof(g_slot)/sizeof(uint16_t); i++){
+       g_slot[i] = i;
+       tdma_assign_slot(inst->tdma, slot_cb, g_slot[i], &g_slot[i]);
+    }
     while (1) {
         os_eventq_run(os_eventq_dflt_get());
     }
