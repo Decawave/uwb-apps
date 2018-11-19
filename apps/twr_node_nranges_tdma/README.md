@@ -28,10 +28,11 @@ newt run tag 0
 
 ```
 **NOTE:** The NRNG_NFRAMES must be atleast NRNG_NNODES*2
+
 **NOTE:** The number of slots is inversly proportional to the number of nodes in the network. The current configuration 
           of TDMA_SLOTS in syscfg.yml is set to 128 for 4 nodes. Now if using 8 nodes this should be reduced to ~64 slots
-          Current FOM(Time taken for 1 range) for 4 nodes is ~6.5 to 7ms and CCP period is 1s.
-          The formula to calculate number of slots will be Slots = CCP_PERIOD / FOM( N Nodes )
+          
+Current FOM(Time taken for 1 range) for 4 nodes is ~6.5 to 7ms and CCP period is 1s. The formula to calculate number of slots will be Slots = CCP_PERIOD / FOM( N Nodes )
 
 The number of nodes to range with can be configured by setting the **NRNG_NNODES** on tag app during build time,
    (ex: for 3 nodes, use this command while building tag app **newt target amend tag syscfg=NRNG_NNODES=3** )
