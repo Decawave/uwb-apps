@@ -43,5 +43,5 @@ syscfg.vals:
         
 syscfg.defs:
     UUID_CCP_MASTER:
-        description: > Clock Master UUID
+        description: Clock Master UUID
         value: ((uint64_t){0x8000})  
