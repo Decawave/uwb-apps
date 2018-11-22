@@ -8,6 +8,9 @@ syscfg.defs:
     UWB_MBUF_SIZE:
         description: 'Size of each message buffer'
         value: 136
+    CIR_NUM_SAMPLES:
+        description: 'Number of of CIR accumulator samples to show, 0=none'
+        value: '"0"'
         
 syscfg.vals:
     # Route console to UART
