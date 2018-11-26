@@ -87,8 +87,8 @@ With the above commands, you get the image slots of both the devices.
 
 ## Create one more image for both devices with version 2.0.0 which resides in secondary slots of tag and node.
 ```
-new create-image tag 2.0.0
-new create-image node 2.0.0
+newt create-image tag 2.0.0
+newt create-image node 2.0.0
 
 ```
 ### Uploading an image to device
