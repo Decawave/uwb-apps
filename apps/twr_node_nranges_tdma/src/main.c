@@ -151,6 +151,7 @@ slot_cb(struct os_event * ev){
 
     dw1000_set_delay_start(inst, dx_time);
     uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(nrng_request_frame_t))
+                            + inst->nrng->config.rx_timeout_period
                             + inst->nrng->config.tx_holdoff_delay     // Remote side turn arroud time. 
                             + inst->nrng->config.tx_guard_delay;        
                             

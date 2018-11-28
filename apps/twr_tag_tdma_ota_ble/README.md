@@ -87,8 +87,8 @@ With the above commands, you get the image slots of both the devices.
 
 ## Create one more image for both devices with version 2.0.0 which resides in secondary slots of tag and node.
 ```
-newt create-image tag 2.0.0
-newt create-image node 2.0.0
+new create-image tag 2.0.0
+new create-image node 2.0.0
 
 ```
 ### Uploading an image to device
@@ -112,7 +112,7 @@ newtmgr image test -c ble1 (hash value of secondary slot of node)
 
 ```
 Now the images of secondary slot goes to pending state.
-Then power OFF and ON both the devices.
+**NOTE:** Then power OFF and ON both the devices at a time, else one of the devices go to pending state instead of confirmed.
 
 ## Check for image status
 ```

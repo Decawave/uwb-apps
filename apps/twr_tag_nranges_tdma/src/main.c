@@ -123,19 +123,6 @@ slot_cb(struct os_event *ev){
         }
     }
 }
-/*! 
- * @fn slot0_timer_cb(struct os_event * ev)
- * @brief This function is a place holder
- *
- * input parameters
- * @param inst - struct os_event *  
- * output parameters
- * returns none 
-static void 
-slot0_timer_cb(struct os_event *ev){
-    //printf("{\"utime\": %lu,\"msg\": \"%s:[%d]:slot0_timer_cb\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()),__FILE__, __LINE__); 
-}
- */
 
 int main(int argc, char **argv){
     int rc;
