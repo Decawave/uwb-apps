@@ -208,7 +208,6 @@ process_rx_data_queue(struct os_event *ev)
 }
 
 
-static uint8_t buffer[1024];
 static bool
 rx_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
 {
@@ -222,23 +221,12 @@ rx_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
     if (om) {
         struct uwb_msg_hdr *hdr = (struct uwb_msg_hdr*)OS_MBUF_USRHDR(om);
         memset(hdr, 0, sizeof(struct uwb_msg_hdr));
-        hdr->dlen = (inst->frame_len>sizeof(buffer))? sizeof(buffer) : inst->frame_len;
+        hdr->dlen = inst->frame_len;
         
-        dw1000_read_rx(inst, buffer, 0, hdr->dlen);
+        hdr->ts = inst->rxtimestamp;
 
-        /* Verify that the timestamp is valid */
-        if(inst->sys_status & SYS_STATUS_LDEDONE) {
-            hdr->ts = dw1000_read_rxtime(inst);
-        } else if (inst->sys_status & SYS_STATUS_LDEERR) {
-            hdr->ts = 0;
-        } else {
-            /* Should never happen */
-            assert(0);
-        }
-
-        dw1000_read_rxdiag(inst, &hdr->diag);
-        
-        rc = os_mbuf_copyinto(om, 0, buffer, hdr->dlen);
+        memcpy(&hdr->diag, &inst->rxdiag, sizeof(inst->rxdiag));
+        rc = os_mbuf_copyinto(om, 0, inst->rxbuf, hdr->dlen);
         if (rc != 0) {
             return true;
         }
@@ -264,9 +252,6 @@ rx_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
         }
     } else {
         /* Not enough memory to handle incoming packet, drop it */
-    }
-    if (!inst->config.dblbuffon_enabled) {
-        dw1000_start_rx(inst);
     }
     return true;
 }
