@@ -1,6 +1,6 @@
 tcp = tcpclient('127.0.0.1', 19021);
 
-ntimes = 24000
+ntimes = 12000
 idx = [];
 data= [];
 utime =[];

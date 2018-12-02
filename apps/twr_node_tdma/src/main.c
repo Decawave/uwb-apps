@@ -146,7 +146,6 @@ static void slot_complete_cb(struct os_event *ev)
                 (frame->transmission_timestamp - frame->reception_timestamp),
                 *(uint32_t *)(&rssi)
         );
-        //json_cir_encode(&g_cir, utime, "cir", CIR_SIZE);
         frame->code = DWT_DS_TWR_END;
     }    
     else if (frame->code == DWT_SS_TWR_FINAL) {

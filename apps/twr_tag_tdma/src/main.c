@@ -106,7 +106,7 @@ slot_cb(struct os_event *ev){
 #ifdef TICTOC
     uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
 #endif
-    if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_DS_TWR).start_tx_error){
+    if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_SS_TWR).start_tx_error){
     }else{
 #ifdef TICTOC
         os_error_t err = os_sem_pend(&inst->rng->sem, OS_TIMEOUT_NEVER); // Wait for completion of transactions 
@@ -326,9 +326,10 @@ int main(int argc, char **argv){
     }
 #endif
 
-   for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
+    for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
         g_slot[i] = i;
     tdma_assign_slot(inst->tdma, slot0_cb, g_slot[0], &g_slot[0]);
+ 
     for (uint16_t i = 1; i < sizeof(g_slot)/sizeof(uint16_t); i++)
         tdma_assign_slot(inst->tdma, slot_cb, g_slot[i], &g_slot[i]);
 

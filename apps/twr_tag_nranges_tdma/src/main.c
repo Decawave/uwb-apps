@@ -94,18 +94,19 @@ slot_cb(struct os_event *ev){
     uint64_t dx_time = (ccp->epoch + (uint64_t) (idx * ((uint64_t)tdma->period << 16)/tdma->nslots));
 #endif
     dx_time = dx_time & 0xFFFFFFFFFE00UL;
+
 #ifdef TICTOC
     uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
 #endif
-    if(dw1000_nrng_request_delay_start(inst, 0xffff, dx_time, DWT_DS_TWR_NRNG, MYNEWT_VAL(NODE_START_SLOT_ID), MYNEWT_VAL(NODE_END_SLOT_ID)).start_tx_error){
+    if(dw1000_nrng_request_delay_start(inst, 0xffff, dx_time, DWT_SS_TWR_NRNG, MYNEWT_VAL(NODE_START_SLOT_ID), MYNEWT_VAL(NODE_END_SLOT_ID)).start_tx_error){
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
         printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\"}\n",utime,idx);
     }
 #ifdef TICTOC
     uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
     printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %lu}\n",toc,toc-tic);
-#endif
-    printf("{\"utime\": %lu,\"slot_id\": %d}\n",os_cputime_ticks_to_usecs(os_cputime_get32()), idx);
+#endif 
+//    printf("{\"utime\": %lu,\"slot_id\": %d}\n",os_cputime_ticks_to_usecs(os_cputime_get32()), idx);
     for(int i=0; i<nranges->nframes/FRAMES_PER_RANGE; i++){
         nrng_frame_t *prev_frame = nranges->frames[i][FIRST_FRAME_IDX];
         nrng_frame_t *frame = nranges->frames[i][SECOND_FRAME_IDX];
@@ -118,7 +119,7 @@ slot_cb(struct os_event *ev){
             prev_frame->code = DWT_DS_TWR_NRNG_END;
         }else if(prev_frame->code == DWT_SS_TWR_NRNG_FINAL){
             float range = dw1000_rng_tof_to_meters(dw1000_nrng_twr_to_tof_frames(inst, prev_frame, prev_frame));
-            printf("\"slot_id\": %d,\"src_addr\": 0x%X,\"dst_addr\": 0x%X,\"range\": %lu\n",idx, prev_frame->src_address, prev_frame->dst_address, (uint32_t)(range*1000));
+            printf("\"slot_id\": %2d,\"src_addr\": 0x%X,\"dst_addr\": 0x%X,\"range\": %4lu, \"seq_num\": %2u\n",idx, prev_frame->src_address, prev_frame->dst_address, (uint32_t)(range*1000), prev_frame->seq_num);
             prev_frame->code = DWT_DS_TWR_NRNG_END;
         }
     }

@@ -1,0 +1,40 @@
+syscfg.vals:
+    # Route console to RTT
+    CONSOLE_UART: 0
+    CONSOLE_RTT: 1
+    DW1000_DEVICE_0: 1
+    DW1000_DEVICE_1: 1
+    FS_XTALT_AUTOTUNE_ENABLED: 0
+    DW1000_BIAS_CORRECTION_ENABLED: 0
+    HARDFLOAT: 1
+    TDMA_NSLOTS: 64
+    STATS_CLI: 1
+    STATS_NAMES: 1
+    DW1000_CLI: 1
+    WCS_VERBOSE: 1
+    CIR_VERBOSE: 1    
+    CIR_SIZE: 16
+
+    TWR_DS_TX_HOLDOFF: ((uint32_t){0x0500})
+    TWR_SS_TX_HOLDOFF: ((uint32_t){0x0500})
+
+    # Enable newtmgr commands.
+    STATS_NEWTMGR: 1
+    LOG_NEWTMGR: 1
+    CONFIG_NEWTMGR: 1
+
+    DW1000_DEVICE_1_TX_ANT_DLY: 0x4051
+    DW1000_DEVICE_1_RX_ANT_DLY: 0x401A
+    DW1000_DEVICE_0_TX_ANT_DLY: 0x4053
+    DW1000_DEVICE_0_RX_ANT_DLY: 0x4012
+    
+syscfg.defs:
+    UUID_CCP_MASTER:
+        description: Clock Master UUID
+        value: ((uint64_t){0x8000}) 
+    DEVICE_ID_0:  
+        description: 'Master Device'
+        value: ((uint16_t){0x4321})
+    DEVICE_ID_1:  
+        description: 'Slave Device'
+        value: ((uint16_t){0x1234})
