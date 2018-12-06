@@ -67,13 +67,6 @@ pan_master_cb(struct os_event * ev)
     dw1000_pan_instance_t * pan = inst->pan; 
     pan_frame_t * frame = pan->frames[(pan->idx)%pan->nframes]; 
 
-    /* PAN Request frame */
-    printf("{\"utime\":%lu,\"UUID\":\"%llX\",\"seq_num\": %d}\n", 
-        os_cputime_ticks_to_usecs(os_cputime_get32()),
-        frame->long_address,
-        frame->seq_num
-    );
-
     pan_db_t *db_entry = pan_master_find_node(frame->long_address, frame->role);
     if (db_entry) {
         frame->code = DWT_PAN_RESP;
@@ -98,6 +91,16 @@ pan_master_cb(struct os_event * ev)
         );  
     }
 
+    dw1000_write_tx(inst, frame->array, 0, sizeof(pan_frame_resp_t));
+    dw1000_write_tx_fctrl(inst, sizeof(pan_frame_resp_t), 0, true); 
+    pan->status.start_tx_error = dw1000_start_tx(inst).start_tx_error;
+
+    /* PAN Request frame */
+    printf("{\"utime\":%lu,\"UUID\":\"%llX\",\"seq_num\": %d}\n", 
+        os_cputime_ticks_to_usecs(os_cputime_get32()),
+        frame->long_address,
+        frame->seq_num
+    );
     printf("{\"utime\":%lu,\"UUID\":\"%llX\",\"ID\":\"%X\",\"PANID\":\"%X\",\"SLOTID\":%d}\n", 
            os_cputime_ticks_to_usecs(os_cputime_get32()),
            frame->long_address,
@@ -105,10 +108,6 @@ pan_master_cb(struct os_event * ev)
            frame->pan_id,
            frame->slot_id
         );
-
-    dw1000_write_tx(inst, frame->array, 0, sizeof(pan_frame_resp_t));
-    dw1000_write_tx_fctrl(inst, sizeof(pan_frame_resp_t), 0, true); 
-    pan->status.start_tx_error = dw1000_start_tx(inst).start_tx_error;
 }
 
 void
