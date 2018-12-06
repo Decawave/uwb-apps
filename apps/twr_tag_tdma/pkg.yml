@@ -35,6 +35,7 @@ pkg.deps:
     - "@mynewt-dw1000-core/hw/drivers/dw1000"
     - "@mynewt-dw1000-core/lib/tdma"
     - "@mynewt-dw1000-core/lib/ccp"
+    - "@mynewt-dw1000-core/lib/pan"
     - "@mynewt-dw1000-core/lib/wcs"
     - "@mynewt-timescale-lib/lib/timescale"
     - "@mynewt-dw1000-core/lib/twr_ss"

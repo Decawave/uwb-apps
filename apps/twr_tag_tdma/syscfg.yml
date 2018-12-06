@@ -7,6 +7,7 @@ syscfg.vals:
     DW1000_DEVICE_0: 1
     FS_XTALT_AUTOTUNE_ENABLED: 0
     DW1000_BIAS_CORRECTION_ENABLED: 0
+    PAN_ENABLED: 1
     HARDFLOAT: 1
     TDMA_NSLOTS: 128
     WCS_VERBOSE: 1
@@ -15,6 +16,7 @@ syscfg.vals:
     STATS_CLI: 1
     CONFIG_CLI: 1
     DW1000_CLI: 1
+    SHELL_TASK: 1
 
     # Enable newtmgr commands.
     STATS_NEWTMGR: 1

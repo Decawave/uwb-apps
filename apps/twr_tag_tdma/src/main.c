@@ -38,6 +38,9 @@
 #include <dw1000/dw1000_mac.h>
 #include <dw1000/dw1000_ftypes.h>
 #include <rng/rng.h>
+#if MYNEWT_VAL(PAN_ENABLED)
+#include <pan/pan.h>
+#endif
 
 #if MYNEWT_VAL(TDMA_ENABLED)
 #include <tdma/tdma.h>
@@ -93,6 +96,10 @@ slot_cb(struct os_event *ev){
     dw1000_ccp_instance_t * ccp = inst->ccp;
     uint16_t idx = slot->idx;
 
+#if MYNEWT_VAL(PAN_ENABLED)
+    if (inst->pan->status.valid == false) return;
+#endif
+    
     hal_gpio_toggle(LED_BLINK_PIN);  
     
 #if MYNEWT_VAL(WCS_ENABLED)
@@ -106,7 +113,7 @@ slot_cb(struct os_event *ev){
 #ifdef TICTOC
     uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
 #endif
-    if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_SS_TWR).start_tx_error){
+    if(dw1000_rng_request_delay_start(inst, 0xDEC1, dx_time, DWT_SS_TWR).start_tx_error){
     }else{
 #ifdef TICTOC
         os_error_t err = os_sem_pend(&inst->rng->sem, OS_TIMEOUT_NEVER); // Wait for completion of transactions 
@@ -240,6 +247,28 @@ slot_complete_cb(struct os_event * ev){
     } 
 }
 
+static void 
+pan_slot_timer_cb(struct os_event * ev)
+{
+    tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
+    tdma_instance_t * tdma = slot->parent;
+    dw1000_dev_instance_t * inst = tdma->parent;
+    dw1000_ccp_instance_t * ccp = inst->ccp;
+    uint16_t idx = slot->idx;
+
+#if MYNEWT_VAL(WCS_ENABLED)
+    wcs_instance_t * wcs = ccp->wcs;
+    uint64_t dx_time = (ccp->epoch + (uint64_t) roundf((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
+#else
+    uint64_t dx_time = (ccp->epoch + (uint64_t) ((idx * ((uint64_t)tdma->period << 16)/tdma->nslots)));
+#endif
+
+    if (inst->pan->status.valid) return;
+    /* "Random" shift to hopefully avoid collisions */
+    dx_time += (os_cputime_get32()&0x7)*tdma->period/tdma->nslots/16;
+    dw1000_pan_blink(inst, 2, DWT_NONBLOCKING, dx_time);
+}
+
 
 /*! 
  * @fn error_cb(struct os_event *ev)
@@ -294,6 +323,12 @@ int main(int argc, char **argv){
 #if MYNEWT_VAL(CCP_ENABLED)
     dw1000_ccp_start(inst, CCP_ROLE_SLAVE);
 #endif
+
+#if MYNEWT_VAL(PAN_ENABLED)
+    inst->my_short_address = 0xffff;
+    dw1000_pan_start(inst, PAN_ROLE_SLAVE);
+#endif
+
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
     printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 
     printf("{\"utime\": %lu,\"msg\": \"device_id = 0x%lX\"}\n",utime,inst->device_id);
@@ -326,11 +361,13 @@ int main(int argc, char **argv){
     }
 #endif
 
+    /* Slot 0:ccp, 1:pan, 2+ twr */
     for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
         g_slot[i] = i;
     tdma_assign_slot(inst->tdma, slot0_cb, g_slot[0], &g_slot[0]);
- 
-    for (uint16_t i = 1; i < sizeof(g_slot)/sizeof(uint16_t); i++)
+    tdma_assign_slot(inst->tdma, pan_slot_timer_cb, g_slot[1], &g_slot[1]);
+
+    for (uint16_t i = 2; i < sizeof(g_slot)/sizeof(uint16_t); i++)
         tdma_assign_slot(inst->tdma, slot_cb, g_slot[i], &g_slot[i]);
 
     while (1) {
