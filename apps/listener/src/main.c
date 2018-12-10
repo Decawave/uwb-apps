@@ -44,6 +44,8 @@
 #include "dw1000/dw1000_phy.h"
 #include "dw1000/dw1000_mac.h"
 
+static int uwb_config_updated();
+
 /* 
  * Default Config 
  */
@@ -96,6 +98,7 @@ lstnr_commit(void)
 {
     conf_value_from_str(lstnr_config.acc_samples, CONF_INT16,
                         (void*)&(acc_samples_to_load), 0);
+    uwb_config_updated();
     return 0;
 }
 
@@ -153,7 +156,7 @@ process_rx_data_queue(struct os_event *ev)
     int rc;
     struct os_mbuf *om;
     struct uwb_msg_hdr *hdr;
-    struct _dw1000_cir_complex *cirp;
+    cir_complex_t *cirp;
     int payload_len;
 
     hal_gpio_init_out(LED_BLINK_PIN, 0);
@@ -185,8 +188,8 @@ process_rx_data_queue(struct os_event *ev)
             printf("%02x", print_buffer[i]);
         }
         if (hdr->acc_offset > 0) {
-            cirp = (struct _dw1000_cir_complex *) (print_buffer + hdr->acc_offset);
-            float idx = (float)(hdr->diag.fp_idx >> 6) + (hdr->diag.fp_idx&0x3F)*(1.0/64);
+            cirp = (cir_complex_t *) (print_buffer + hdr->acc_offset);
+            float idx = ((float) hdr->diag.fp_idx)/64.0f;
             printf("\",\"cir\":{\"fp_idx\":\"%d.%03d\",\"real\":", 
                    (int)idx, (int)(1000*(idx-(int)idx)));
             for (int i=0;i<hdr->acc_len;i++) {
@@ -206,7 +209,6 @@ process_rx_data_queue(struct os_event *ev)
     }
     hal_gpio_init_out(LED_BLINK_PIN, 1);
 }
-
 
 static bool
 rx_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
@@ -232,16 +234,14 @@ rx_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
         }
         /* Do we need to load accumulator data */
         if (acc_samples_to_load) {
-            float idx = (float)(hdr->diag.fp_idx >> 6) + (hdr->diag.fp_idx&0x3F)*(1.0/64);
-            uint16_t fp_idx = roundf(idx) - 4*sizeof(struct _dw1000_cir_complex);
-
-            hdr->acc_offset = hdr->dlen;
-            hdr->acc_len = acc_samples_to_load;
-            dw1000_read_accdata(inst, buffer, fp_idx * sizeof(struct _dw1000_cir_complex),
-                                hdr->acc_len * sizeof(struct _dw1000_cir_complex) + 1);
-
-            rc = os_mbuf_copyinto(om, hdr->acc_offset, buffer+1,
-                                  hdr->acc_len * sizeof(struct _dw1000_cir_complex));
+            if (inst->cir->status.valid) {
+                hdr->acc_offset = hdr->dlen;
+                hdr->acc_len = (acc_samples_to_load < MYNEWT_VAL(CIR_SIZE)) ?
+                    acc_samples_to_load : MYNEWT_VAL(CIR_SIZE);
+                rc = os_mbuf_copyinto(om, hdr->acc_offset, (uint8_t*)inst->cir->cir.array,
+                                      hdr->acc_len * sizeof(cir_complex_t));
+            }
+            cir_enable(inst->cir, true);
         } else {
             hdr->acc_offset = 0;
             hdr->acc_len = 0;
@@ -260,8 +260,6 @@ bool
 error_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
 {
     printf("err_cb\n");
-    dw1000_set_dblrxbuff(inst, false);
-    dw1000_set_dblrxbuff(inst, true);
     dw1000_set_rx_timeout(inst, 0);
     inst->control.on_error_continue_enabled = 1;
     dw1000_start_rx(inst);
@@ -272,15 +270,19 @@ void
 uwb_config_update(struct os_event * ev)
 {
     dw1000_dev_instance_t * inst = ev->ev_arg;
-    dw1000_set_dblrxbuff(inst, false);
     dw1000_mac_config(inst, NULL);
 
-    dw1000_set_dblrxbuff(inst, true);
+    if (acc_samples_to_load) {
+        dw1000_set_dblrxbuff(inst, false);
+    } else {
+        dw1000_set_dblrxbuff(inst, true);
+    }
+    
     dw1000_set_rx_timeout(inst, 0);
     dw1000_start_rx(inst);
 }
 
-int
+static int
 uwb_config_updated()
 {
     static struct os_event ev = {
@@ -317,7 +319,8 @@ int main(int argc, char **argv){
     conf_load();
     
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    inst->config.dblbuffon_enabled = 1;
+    inst->config.dblbuffon_enabled = (acc_samples_to_load==0);
+    inst->config.rxdiag_enable = 1;
     inst->config.framefilter_enabled = 0;
     inst->config.bias_correction_enable = 0;
     inst->config.LDE_enable = 1;
@@ -325,7 +328,9 @@ int main(int argc, char **argv){
     inst->config.sleep_enable = 0;
     inst->config.wakeup_rx_enable = 1;
     inst->config.rxauto_enable = 1;
+    inst->config.cir_enable = false;
     inst->control.on_error_continue_enabled = 1;
+    cir_enable(inst->cir, (acc_samples_to_load>0));
 
     inst->my_short_address = inst->partID&0xffff;
     inst->my_long_address = ((uint64_t) inst->lotID << 33) + inst->partID;
