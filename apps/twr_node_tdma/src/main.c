@@ -57,10 +57,12 @@
 #if MYNEWT_VAL(TIMESCALE)
 #include <timescale/timescale.h> 
 #endif
-#include "json_encode.h"
 #if MYNEWT_VAL(PAN_ENABLED)
 #include <pan/pan.h>
 #include <pan_master.h>
+#endif
+#if MYNEWT_VAL(CIR_ENABLED)
+#include <cir/cir.h>
 #endif
 
 
@@ -73,8 +75,6 @@ static bool dw1000_config_updated = false;
 static void slot_complete_cb(struct os_event *ev);
 
 static uint16_t g_slot[MYNEWT_VAL(TDMA_NSLOTS)] = {0};
-
-cir_t g_cir;
 
 /*! 
  * @fn complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
@@ -218,7 +218,7 @@ pan_slot_timer_cb(struct os_event * ev)
     if (inst->pan->status.valid) return;
     /* "Random" shift to hopefully avoid collisions */
     dx_time += (os_cputime_get32()&0x7)*tdma->period/tdma->nslots/16;
-    dw1000_pan_blink(inst, NTWR_ROLE_NODE, DWT_NONBLOCKING, dx_time);
+    dw1000_pan_blink(inst, NTWR_ROLE_NODE, DWT_BLOCKING, dx_time);
 #endif // PANMASTER_ISSUER
 }
 
@@ -304,7 +304,6 @@ int main(int argc, char **argv){
     }
     dw1000_pan_start(inst, PAN_ROLE_MASTER);
 #else
-
     dw1000_pan_start(inst, PAN_ROLE_SLAVE);
 #endif
     

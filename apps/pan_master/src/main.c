@@ -92,8 +92,7 @@ pan_master(struct os_event * ev){
 
         g_device_idx++;
     }
-    if(g_device_idx > PAN_SIZE)
-    {
+    if(g_device_idx > PAN_SIZE){
         printf("{\"utime\":%lu,\"Warning\": \"PANIDs over subscribed\",{\"g_device_idx\":%d}\n", 
             os_cputime_ticks_to_usecs(os_cputime_get32()),
             g_device_idx

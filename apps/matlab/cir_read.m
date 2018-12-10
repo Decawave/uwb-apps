@@ -1,10 +1,11 @@
 tcp = tcpclient('127.0.0.1', 19021);
 pause(1)
       
-ntime = 120000
+ntime = 120
 idx =[];
 data=[];
-idx =[];
+fp_idx =[];
+pow =[]; 
 utime_a =[];
 utime_b =[];
 idx_a =[];
@@ -33,7 +34,8 @@ for j=1:ntime
                 if (isfield(line,'cir'))
                     utime_a(end+1,:) = line.utime;
                     cir(end+1,:) = complex(line.cir.real,line.cir.imag)';
-                    idx(end+1) = line.cir.idx;
+                    fp_idx(end+1) = typecast(uint32(line.cir.idx),'single');
+                    pow(end+1) = typecast(uint32(line.cir.power),'single');
                 end
                 if (isfield(line,'cir0'))
                     utime_a(end+1,:) = line.utime;
@@ -63,17 +65,19 @@ for j=1:ntime
     
 
     ax =[];
-    ax(end+1) = subplot(311); 
+    
     if (n == m)   
-       plot(n,[real(cir_a(end,:));imag(cir_a(end,:))],'-o',m,[real(cir_b(end,:));imag(cir_b(end,:))]','-+');
+        ax(end+1) = subplot(311); plot(n,[real(cir_a(end,:));imag(cir_a(end,:))],'-o',m,[real(cir_b(end,:));imag(cir_b(end,:))]','-+');
+        ax(end+1) = subplot(312); plot([angle(cir_a(end,:));angle(cir_b(end,:))]','-+');
+        ax(end+1) = subplot(313); plot([abs(cir_a(end,:));abs(cir_b(end,:))]','-+');
     else
-       plot(n,[real(cir(end,:));imag(cir(end,:))],'-o');
+        ax(end+1) = subplot(311); plot(n,[real(cir(end,:));imag(cir(end,:))],'-o');
+        ax(end+1) = subplot(312); plot([angle(cir(end,:))]','-+');
+        ax(end+1) = subplot(313); plot([abs(cir(end,:))]','-+');
+        axis([1  8 0 60]);
     end
     
-       
-    ax(end+1) = subplot(312); plot([angle(cir_a(end,:));angle(cir_b(end,:))]','-+');
-    ax(end+1) = subplot(313); plot([abs(cir_a(end,:));abs(cir_b(end,:))]','-+');
-    linkaxes(ax,'x');
+   linkaxes(ax,'x');
 
 end
 

@@ -48,6 +48,12 @@ newt target set loopback bsp=@mynewt-dw1000-core/hw/bsp/dwm1002
 newt target set loopbackbuild_profile=debug 
 newt run loopback 0
 
+newt target create listener
+newt target set listener app=apps/listener
+newt target set listener bsp=@mynewt-dw1000-core/hw/bsp/dwm1002
+newt target set listener build_profile=debug 
+newt run listener 0
+
 ```
 
 

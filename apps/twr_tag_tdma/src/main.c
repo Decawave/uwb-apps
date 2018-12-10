@@ -266,7 +266,7 @@ pan_slot_timer_cb(struct os_event * ev)
     if (inst->pan->status.valid) return;
     /* "Random" shift to hopefully avoid collisions */
     dx_time += (os_cputime_get32()&0x7)*tdma->period/tdma->nslots/16;
-    dw1000_pan_blink(inst, 2, DWT_NONBLOCKING, dx_time);
+    dw1000_pan_blink(inst, 2, DWT_BLOCKING, dx_time);
 }
 
 
@@ -305,12 +305,13 @@ error_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
 int main(int argc, char **argv){
     int rc;
 
+    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+    
     sysinit();
+
     hal_gpio_init_out(LED_BLINK_PIN, 1);
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
-    
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     
     dw1000_mac_interface_t cbs = {
         .id = DW1000_APP0,

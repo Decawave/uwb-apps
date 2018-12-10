@@ -9,7 +9,6 @@ syscfg.vals:
     DW1000_BIAS_CORRECTION_ENABLED: 0
     PAN_ENABLED: 1
     TDMA_NSLOTS: 128
-    DEVICE_ID: ((uint16_t){0x4321})
     CCP_VERBOSE: 0
     STATS_NAMES: 1
     STATS_CLI: 1
