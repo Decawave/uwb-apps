@@ -71,8 +71,8 @@ newt load tag
 
 ### Create a newtmgr connection profile
 ```
-newtmgr conn add ble type=ble connstring="peer_name=DECA_1234"   (twr_tag_tdma_ota_ble)
-newtmgr conn add ble1 type=ble connstring="peer_name=DECA_4321" (twr_node_tdma_ota_ble)
+newtmgr conn add ble type=ble connstring="peer_name=DECA-1234"   (twr_tag_tdma_ota_ble)
+newtmgr conn add ble1 type=ble connstring="peer_name=DECA-4321" (twr_node_tdma_ota_ble)
 
 ```
 Now that connections are being established for tag and node.
