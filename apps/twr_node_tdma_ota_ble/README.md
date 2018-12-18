@@ -112,7 +112,7 @@ newtmgr image test -c ble1 (hash value of secondary slot of node)
 
 ```
 Now the images of secondary slot goes to pending state.
-**NOTE:** Then power OFF and ON both the devices at a time, else one of the devices go to pending state instead of confirmed.
+Power OFF and ON both the devices, check for image status.
 
 ## Check for image status
 ```
