@@ -191,7 +191,6 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,dw1000_phy_SHR_duration(&inst->attrib)); 
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst->rng->config.tx_holdoff_delay))); 
     
-
     inst->slot_id = MYNEWT_VAL(SLOT_ID);
 #if MYNEWT_VAL(CCP_ENABLED)
     if(inst->slot_id ==1)

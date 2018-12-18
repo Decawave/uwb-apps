@@ -53,12 +53,12 @@ for j=1:ntimes
      end
      if (mod(j,4) == 0)
             [mu,sigma,~,~] = normfit(range);
-            subplot(211);
-            yyaxis right
+            ax = subplot(211);
+            yyaxis(ax,'right')
             plot(utime,skew,utime_wcs,skew_wcs,'o-m');
-            yyaxis left
-            plot(utime,range);
-%            plot(utime_wcs,wcs)
+            yyaxis(ax,'left')
+%            plot(utime,range);
+            plot(utime_wcs,skew_wcs)
             title(sprintf("tof mu=%f tof sigma=%f (dwt unit)",mu,sigma))
      end
      if (mod(j,4) == 0 && length(range) > nwin)

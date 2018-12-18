@@ -1,7 +1,7 @@
 tcp = tcpclient('127.0.0.1', 19021);
 pause(1)
       
-ntime = 120
+ntime = 12000
 idx =[];
 data=[];
 fp_idx =[];
