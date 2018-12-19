@@ -8,7 +8,7 @@ syscfg.vals:
     FS_XTALT_AUTOTUNE_ENABLED: 0
     DW1000_BIAS_CORRECTION_ENABLED: 0
     HARDFLOAT: 1
-    TDMA_NSLOTS: 128
+    TDMA_NSLOTS: 64
     NRNG_NNODES: 4
     #N-frames should be atleast nnodes*2
     NRNG_NFRAMES: 8
@@ -21,7 +21,7 @@ syscfg.vals:
     CIR_SIZE: 8
     CIR_OFFSET: 2
     WCS_VERBOSE: 1
-    NRNG_VERBOSE: 1
+    NRNG_VERBOSE: 0
     
 syscfg.defs:
     UUID_CCP_MASTER:

@@ -116,15 +116,16 @@ slot_cb(struct os_event *ev){
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
         printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\"}\n",utime,idx);
     }else{
-        for (uint16_t i = MYNEWT_VAL(NODE_START_SLOT_ID); i < MYNEWT_VAL(NODE_END_SLOT_ID); i++){
 
+        uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
+        for (uint16_t i = MYNEWT_VAL(NODE_START_SLOT_ID); i < MYNEWT_VAL(NODE_END_SLOT_ID); i++){
             uint16_t slot_idx = calc_nslots(slot_mask, 1UL << i, SLOT_POSITION); 
             nrng_frame_t * frame = nranges->frames[slot_idx][FIRST_FRAME_IDX];
  
             if (frame->code ==  DWT_SS_TWR_NRNG_FINAL) {
                 float range = dw1000_rng_tof_to_meters(dw1000_nrng_twr_to_tof_frames(inst, frame, frame));
                 printf("{\"utime\": %lu,\"slot_id\": [%2u,%2u,%2u],\"ToA\": \"%lX\", \"range\": %lu,\"res_req\": \"%lX\",\"rec_tra\": \"%lX\"}\n",
-                        os_cputime_ticks_to_usecs(os_cputime_get32()),
+                        utime,
                         slot_idx, idx, frame->seq_num,
                         frame->reception_timestamp,
                         *(uint32_t *)(&range),
