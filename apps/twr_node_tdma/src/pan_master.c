@@ -75,6 +75,7 @@ pan_master_cb(struct os_event * ev)
         frame->slot_id = db_entry->slot_id;
         frame->role = db_entry->role;
         frame->seq_num++;
+        frame->lease_time = 300;
     } else {
         printf("{\"utime\":%lu,\"Warning\": \"Could not assign PAN\",{\"g_device_idx\":%d}\n", 
                os_cputime_ticks_to_usecs(os_cputime_get32()),
@@ -91,8 +92,8 @@ pan_master_cb(struct os_event * ev)
         );  
     }
 
-    dw1000_write_tx(inst, frame->array, 0, sizeof(pan_frame_resp_t));
-    dw1000_write_tx_fctrl(inst, sizeof(pan_frame_resp_t), 0, true); 
+    dw1000_write_tx(inst, frame->array, 0, sizeof(pan_frame_t));
+    dw1000_write_tx_fctrl(inst, sizeof(pan_frame_t), 0, true);
     pan->status.start_tx_error = dw1000_start_tx(inst).start_tx_error;
 
     /* PAN Request frame */

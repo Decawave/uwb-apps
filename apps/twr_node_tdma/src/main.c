@@ -217,7 +217,7 @@ pan_slot_timer_cb(struct os_event * ev)
 
     if (inst->pan->status.valid) return;
     /* "Random" shift to hopefully avoid collisions */
-    dx_time += (os_cputime_get32()&0x7)*tdma->period/tdma->nslots/16;
+    dx_time += (os_cputime_get32()&0x7)*(tdma->period<<16)/tdma->nslots/16;
     dw1000_pan_blink(inst, NTWR_ROLE_NODE, DWT_BLOCKING, dx_time);
 #endif // PANMASTER_ISSUER
 }
