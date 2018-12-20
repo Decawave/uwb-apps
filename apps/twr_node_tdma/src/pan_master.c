@@ -93,11 +93,7 @@ pan_master_cb(struct os_event * ev)
     }
 
     dw1000_write_tx(inst, frame->array, 0, sizeof(pan_frame_t));
-<<<<<<< Updated upstream
-    dw1000_write_tx_fctrl(inst, sizeof(pan_frame_t), 0, true);
-=======
     dw1000_write_tx_fctrl(inst, sizeof(pan_frame_t), 0, true); 
->>>>>>> Stashed changes
     pan->status.start_tx_error = dw1000_start_tx(inst).start_tx_error;
 
     /* PAN Request frame */
