@@ -57,8 +57,8 @@ for j=1:ntimes
             yyaxis(ax,'right')
             plot(utime,skew,utime_wcs,skew_wcs,'o-m');
             yyaxis(ax,'left')
-%            plot(utime,range);
-            plot(utime_wcs,skew_wcs)
+            plot(utime,range);
+%            plot(utime_wcs,skew_wcs)
             title(sprintf("tof mu=%f tof sigma=%f (dwt unit)",mu,sigma))
      end
      if (mod(j,4) == 0 && length(range) > nwin)

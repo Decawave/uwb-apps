@@ -49,6 +49,9 @@
 //#include <nrng/nrng.h>
 #include <nranges/nranges.h>
 #endif
+#include <config/config.h>
+#include "uwbcfg/uwbcfg.h"
+
 //#define DIAGMSG(s,u) printf(s,u)
 #ifndef DIAGMSG
 #define DIAGMSG(s,u)
@@ -56,6 +59,9 @@
 #ifndef TICTOC
 #undef TICTOC
 #endif
+
+
+static bool dw1000_config_updated = false;
 
 void print_frame(nrng_frame_t * twr, char crlf){
     printf("{\"utime\": %lu,%c\"fctrl\": \"0x%04X\",%c", os_cputime_ticks_to_usecs(os_cputime_get32()), crlf, twr->fctrl, crlf);
@@ -138,6 +144,22 @@ slot_cb(struct os_event *ev){
         }
     }
 }
+
+
+
+/**
+ * @fn uwb_config_update
+ * 
+ * Called from the main event queue as a result of the uwbcfg packet
+ * having received a commit/load of new uwb configuration.
+ */
+int
+uwb_config_updated()
+{
+    dw1000_config_updated = true;
+    return 0;
+}
+
 /*! 
  * @fn slot0_timer_cb(struct os_event * ev)
  * @brief This function is a place holder
@@ -157,6 +179,15 @@ int main(int argc, char **argv){
     int rc;
 
     sysinit();
+    
+    /* Register callback for UWB configuration changes */
+    struct uwbcfg_cbs uwb_cb = {
+        .uc_update = uwb_config_updated
+    };
+    uwbcfg_register(&uwb_cb);
+    /* Load config from flash */
+    conf_load();
+
     hal_gpio_init_out(LED_BLINK_PIN, 1);
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
