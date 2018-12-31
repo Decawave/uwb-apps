@@ -7,6 +7,7 @@ syscfg.vals:
     DW1000_DEVICE_0: 1
     FS_XTALT_AUTOTUNE_ENABLED: 0
     DW1000_BIAS_CORRECTION_ENABLED: 0
+    PAN_ENABLED: 1
     HARDFLOAT: 1
     TDMA_NSLOTS: 128
     WCS_VERBOSE: 1
@@ -15,13 +16,15 @@ syscfg.vals:
     STATS_CLI: 1
     CONFIG_CLI: 1
     DW1000_CLI: 1
-
+    CIR_VERBOSE: 0    
+    CIR_SIZE: 8
+    CIR_OFFSET: 2
     # Enable newtmgr commands.
     STATS_NEWTMGR: 1
     LOG_NEWTMGR: 1
     CONFIG_NEWTMGR: 1
 
-    DEVICE_ID: ((uint16_t){0x1234})
+#    DEVICE_ID: ((uint16_t){0x1234})
 syscfg.defs:
     UUID_CCP_MASTER:
         description: Clock Master UUID

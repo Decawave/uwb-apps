@@ -7,13 +7,14 @@ syscfg.vals:
     DW1000_DEVICE_0: 1
     FS_XTALT_AUTOTUNE_ENABLED: 0
     DW1000_BIAS_CORRECTION_ENABLED: 0
+    PAN_ENABLED: 1
     TDMA_NSLOTS: 128
-    DEVICE_ID: ((uint16_t){0x4321})
     CCP_VERBOSE: 0
     STATS_NAMES: 1
     STATS_CLI: 1
     CONFIG_CLI: 1
     DW1000_CLI: 1
+    SHELL_TASK: 1
 
     # Enable newtmgr commands.
     STATS_NEWTMGR: 1
@@ -25,3 +26,6 @@ syscfg.defs:
         description: >
             Clock Master UUID
         value: ((uint64_t){0x8000})  
+    PANMASTER_ISSUER:
+        description: 'Act as panmaster in the network'
+        value: 1

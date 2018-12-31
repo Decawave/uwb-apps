@@ -92,8 +92,7 @@ pan_master(struct os_event * ev){
 
         g_device_idx++;
     }
-    if(g_device_idx > PAN_SIZE)
-    {
+    if(g_device_idx > PAN_SIZE){
         printf("{\"utime\":%lu,\"Warning\": \"PANIDs over subscribed\",{\"g_device_idx\":%d}\n", 
             os_cputime_ticks_to_usecs(os_cputime_get32()),
             g_device_idx
@@ -108,8 +107,8 @@ pan_master(struct os_event * ev){
         frame->slot_id
     );
 
-    dw1000_write_tx(inst, frame->array, 0, sizeof(pan_frame_resp_t));
-    dw1000_write_tx_fctrl(inst, sizeof(pan_frame_resp_t), 0, true); 
+    dw1000_write_tx(inst, frame->array, 0, sizeof(pan_frame_t));
+    dw1000_write_tx_fctrl(inst, sizeof(pan_frame_t), 0, true);
     dw1000_set_wait4resp(inst, true);    
     dw1000_set_rx_timeout(inst, 0);
     pan->status.start_tx_error = dw1000_start_tx(inst).start_tx_error;

@@ -49,6 +49,9 @@
 //#include <nrng/nrng.h>
 #include <nranges/nranges.h>
 #endif
+#include <config/config.h>
+#include "uwbcfg/uwbcfg.h"
+
 //#define DIAGMSG(s,u) printf(s,u)
 #ifndef DIAGMSG
 #define DIAGMSG(s,u)
@@ -56,6 +59,22 @@
 #ifndef TICTOC
 #undef TICTOC
 #endif
+
+
+static bool dw1000_config_updated = false;
+
+void print_frame(nrng_frame_t * twr, char crlf){
+    printf("{\"utime\": %lu,%c\"fctrl\": \"0x%04X\",%c", os_cputime_ticks_to_usecs(os_cputime_get32()), crlf, twr->fctrl, crlf);
+    printf("\"seq_num\": \"0x%02X\",%c", twr->seq_num, crlf);
+    printf("\"PANID\": \"0x%04X\",%c", twr->PANID, crlf);
+    printf("\"dst_address\": \"0x%04X\",%c", twr->dst_address, crlf);
+    printf("\"src_address\": \"0x%04X\",%c", twr->src_address, crlf);
+    printf("\"code\": \"0x%04X\",%c", twr->code, crlf);
+    printf("\"reception_timestamp\": \"0x%08lX\",%c", twr->reception_timestamp, crlf);
+    printf("\"transmission_timestamp\": \"0x%08lX\",%c", twr->transmission_timestamp, crlf);
+    printf("\"request_timestamp\": \"0x%08lX\",%c", twr->request_timestamp, crlf);
+    printf("\"response_timestamp\": \"0x%08lX\"}\n", twr->response_timestamp);
+}
 
 #define NSLOTS MYNEWT_VAL(TDMA_NSLOTS)
 
@@ -94,45 +113,83 @@ slot_cb(struct os_event *ev){
     uint64_t dx_time = (ccp->epoch + (uint64_t) (idx * ((uint64_t)tdma->period << 16)/tdma->nslots));
 #endif
     dx_time = dx_time & 0xFFFFFFFFFE00UL;
-#ifdef TICTOC
-    uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
-#endif
-    if(dw1000_nrng_request_delay_start(inst, 0xffff, dx_time, DWT_DS_TWR_NRNG, MYNEWT_VAL(NODE_START_SLOT_ID), MYNEWT_VAL(NODE_END_SLOT_ID)).start_tx_error){
+
+    uint32_t slot_mask = 0;
+    for (uint16_t i = MYNEWT_VAL(NODE_START_SLOT_ID); i <= MYNEWT_VAL(NODE_END_SLOT_ID); i++)
+        slot_mask |= 1UL << i;
+    if(dw1000_nrng_request_delay_start(inst, 0xffff, dx_time, DWT_SS_TWR_NRNG, slot_mask, 0).start_tx_error){
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
         printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\"}\n",utime,idx);
-    }
-#ifdef TICTOC
-    uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
-    printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %lu}\n",toc,toc-tic);
-#endif
-    printf("{\"utime\": %lu,\"slot_id\": %d}\n",os_cputime_ticks_to_usecs(os_cputime_get32()), idx);
-    for(int i=0; i<nranges->nframes/FRAMES_PER_RANGE; i++){
-        nrng_frame_t *prev_frame = nranges->frames[i][FIRST_FRAME_IDX];
-        nrng_frame_t *frame = nranges->frames[i][SECOND_FRAME_IDX];
+    }else{
 
-        if ((frame->code == DWT_DS_TWR_NRNG_FINAL && prev_frame->code == DWT_DS_TWR_NRNG_T2)\
-             || (prev_frame->code == DWT_DS_TWR_NRNG_EXT_T2 && frame->code == DWT_DS_TWR_NRNG_EXT_FINAL)) {
-            float range = dw1000_rng_tof_to_meters(dw1000_nrng_twr_to_tof_frames(inst, frame, prev_frame));
-            printf("\"dst_addr\": 0x%X,\"range\": %lu\n", prev_frame->dst_address, (uint32_t)(range*1000));
-            frame->code = DWT_DS_TWR_NRNG_END;
-            prev_frame->code = DWT_DS_TWR_NRNG_END;
-        }else if(prev_frame->code == DWT_SS_TWR_NRNG_FINAL){
-            float range = dw1000_rng_tof_to_meters(dw1000_nrng_twr_to_tof_frames(inst, prev_frame, prev_frame));
-            printf("\"slot_id\": %d,\"src_addr\": 0x%X,\"dst_addr\": 0x%X,\"range\": %lu\n",idx, prev_frame->src_address, prev_frame->dst_address, (uint32_t)(range*1000));
-            prev_frame->code = DWT_DS_TWR_NRNG_END;
+        uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
+        for (uint16_t i = MYNEWT_VAL(NODE_START_SLOT_ID); i <= MYNEWT_VAL(NODE_END_SLOT_ID); i++){
+            uint16_t slot_idx = calc_nslots(slot_mask, 1UL << i, SLOT_POSITION);
+            nrng_frame_t * frame = nranges->frames[slot_idx][FIRST_FRAME_IDX];
+ 
+            if (frame->code ==  DWT_SS_TWR_NRNG_FINAL) {
+                float range = dw1000_rng_tof_to_meters(dw1000_nrng_twr_to_tof_frames(inst, frame, frame));
+                printf("{\"utime\": %lu,\"slot_id\": [%2u,%2u,%2u],\"ToA\": \"%lX\", \"range\": %lu,\"res_req\": \"%lX\",\"rec_tra\": \"%lX\"}\n",
+                        utime,
+                        slot_idx, idx, frame->seq_num,
+                        frame->reception_timestamp,
+                        *(uint32_t *)(&range),
+                        (frame->response_timestamp - frame->request_timestamp),
+                        (frame->transmission_timestamp - frame->reception_timestamp)
+                );
+ //               print_frame(frame,'\n');
+                frame->code = DWT_DS_TWR_NRNG_END;
+            }
         }
     }
 }
+/**
+ * @fn uwb_config_update
+ * 
+ * Called from the main event queue as a result of the uwbcfg packet
+ * having received a commit/load of new uwb configuration.
+ */
+int
+uwb_config_updated()
+{
+    dw1000_config_updated = true;
+    return 0;
+}
+
+/*! 
+ * @fn slot0_timer_cb(struct os_event * ev)
+ * @brief This function is a place holder
+ *
+ * input parameters
+ * @param inst - struct os_event *  
+ * output parameters
+ * returns none 
+static void 
+slot0_timer_cb(struct os_event *ev){
+    //printf("{\"utime\": %lu,\"msg\": \"%s:[%d]:slot0_timer_cb\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()),__FILE__, __LINE__); 
+}
+ */
 
 int main(int argc, char **argv){
     int rc;
 
     sysinit();
+    
+    /* Register callback for UWB configuration changes */
+    struct uwbcfg_cbs uwb_cb = {
+        .uc_update = uwb_config_updated
+    };
+    uwbcfg_register(&uwb_cb);
+    /* Load config from flash */
+    conf_load();
+
     hal_gpio_init_out(LED_BLINK_PIN, 1);
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
 
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+    inst->config.cir_enable = true;
+//    inst->config.rxauto_enable = false;
 
 #if MYNEWT_VAL(CCP_ENABLED)
     dw1000_ccp_start(inst, CCP_ROLE_SLAVE);
@@ -149,7 +206,6 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,dw1000_phy_SHR_duration(&inst->attrib)); 
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst->rng->config.tx_holdoff_delay))); 
     
-
    for (uint16_t i = 1; i < sizeof(g_slot)/sizeof(uint16_t); i++){
        g_slot[i] = i;
        tdma_assign_slot(inst->tdma, slot_cb, g_slot[i], &g_slot[i]);

@@ -57,7 +57,13 @@
 #if MYNEWT_VAL(TIMESCALE)
 #include <timescale/timescale.h> 
 #endif
-#include "json_encode.h"
+#if MYNEWT_VAL(PAN_ENABLED)
+#include <pan/pan.h>
+#include <pan_master.h>
+#endif
+#if MYNEWT_VAL(CIR_ENABLED)
+#include <cir/cir.h>
+#endif
 
 
 //#define DIAGMSG(s,u) printf(s,u)
@@ -69,8 +75,6 @@ static bool dw1000_config_updated = false;
 static void slot_complete_cb(struct os_event *ev);
 
 static uint16_t g_slot[MYNEWT_VAL(TDMA_NSLOTS)] = {0};
-
-cir_t g_cir;
 
 /*! 
  * @fn complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
@@ -146,7 +150,6 @@ static void slot_complete_cb(struct os_event *ev)
                 (frame->transmission_timestamp - frame->reception_timestamp),
                 *(uint32_t *)(&rssi)
         );
-        //json_cir_encode(&g_cir, utime, "cir", CIR_SIZE);
         frame->code = DWT_DS_TWR_END;
     }    
     else if (frame->code == DWT_SS_TWR_FINAL) {
@@ -180,6 +183,43 @@ uwb_config_updated()
 {
     dw1000_config_updated = true;
     return 0;
+}
+
+
+static void 
+pan_slot_timer_cb(struct os_event * ev)
+{
+    assert(ev);
+
+    tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
+    tdma_instance_t * tdma = slot->parent;
+    dw1000_dev_instance_t * inst = tdma->parent;
+    dw1000_ccp_instance_t * ccp = inst->ccp;
+    uint16_t idx = slot->idx;
+
+#if MYNEWT_VAL(WCS_ENABLED)
+    wcs_instance_t * wcs = ccp->wcs;
+    uint64_t dx_time = (ccp->epoch + (uint64_t) roundf((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
+#else
+    uint64_t dx_time = (ccp->epoch + (uint64_t) ((idx * ((uint64_t)tdma->period << 16)/tdma->nslots)));
+#endif
+
+    
+#if MYNEWT_VAL(PANMASTER_ISSUER)
+    dx_time = (dx_time - ((uint64_t)ceilf(dw1000_usecs_to_dwt_usecs(dw1000_phy_SHR_duration(&inst->attrib))) << 16)) & 0xFFFFFFFE00UL;
+
+    /* Listen for pan requests */
+    dw1000_set_rx_timeout(inst, tdma->period/tdma->nslots/2);
+    dw1000_set_delay_start(inst, dx_time);
+    dw1000_pan_listen(inst, DWT_BLOCKING);
+
+#else
+
+    if (inst->pan->status.valid) return;
+    /* "Random" shift to hopefully avoid collisions */
+    dx_time += (os_cputime_get32()&0x7)*(tdma->period<<16)/tdma->nslots/16;
+    dw1000_pan_blink(inst, NTWR_ROLE_NODE, DWT_BLOCKING, dx_time);
+#endif // PANMASTER_ISSUER
 }
 
 /*! 
@@ -255,6 +295,18 @@ int main(int argc, char **argv){
     };
     dw1000_mac_append_interface(inst, &cbs);
 
+#if MYNEWT_VAL(PANMASTER_ISSUER)
+    pan_master_init(inst);
+    pan_db_t* node = pan_master_find_node(inst->my_long_address, DWT_TWR_ROLE_NODE);
+    if (node) {
+        inst->my_short_address = node->short_address;
+        inst->slot_id = node->slot_id;
+    }
+    dw1000_pan_start(inst, PAN_ROLE_MASTER);
+#else
+    dw1000_pan_start(inst, PAN_ROLE_SLAVE);
+#endif
+    
 #if MYNEWT_VAL(CCP_ENABLED)
     dw1000_ccp_start(inst, CCP_ROLE_MASTER);
 #endif
@@ -269,11 +321,14 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime,dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t))); 
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,dw1000_phy_SHR_duration(&inst->attrib)); 
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst->rng->config.tx_holdoff_delay))); 
-    
+
+    /* Slot 0:ccp, 1:pan, 2+ twr */
     for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
         g_slot[i] = i;
 
-    for (uint16_t i = 1; i < sizeof(g_slot)/sizeof(uint16_t); i++)
+    tdma_assign_slot(inst->tdma, pan_slot_timer_cb, g_slot[1], &g_slot[1]);
+    
+    for (uint16_t i = 2; i < sizeof(g_slot)/sizeof(uint16_t); i++)
         tdma_assign_slot(inst->tdma, slot_cb,  g_slot[i], &g_slot[i]);
 
     while (1) {

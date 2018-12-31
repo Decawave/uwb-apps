@@ -1,6 +1,6 @@
 tcp = tcpclient('127.0.0.1', 19021);
 
-ntimes = 24000
+ntimes = 12000
 idx = [];
 data= [];
 utime =[];
@@ -53,12 +53,12 @@ for j=1:ntimes
      end
      if (mod(j,4) == 0)
             [mu,sigma,~,~] = normfit(range);
-            subplot(211);
-            yyaxis right
+            ax = subplot(211);
+            yyaxis(ax,'right')
             plot(utime,skew,utime_wcs,skew_wcs,'o-m');
-            yyaxis left
+            yyaxis(ax,'left')
             plot(utime,range);
-%            plot(utime_wcs,wcs)
+%            plot(utime_wcs,skew_wcs)
             title(sprintf("tof mu=%f tof sigma=%f (dwt unit)",mu,sigma))
      end
      if (mod(j,4) == 0 && length(range) > nwin)
