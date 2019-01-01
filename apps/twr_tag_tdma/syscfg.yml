@@ -11,7 +11,6 @@ syscfg.vals:
     HARDFLOAT: 1
     TDMA_NSLOTS: 160
     WCS_VERBOSE: 1
-    RNG_VERBOSE: 0
     STATS_NAMES: 1
     STATS_CLI: 1
     CONFIG_CLI: 1
