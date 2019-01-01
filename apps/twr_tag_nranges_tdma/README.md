@@ -56,8 +56,9 @@ newt run tag 0
 
 | profile       | Description  | Benchmark  |
 | ------------- |:-------------:| -----:|
-| nrng_ss | n TWR_SS ranges with 2*n+2 messages. FOM = TX_HOLDOFF + n * (frame duration + TX_GUARD_DELAY) | 1860us for n=4, 2133us for n=6|
+| nrng_ss | n TWR_SS ranges with 2*n+2 messages. | 1860us for n=4, 2133us for n=6|
 
+FOM = TX_HOLDOFF + n * (frame duration + TX_GUARD_DELAY)
 
 The number of nodes to range with can be configured by setting the **NRNG_NNODES** on tag app during build time,
    (ex: for 3 nodes, use this command while building tag app **newt target amend tag syscfg=NRNG_NNODES=3** )
