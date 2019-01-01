@@ -20,7 +20,7 @@ syscfg.vals:
     CONFIG_CLI: 1
     DW1000_CLI: 1
     SHELL_TASK: 1
-    CIR_VERBOSE: 0    
+    CIR_VERBOSE: 1    
     CIR_SIZE: 8
     CIR_OFFSET: 2
     WCS_VERBOSE: 1
