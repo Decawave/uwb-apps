@@ -116,16 +116,42 @@ slot_cb(struct os_event *ev){
     dx_time = dx_time & 0xFFFFFFFFFE00UL;
 
     uint32_t slot_mask = 0;
+<<<<<<< HEAD
     for (uint16_t i = MYNEWT_VAL(NODE_START_SLOT_ID); i <= MYNEWT_VAL(NODE_END_SLOT_ID); i++) 
+=======
+    for (uint16_t i = MYNEWT_VAL(NODE_START_SLOT_ID); i <= MYNEWT_VAL(NODE_END_SLOT_ID); i++)
+>>>>>>> ab6b486966ff39626ac3b0971b08eb1de9caad20
         slot_mask |= 1UL << i;
-
     if(dw1000_nrng_request_delay_start(inst, 0xffff, dx_time, DWT_SS_TWR_NRNG, slot_mask, 0).start_tx_error){
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
         printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\"}\n",utime,idx);
     }else{
+<<<<<<< HEAD
         #if !MYNEWT_VAL(NRNG_VERBOSE)
             nrng_encode(inst->nrng, inst->nrng->seq_num);
         #endif
+=======
+
+        uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
+        for (uint16_t i = MYNEWT_VAL(NODE_START_SLOT_ID); i <= MYNEWT_VAL(NODE_END_SLOT_ID); i++){
+            uint16_t slot_idx = calc_nslots(slot_mask, 1UL << i, SLOT_POSITION);
+            nrng_frame_t * frame = nranges->frames[slot_idx][FIRST_FRAME_IDX];
+ 
+            if (frame->code ==  DWT_SS_TWR_NRNG_FINAL) {
+                float range = dw1000_rng_tof_to_meters(dw1000_nrng_twr_to_tof_frames(inst, frame, frame));
+                printf("{\"utime\": %lu,\"slot_id\": [%2u,%2u,%2u],\"ToA\": \"%lX\", \"range\": %lu,\"res_req\": \"%lX\",\"rec_tra\": \"%lX\"}\n",
+                        utime,
+                        slot_idx, idx, frame->seq_num,
+                        frame->reception_timestamp,
+                        *(uint32_t *)(&range),
+                        (frame->response_timestamp - frame->request_timestamp),
+                        (frame->transmission_timestamp - frame->reception_timestamp)
+                );
+ //               print_frame(frame,'\n');
+                frame->code = DWT_DS_TWR_NRNG_END;
+            }
+        }
+>>>>>>> ab6b486966ff39626ac3b0971b08eb1de9caad20
     }
 }
 
