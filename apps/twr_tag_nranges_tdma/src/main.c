@@ -194,7 +194,7 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,dw1000_phy_SHR_duration(&inst->attrib)); 
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst->rng->config.tx_holdoff_delay))); 
        
-    for (uint16_t i = 1; i < sizeof(g_slot)/sizeof(uint16_t); i+=8){
+    for (uint16_t i = 1; i < sizeof(g_slot)/sizeof(uint16_t); i+=4){
        g_slot[i] = i;
        tdma_assign_slot(inst->tdma, slot_cb, g_slot[i], &g_slot[i]);
     }
