@@ -367,7 +367,7 @@ int main(int argc, char **argv){
         g_slot[i] = i;
     tdma_assign_slot(inst->tdma, slot0_cb, g_slot[0], &g_slot[0]);
     tdma_assign_slot(inst->tdma, pan_slot_timer_cb, g_slot[1], &g_slot[1]);
-
+   
     for (uint16_t i = 2; i < sizeof(g_slot)/sizeof(uint16_t); i++)
         tdma_assign_slot(inst->tdma, slot_cb, g_slot[i], &g_slot[i]);
 

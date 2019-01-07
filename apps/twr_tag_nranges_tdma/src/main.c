@@ -46,12 +46,14 @@
 #include <wcs/wcs.h>
 #endif
 #if MYNEWT_VAL(NRNG_ENABLED)
-//#include <nrng/nrng.h>
-#include <nranges/nranges.h>
+#include <rng/nrng.h>
 #endif
 #include <config/config.h>
 #include "uwbcfg/uwbcfg.h"
 
+#if MYNEWT_VAL(NRNG_VERBOSE)
+#include <rng/nrng_encode.h>
+#endif
 //#define DIAGMSG(s,u) printf(s,u)
 #ifndef DIAGMSG
 #define DIAGMSG(s,u)
@@ -81,7 +83,7 @@ void print_frame(nrng_frame_t * twr, char crlf){
 static uint16_t g_slot[NSLOTS] = {0};
 
 /*! 
- * @fn slot_timer_cb(struct os_event * ev)
+ * @fn slot_cb(struct os_event * ev)
  *
  * @brief This function each 
  *
@@ -92,6 +94,7 @@ static uint16_t g_slot[NSLOTS] = {0};
  *
  * returns none 
  */
+
 static void 
 slot_cb(struct os_event *ev){
     assert(ev);
@@ -99,8 +102,6 @@ slot_cb(struct os_event *ev){
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
     tdma_instance_t * tdma = slot->parent;
     dw1000_dev_instance_t * inst = tdma->parent;
-    dw1000_nrng_instance_t * nranges = inst->nrng;
-
     dw1000_ccp_instance_t * ccp = inst->ccp;
     uint16_t idx = slot->idx;
 
@@ -115,34 +116,19 @@ slot_cb(struct os_event *ev){
     dx_time = dx_time & 0xFFFFFFFFFE00UL;
 
     uint32_t slot_mask = 0;
-    for (uint16_t i = MYNEWT_VAL(NODE_START_SLOT_ID); i <= MYNEWT_VAL(NODE_END_SLOT_ID); i++)
+    for (uint16_t i = MYNEWT_VAL(NODE_START_SLOT_ID); i <= MYNEWT_VAL(NODE_END_SLOT_ID); i++) 
         slot_mask |= 1UL << i;
+        
     if(dw1000_nrng_request_delay_start(inst, 0xffff, dx_time, DWT_SS_TWR_NRNG, slot_mask, 0).start_tx_error){
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
         printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\"}\n",utime,idx);
     }else{
-
-        uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
-        for (uint16_t i = MYNEWT_VAL(NODE_START_SLOT_ID); i <= MYNEWT_VAL(NODE_END_SLOT_ID); i++){
-            uint16_t slot_idx = calc_nslots(slot_mask, 1UL << i, SLOT_POSITION);
-            nrng_frame_t * frame = nranges->frames[slot_idx][FIRST_FRAME_IDX];
- 
-            if (frame->code ==  DWT_SS_TWR_NRNG_FINAL) {
-                float range = dw1000_rng_tof_to_meters(dw1000_nrng_twr_to_tof_frames(inst, frame, frame));
-                printf("{\"utime\": %lu,\"slot_id\": [%2u,%2u,%2u],\"ToA\": \"%lX\", \"range\": %lu,\"res_req\": \"%lX\",\"rec_tra\": \"%lX\"}\n",
-                        utime,
-                        slot_idx, idx, frame->seq_num,
-                        frame->reception_timestamp,
-                        *(uint32_t *)(&range),
-                        (frame->response_timestamp - frame->request_timestamp),
-                        (frame->transmission_timestamp - frame->reception_timestamp)
-                );
- //               print_frame(frame,'\n');
-                frame->code = DWT_DS_TWR_NRNG_END;
-            }
-        }
+        #if !MYNEWT_VAL(NRNG_VERBOSE)
+            nrng_encode(inst->nrng, inst->nrng->seq_num);
+        #endif
     }
 }
+
 /**
  * @fn uwb_config_update
  * 
@@ -205,8 +191,8 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime,dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t))); 
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,dw1000_phy_SHR_duration(&inst->attrib)); 
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst->rng->config.tx_holdoff_delay))); 
-    
-   for (uint16_t i = 1; i < sizeof(g_slot)/sizeof(uint16_t); i++){
+       
+    for (uint16_t i = 1; i < sizeof(g_slot)/sizeof(uint16_t); i+=4){
        g_slot[i] = i;
        tdma_assign_slot(inst->tdma, slot_cb, g_slot[i], &g_slot[i]);
     }
