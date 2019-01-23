@@ -51,9 +51,6 @@
 #include <config/config.h>
 #include "uwbcfg/uwbcfg.h"
 
-#if MYNEWT_VAL(NRNG_VERBOSE)
-#include <rng/nrng_encode.h>
-#endif
 //#define DIAGMSG(s,u) printf(s,u)
 #ifndef DIAGMSG
 #define DIAGMSG(s,u)
@@ -109,9 +106,10 @@ slot_cb(struct os_event *ev){
     
 #if MYNEWT_VAL(WCS_ENABLED)
     wcs_instance_t * wcs = ccp->wcs;
-    uint64_t dx_time = (ccp->epoch + (uint64_t) round((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
+//    uint64_t dx_time = (ccp->local_epoch + (uint64_t) round((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
+    uint64_t dx_time = (ccp->local_epoch + (uint64_t) wcs_dtu_time_adjust(wcs, ((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
 #else
-    uint64_t dx_time = (ccp->epoch + (uint64_t) (idx * ((uint64_t)tdma->period << 16)/tdma->nslots));
+    uint64_t dx_time = (ccp->local_epoch + (uint64_t) (idx * ((uint64_t)tdma->period << 16)/tdma->nslots));
 #endif
     dx_time = dx_time & 0xFFFFFFFFFE00UL;
 
@@ -124,7 +122,7 @@ slot_cb(struct os_event *ev){
         printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\"}\n",utime,idx);
     }else{
         #if !MYNEWT_VAL(NRNG_VERBOSE)
-            nrng_encode(inst->nrng, inst->nrng->seq_num);
+            // Place holder 
         #endif
     }
 }
@@ -176,8 +174,8 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_3, 1);
 
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    inst->config.cir_enable = true;
-//    inst->config.rxauto_enable = false;
+    //inst->config.cir_enable = true;
+    //inst->config.rxauto_enable = false;
 
 #if MYNEWT_VAL(CCP_ENABLED)
     dw1000_ccp_start(inst, CCP_ROLE_SLAVE);
@@ -193,7 +191,7 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime,dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t))); 
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,dw1000_phy_SHR_duration(&inst->attrib)); 
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst->rng->config.tx_holdoff_delay))); 
-       
+
     for (uint16_t i = 1; i < sizeof(g_slot)/sizeof(uint16_t); i+=4){
        g_slot[i] = i;
        tdma_assign_slot(inst->tdma, slot_cb, g_slot[i], &g_slot[i]);

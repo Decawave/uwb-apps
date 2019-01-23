@@ -52,10 +52,10 @@
 #include <wcs/wcs.h>
 #endif
 
-//#define VERBOSE 1
+#define VERBOSE0 
 #define NSLOTS MYNEWT_VAL(TDMA_NSLOTS)
 static uint16_t g_slot[NSLOTS] = {0};
-#define VERBOSE0
+
 
 void print_frame(const char * name, nrng_frame_t *twr ){
     printf("%s{\n\tfctrl:0x%04X,\n", name, twr->fctrl);
@@ -79,6 +79,7 @@ static void nrange_complete_cb(struct os_event *ev) {
     dw1000_nrng_instance_t *nranges = inst->nrng;
     nrng_frame_t * frame = nranges->frames[(nranges->idx)%(nranges->nframes/FRAMES_PER_RANGE)][SECOND_FRAME_IDX];
 
+#ifdef VERBOSE
     if (inst->status.start_rx_error)
         printf("{\"utime\": %lu,\"timer_ev_cb\": \"start_rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
     if (inst->status.start_tx_error)
@@ -87,7 +88,7 @@ static void nrange_complete_cb(struct os_event *ev) {
         printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
     if (inst->status.rx_timeout_error)
         printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_timeout_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
-
+#endif
     if (frame->code == DWT_DS_TWR_NRNG_FINAL || frame->code == DWT_DS_TWR_NRNG_EXT_FINAL){
         frame->code = DWT_DS_TWR_NRNG_END;
     }
@@ -142,9 +143,9 @@ slot_cb(struct os_event * ev){
 
 #if MYNEWT_VAL(WCS_ENABLED)
     wcs_instance_t * wcs = ccp->wcs;
-    uint64_t dx_time = (ccp->epoch + (uint64_t) roundf((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
+    uint64_t dx_time = (ccp->local_epoch + (uint64_t) round((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
 #else
-    uint64_t dx_time = (ccp->epoch + (uint64_t) ((idx * ((uint64_t)tdma->period << 16)/tdma->nslots)));
+    uint64_t dx_time = (ccp->local_epoch + (uint64_t) ((idx * ((uint64_t)tdma->period << 16)/tdma->nslots)));
 #endif
     dx_time = (dx_time - ((uint64_t)ceilf(dw1000_usecs_to_dwt_usecs(dw1000_phy_SHR_duration(&inst->attrib))) << 16) ) & 0xFFFFFFFE00UL;
 
@@ -152,7 +153,7 @@ slot_cb(struct os_event * ev){
     uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(nrng_request_frame_t))
                         + inst->nrng->config.rx_timeout_delay;    
           
-    dw1000_set_rx_timeout(inst, timeout);
+    dw1000_set_rx_timeout(inst, timeout + 0x1000);
     dw1000_rng_listen(inst, DWT_BLOCKING);
 
 #ifdef VERBOSE
