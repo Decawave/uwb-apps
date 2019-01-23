@@ -33,6 +33,7 @@ pkg.deps:
     - "@apache-mynewt-core/sys/shell"
     - "@apache-mynewt-core/encoding/json"
     - "@mynewt-dw1000-core/hw/drivers/dw1000"
+    - "@mynewt-dw1000-core/lib/nranges"
     - "@mynewt-dw1000-core/lib/twr_ss_nrng"
 #    - "@mynewt-dw1000-core/lib/twr_ds_nrng"
 #    - "@mynewt-dw1000-core/lib/twr_ds_ext_nrng"
