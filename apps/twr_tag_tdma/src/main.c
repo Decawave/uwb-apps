@@ -89,7 +89,6 @@ static void slot_complete_cb(struct os_event * ev);
 static void 
 slot_cb(struct os_event *ev){
     assert(ev);
-
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
     tdma_instance_t * tdma = slot->parent;
     dw1000_dev_instance_t * inst = tdma->parent;
@@ -104,9 +103,9 @@ slot_cb(struct os_event *ev){
     
 #if MYNEWT_VAL(WCS_ENABLED)
     wcs_instance_t * wcs = ccp->wcs;
-    uint64_t dx_time = (ccp->epoch + (uint64_t) round((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
+    uint64_t dx_time = (ccp->local_epoch + (uint64_t) wcs_dtu_time_adjust(wcs, ((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
 #else
-    uint64_t dx_time = (ccp->epoch + (uint64_t) (idx * ((uint64_t)tdma->period << 16)/tdma->nslots));
+    uint64_t dx_time = (ccp->local_epoch + (uint64_t) (idx * ((uint64_t)tdma->period << 16)/tdma->nslots));
 #endif
     dx_time = dx_time & 0xFFFFFFFFFE00UL;
   
@@ -246,7 +245,6 @@ slot_complete_cb(struct os_event * ev){
         frame->code = DWT_DS_TWR_END;
     } 
 }
-
 static void 
 pan_slot_timer_cb(struct os_event * ev)
 {
@@ -258,17 +256,14 @@ pan_slot_timer_cb(struct os_event * ev)
 
 #if MYNEWT_VAL(WCS_ENABLED)
     wcs_instance_t * wcs = ccp->wcs;
-    uint64_t dx_time = (ccp->epoch + (uint64_t) roundf((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
+    uint64_t dx_time = (ccp->local_epoch + (uint64_t) wcs_dtu_time_adjust(wcs, ((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
 #else
-    uint64_t dx_time = (ccp->epoch + (uint64_t) ((idx * ((uint64_t)tdma->period << 16)/tdma->nslots)));
+    uint64_t dx_time = (ccp->local_epoch + (uint64_t) (idx * ((uint64_t)tdma->period << 16)/tdma->nslots));
 #endif
 
     if (inst->pan->status.valid) return;
-    /* "Random" shift to hopefully avoid collisions */
-    dx_time += (os_cputime_get32()&0x7)*(tdma->period<<16)/tdma->nslots/16;
     dw1000_pan_blink(inst, 2, DWT_BLOCKING, dx_time);
 }
-
 
 /*! 
  * @fn error_cb(struct os_event *ev)
@@ -305,14 +300,13 @@ error_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
 int main(int argc, char **argv){
     int rc;
 
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    
     sysinit();
 
     hal_gpio_init_out(LED_BLINK_PIN, 1);
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
     
+    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     dw1000_mac_interface_t cbs = {
         .id = DW1000_APP0,
         .tx_error_cb = error_cb,
@@ -368,7 +362,7 @@ int main(int argc, char **argv){
     tdma_assign_slot(inst->tdma, slot0_cb, g_slot[0], &g_slot[0]);
     tdma_assign_slot(inst->tdma, pan_slot_timer_cb, g_slot[1], &g_slot[1]);
    
-    for (uint16_t i = 2; i < sizeof(g_slot)/sizeof(uint16_t); i++)
+    for (uint16_t i = 2; i < sizeof(g_slot)/sizeof(uint16_t); i+=4)
         tdma_assign_slot(inst->tdma, slot_cb, g_slot[i], &g_slot[i]);
 
     while (1) {
