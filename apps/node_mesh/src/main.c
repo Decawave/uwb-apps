@@ -95,12 +95,16 @@ cir_t g_cir;
 /* The timer callout */
 
 static struct os_callout slot_callout;
+static uint16_t g_idx_latest;
 
 static bool
 complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
     }
+    dw1000_rng_instance_t * rng = inst->rng;
+    g_idx_latest = (rng->idx)%rng->nframes; // Store valid frame pointer
+
     os_callout_init(&slot_callout, os_eventq_dflt_get(), slot_complete_cb, inst);
     os_eventq_put(os_eventq_dflt_get(), &slot_callout.c_ev);
     return true;
@@ -127,10 +131,10 @@ static void slot_complete_cb(struct os_event *ev)
     hal_gpio_toggle(LED_BLINK_PIN);
     dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *)ev->ev_arg;
     dw1000_rng_instance_t * rng = inst->rng; 
-    twr_frame_t * frame = rng->frames[(rng->idx)%rng->nframes];
+    twr_frame_t * frame = rng->frames[g_idx_latest%rng->nframes];
 
     if (frame->code == DWT_DS_TWR_FINAL || frame->code == DWT_DS_TWR_EXT_FINAL) {
-        float time_of_flight = dw1000_rng_twr_to_tof(rng);
+        float time_of_flight = (float) dw1000_rng_twr_to_tof(rng, g_idx_latest);
         uint32_t utime =os_cputime_ticks_to_usecs(os_cputime_get32()); 
         float rssi = dw1000_get_rssi(inst);
 
@@ -148,7 +152,7 @@ static void slot_complete_cb(struct os_event *ev)
         frame->code = DWT_DS_TWR_END;
     }    
     else if (frame->code == DWT_SS_TWR_FINAL) {
-        float time_of_flight = dw1000_rng_twr_to_tof(rng);
+        float time_of_flight = dw1000_rng_twr_to_tof(rng, g_idx_latest);
         float range = dw1000_rng_tof_to_meters(time_of_flight);
         uint32_t utime =os_cputime_ticks_to_usecs(os_cputime_get32()); 
  
@@ -195,18 +199,18 @@ slot_cb(struct os_event * ev){
 
 #if MYNEWT_VAL(WCS_ENABLED)
     wcs_instance_t * wcs = ccp->wcs;
-    uint64_t dx_time = (ccp->epoch + (uint64_t) roundf((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
+    uint64_t dx_time = (ccp->local_epoch + (uint64_t) round((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
 #else
-    uint64_t dx_time = (ccp->epoch + (uint64_t) ((idx * ((uint64_t)tdma->period << 16)/tdma->nslots)));
+    uint64_t dx_time = (ccp->local_epoch + (uint64_t) ((idx * ((uint64_t)tdma->period << 16)/tdma->nslots)));
 #endif
-    dx_time = (dx_time - ((uint64_t)ceilf(dw1000_usecs_to_dwt_usecs(dw1000_phy_SHR_duration(&inst->attrib))) << 16)) & 0xFFFFFFFE00UL;
+    dx_time = (dx_time - ((uint64_t)ceilf(dw1000_usecs_to_dwt_usecs(dw1000_phy_SHR_duration(&inst->attrib))) << 16) ) & 0xFFFFFFFE00UL;
 
     dw1000_set_delay_start(inst, dx_time);
     uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(ieee_rng_response_frame_t))                 
-                            + inst->rng->config.tx_holdoff_delay;         // Remote side turn arroud time. 
+                            + inst->rng->config.rx_timeout_delay;         // Remote side turn arroud time.
     dw1000_set_rx_timeout(inst, timeout);
+    dw1000_rng_listen(inst, DWT_BLOCKING);
 
-    dw1000_set_on_error_continue(inst, true);
     if(dw1000_start_rx(inst).start_rx_error){
         printf("{\"utime\": %lu,\"msg\": \"main::slot_cb:start_rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
     }    

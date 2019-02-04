@@ -101,14 +101,14 @@ slot_cb(struct os_event *ev){
     
 #if MYNEWT_VAL(WCS_ENABLED)
     wcs_instance_t * wcs = ccp->wcs;
-    uint64_t dx_time = (ccp->epoch + (uint64_t) round((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
+    uint64_t dx_time = (ccp->local_epoch + (uint64_t) wcs_dtu_time_adjust(wcs, ((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
 #else
-    uint64_t dx_time = (ccp->epoch + (uint64_t) (idx * ((uint64_t)tdma->period << 16)/tdma->nslots));
+    uint64_t dx_time = (ccp->local_epoch + (uint64_t) (idx * ((uint64_t)tdma->period << 16)/tdma->nslots));
 #endif
     dx_time = dx_time & 0xFFFFFFFFFE00UL;
   
 #ifdef TICTOC
-   uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
+    uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
 #endif
     if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_SS_TWR).start_tx_error){
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
@@ -156,12 +156,16 @@ slot0_cb(struct os_event *ev){
  */
 /* The timer callout */
 static struct os_callout slot_complete_callout;
+static uint16_t g_idx_latest;
 
 static bool
 complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
     }
+    dw1000_rng_instance_t * rng = inst->rng;
+    g_idx_latest = (rng->idx)%rng->nframes; // Store valid frame pointer
+
     os_callout_init(&slot_complete_callout, os_eventq_dflt_get(), slot_complete_cb, inst);
     os_eventq_put(os_eventq_dflt_get(), &slot_complete_callout.c_ev);
     return true;
@@ -189,12 +193,12 @@ slot_complete_cb(struct os_event * ev){
     dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *) ev->ev_arg;
     dw1000_rng_instance_t * rng = inst->rng;
     
-    twr_frame_t * frame = rng->frames[(rng->idx)%rng->nframes];
+    twr_frame_t * frame = rng->frames[g_idx_latest%rng->nframes];
     float skew = dw1000_calc_clock_offset_ratio(inst, frame->carrier_integrator);
     
     if (frame->code == DWT_SS_TWR_FINAL) {
-        float time_of_flight = (float) dw1000_rng_twr_to_tof(rng);
-        float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
+        float time_of_flight = (float) dw1000_rng_twr_to_tof(rng, g_idx_latest);
+        float range = dw1000_rng_tof_to_meters(time_of_flight);
         printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": \"%lX\","
                 " \"rec_tra\": \"%lX\", \"skew\": %lu}\n",
                 os_cputime_ticks_to_usecs(os_cputime_get32()),
@@ -208,8 +212,8 @@ slot_complete_cb(struct os_event * ev){
     }
 
     else if (frame->code == DWT_DS_TWR_FINAL) {
-        float time_of_flight = dw1000_rng_twr_to_tof(rng);
-        float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
+        float time_of_flight = dw1000_rng_twr_to_tof(rng, g_idx_latest);
+        float range = dw1000_rng_tof_to_meters(time_of_flight);
         printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"azimuth\": %lu,\"res_req\":\"%lX\","
                 " \"rec_tra\": \"%lX\"}\n",
                 os_cputime_ticks_to_usecs(os_cputime_get32()), 
@@ -223,7 +227,7 @@ slot_complete_cb(struct os_event * ev){
     } 
 
     else if (frame->code == DWT_DS_TWR_EXT_FINAL) {
-        float time_of_flight = dw1000_rng_twr_to_tof(rng);
+        float time_of_flight = dw1000_rng_twr_to_tof(rng, g_idx_latest);
         printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"azimuth\": %lu,\"res_req\":\"%lX\","
                 " \"rec_tra\": \"%lX\"}\n",
                 os_cputime_ticks_to_usecs(os_cputime_get32()), 
