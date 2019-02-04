@@ -96,14 +96,14 @@ slot_cb(struct os_event *ev){
     
 #if MYNEWT_VAL(WCS_ENABLED)
     wcs_instance_t * wcs = ccp->wcs;
-    uint64_t dx_time = (ccp->epoch + (uint64_t) round((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
+    uint64_t dx_time = (ccp->local_epoch + (uint64_t) wcs_dtu_time_adjust(wcs, ((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
 #else
-    uint64_t dx_time = (ccp->epoch + (uint64_t) (idx * ((uint64_t)tdma->period << 16)/tdma->nslots));
+    uint64_t dx_time = (ccp->local_epoch + (uint64_t) (idx * ((uint64_t)tdma->period << 16)/tdma->nslots));
 #endif
     dx_time = dx_time & 0xFFFFFFFFFE00UL;
   
 #ifdef TICTOC
-   uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
+    uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
 #endif
     if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_DS_TWR).start_tx_error){
     }else{
