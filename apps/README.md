@@ -22,20 +22,21 @@
 ## Overview
 
 ```
-├── README.md        // This file
-├── lwip_p2p_rx      // LWIP Read/Write example
-├── lwip_p2p_tx      // ~
-├── lwip_ping_rx     // LWIP sign-of-life
-├── lwip_ping_tx     // ~
-├── matlab           // Realtime Matlab visualisation utilities
-├── node_provision   // Elementary standalone provisioning example 
-├── tag_provision    // ~
-├── pan_master       // Elementary PAN Master example 
-├── twr_node         // Two-Way-Ranging examples
-├── twr_tag          // ~
-├── twr_node_tdma    // Two-Way-Ranging example with TDMA scheme
-├── twr_tag_tdma     // ~
-├── twr_node_nranges // 2n+2 example with TDMA scheme
-└── twr_tag_nranges  // ~
+├── README.md                // This file
+├── depreciated              // Legacy apps
+├── listener                 // Sniffer app
+├── loopback                 // Loopback app to test dwm1002 board with 2 DW radios
+├── lwip_ping_rx             // LWIP Read/Write example
+├── lwip_ping_tx             // ~
+├── matlab                   // Realtime Matlab visualisation utilities
+├── node_mesh                // BLE mesh demo apps with TWR ranging
+├── tag_mesh                 // ~
+├── tdoa_tag                 // Blink service app intended for TDOA ranging scheme
+├── twr_node_nranges_tdma    // 2n+2 example with TDMA scheme
+├── twr_tag_nranges_tdma     // ~
+├── twr_node_tdma            // Two-Way-Ranging example with TDMA scheme
+├── twr_tag_tdma             // ~
+├── twr_node_tdma_ota_ble    // OTA over BLE demonstration with Two way ranging
+└── twr_tag_tdma_ota_ble     // ~
 
 ```
