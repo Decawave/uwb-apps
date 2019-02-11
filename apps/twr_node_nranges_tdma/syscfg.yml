@@ -5,25 +5,23 @@ syscfg.vals:
     CONSOLE_UART_BAUD: 115200
     CONSOLE_UART_TX_BUF_SIZE: '1024'
     DW1000_DEVICE_0: 1
-    CLOCK_CALIBRATION_ENABLED: 0
-    TIMESCALE_PROCESSING_ENABLED: 0
-    ADAPTIVE_TIMESCALE_ENABLED: 0
     FS_XTALT_AUTOTUNE_ENABLED: 0
     DW1000_BIAS_CORRECTION_ENABLED: 0
-    TDMA_NSLOTS: 64
+    TDMA_NSLOTS: 160
     NRNG_DEVICE_TYPE: 1
     HARDFLOAT: 1
-    DEVICE_ID: ((uint16_t){0x2222})
+    DEVICE_ID: ((uint16_t)0x2222)
     STATS_NAMES: 1
     STATS_CLI: 1
     WCS_VERBOSE: 1
     NRNG_VERBOSE: 0
+    TDMA_SANITY_INTERVAL: 10
 
 syscfg.defs:
     UUID_CCP_MASTER:
         description: >
             Clock Master UUID
-        value: ((uint16_t){0x8000})
+        value: ((uint16_t)0x8000)
     SLOT_ID:
         description: >
             SLOT_ID for the Device

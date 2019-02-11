@@ -185,7 +185,6 @@ uwb_config_updated()
     return 0;
 }
 
-
 static void 
 pan_slot_timer_cb(struct os_event * ev)
 {
@@ -199,12 +198,11 @@ pan_slot_timer_cb(struct os_event * ev)
 
 #if MYNEWT_VAL(WCS_ENABLED)
     wcs_instance_t * wcs = ccp->wcs;
-    uint64_t dx_time = (ccp->epoch + (uint64_t) roundf((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
+    uint64_t dx_time = (ccp->local_epoch + (uint64_t) round((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
 #else
-    uint64_t dx_time = (ccp->epoch + (uint64_t) ((idx * ((uint64_t)tdma->period << 16)/tdma->nslots)));
+    uint64_t dx_time = (ccp->local_epoch + (uint64_t) ((idx * ((uint64_t)tdma->period << 16)/tdma->nslots)));
 #endif
 
-    
 #if MYNEWT_VAL(PANMASTER_ISSUER)
     dx_time = (dx_time - ((uint64_t)ceilf(dw1000_usecs_to_dwt_usecs(dw1000_phy_SHR_duration(&inst->attrib))) << 16)) & 0xFFFFFFFE00UL;
 
@@ -212,16 +210,12 @@ pan_slot_timer_cb(struct os_event * ev)
     dw1000_set_rx_timeout(inst, tdma->period/tdma->nslots/2);
     dw1000_set_delay_start(inst, dx_time);
     dw1000_pan_listen(inst, DWT_BLOCKING);
-
 #else
 
     if (inst->pan->status.valid) return;
-    /* "Random" shift to hopefully avoid collisions */
-    dx_time += (os_cputime_get32()&0x7)*(tdma->period<<16)/tdma->nslots/16;
     dw1000_pan_blink(inst, NTWR_ROLE_NODE, DWT_BLOCKING, dx_time);
 #endif // PANMASTER_ISSUER
 }
-
 /*! 
  * @fn slot_cb(struct os_event * ev)
  * 
@@ -258,15 +252,15 @@ slot_cb(struct os_event * ev){
 
 #if MYNEWT_VAL(WCS_ENABLED)
     wcs_instance_t * wcs = ccp->wcs;
-    uint64_t dx_time = (ccp->epoch + (uint64_t) roundf((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
+    uint64_t dx_time = (ccp->local_epoch + (uint64_t) round((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
 #else
-    uint64_t dx_time = (ccp->epoch + (uint64_t) ((idx * ((uint64_t)tdma->period << 16)/tdma->nslots)));
+    uint64_t dx_time = (ccp->local_epoch + (uint64_t) ((idx * ((uint64_t)tdma->period << 16)/tdma->nslots)));
 #endif
-    dx_time = (dx_time - ((uint64_t)ceilf(dw1000_usecs_to_dwt_usecs(dw1000_phy_SHR_duration(&inst->attrib))) << 16)) & 0xFFFFFFFE00UL;
+    dx_time = (dx_time - ((uint64_t)ceilf(dw1000_usecs_to_dwt_usecs(dw1000_phy_SHR_duration(&inst->attrib))) << 16) ) & 0xFFFFFFFE00UL;
 
     dw1000_set_delay_start(inst, dx_time);
     uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(ieee_rng_response_frame_t))                 
-                            + inst->rng->config.tx_holdoff_delay;         // Remote side turn arroud time. 
+                        + inst->rng->config.rx_timeout_delay;// tx_holdoff_delay;         // Remote side turn arroud time.
                             
     dw1000_set_rx_timeout(inst, timeout);
     dw1000_rng_listen(inst, DWT_BLOCKING);
@@ -295,6 +289,9 @@ int main(int argc, char **argv){
     };
     dw1000_mac_append_interface(inst, &cbs);
 
+#if MYNEWT_VAL(CCP_ENABLED)
+    dw1000_ccp_start(inst, CCP_ROLE_MASTER);
+#endif
 #if MYNEWT_VAL(PANMASTER_ISSUER)
     pan_master_init(inst);
     pan_db_t* node = pan_master_find_node(inst->my_long_address, DWT_TWR_ROLE_NODE);
@@ -307,9 +304,6 @@ int main(int argc, char **argv){
     dw1000_pan_start(inst, PAN_ROLE_SLAVE);
 #endif
     
-#if MYNEWT_VAL(CCP_ENABLED)
-    dw1000_ccp_start(inst, CCP_ROLE_MASTER);
-#endif
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
     printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 
     printf("{\"utime\": %lu,\"msg\": \"device_id = 0x%lX\"}\n",utime,inst->device_id);

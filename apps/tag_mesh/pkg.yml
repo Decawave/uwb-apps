@@ -58,5 +58,3 @@ pkg.cflags:
 
 pkg.lflags:
     - "-lm"
-
-

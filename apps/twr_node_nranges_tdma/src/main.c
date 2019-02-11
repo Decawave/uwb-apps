@@ -43,8 +43,7 @@
 #include <ccp/ccp.h>
 #endif
 #if MYNEWT_VAL(NRNG_ENABLED)
-//#include <nrng/nrng.h>
-#include <nranges/nranges.h>
+#include <rng/nrng.h>
 #endif
 #if MYNEWT_VAL(TIMESCALE)
 #include <timescale/timescale.h> 
@@ -53,10 +52,10 @@
 #include <wcs/wcs.h>
 #endif
 
-//#define VERBOSE 1
+#define VERBOSE0
 #define NSLOTS MYNEWT_VAL(TDMA_NSLOTS)
 static uint16_t g_slot[NSLOTS] = {0};
-#define VERBOSE0
+
 
 void print_frame(const char * name, nrng_frame_t *twr ){
     printf("%s{\n\tfctrl:0x%04X,\n", name, twr->fctrl);
@@ -80,6 +79,7 @@ static void nrange_complete_cb(struct os_event *ev) {
     dw1000_nrng_instance_t *nranges = inst->nrng;
     nrng_frame_t * frame = nranges->frames[(nranges->idx)%(nranges->nframes/FRAMES_PER_RANGE)][SECOND_FRAME_IDX];
 
+#ifdef VERBOSE
     if (inst->status.start_rx_error)
         printf("{\"utime\": %lu,\"timer_ev_cb\": \"start_rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
     if (inst->status.start_tx_error)
@@ -88,7 +88,7 @@ static void nrange_complete_cb(struct os_event *ev) {
         printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
     if (inst->status.rx_timeout_error)
         printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_timeout_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
-
+#endif
     if (frame->code == DWT_DS_TWR_NRNG_FINAL || frame->code == DWT_DS_TWR_NRNG_EXT_FINAL){
         frame->code = DWT_DS_TWR_NRNG_END;
     }
@@ -109,7 +109,7 @@ static void nrange_complete_cb(struct os_event *ev) {
 /* The timer callout */
 static struct os_callout slot_callout;
 static bool complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
-    if(inst->fctrl != FCNTL_IEEE_N_RANGES_16){
+    if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
     }
     os_callout_init(&slot_callout, os_eventq_dflt_get(), nrange_complete_cb, inst);
@@ -143,20 +143,18 @@ slot_cb(struct os_event * ev){
 
 #if MYNEWT_VAL(WCS_ENABLED)
     wcs_instance_t * wcs = ccp->wcs;
-    uint64_t dx_time = (ccp->epoch + (uint64_t) roundf((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
+    uint64_t dx_time = (ccp->local_epoch + (uint64_t) round((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
 #else
-    uint64_t dx_time = (ccp->epoch + (uint64_t) ((idx * ((uint64_t)tdma->period << 16)/tdma->nslots)));
+    uint64_t dx_time = (ccp->local_epoch + (uint64_t) ((idx * ((uint64_t)tdma->period << 16)/tdma->nslots)));
 #endif
-    dx_time = (dx_time - ((uint64_t)ceilf(dw1000_usecs_to_dwt_usecs(dw1000_phy_SHR_duration(&inst->attrib))) << 16)) & 0xFFFFFFFE00UL;
+    dx_time = (dx_time - ((uint64_t)ceilf(dw1000_usecs_to_dwt_usecs(dw1000_phy_SHR_duration(&inst->attrib))) << 16) ) & 0xFFFFFFFE00UL;
 
     dw1000_set_delay_start(inst, dx_time);
     uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(nrng_request_frame_t))
-                            + inst->nrng->config.rx_timeout_period
-                            + inst->nrng->config.tx_holdoff_delay     // Remote side turn arroud time. 
-                            + inst->nrng->config.tx_guard_delay;        
-                            
-    dw1000_set_rx_timeout(inst, timeout);
-    dw1000_nrng_listen(inst, DWT_BLOCKING);
+                        + inst->nrng->config.rx_timeout_delay;
+
+    dw1000_set_rx_timeout(inst, timeout + 0x1000);
+    dw1000_rng_listen(inst, DWT_BLOCKING);
 
 #ifdef VERBOSE
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
@@ -192,9 +190,8 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,dw1000_phy_SHR_duration(&inst->attrib)); 
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst->rng->config.tx_holdoff_delay))); 
     
-    inst->slot_id = MYNEWT_VAL(SLOT_ID);
 #if MYNEWT_VAL(CCP_ENABLED)
-    if(inst->slot_id ==1)
+    if(inst->slot_id == 0)
         dw1000_ccp_start(inst, CCP_ROLE_MASTER);
     else
         dw1000_ccp_start(inst, CCP_ROLE_SLAVE);
