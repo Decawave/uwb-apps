@@ -103,7 +103,11 @@ slot_cb(struct os_event *ev){
     
 #if MYNEWT_VAL(WCS_ENABLED)
     wcs_instance_t * wcs = ccp->wcs;
+<<<<<<< Updated upstream
     uint64_t dx_time = (ccp->local_epoch + (uint64_t) wcs_dtu_time_adjust(wcs, ((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
+=======
+    uint64_t dx_time = (ccp->local_epoch + (uint64_t) round((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
+>>>>>>> Stashed changes
 #else
     uint64_t dx_time = (ccp->local_epoch + (uint64_t) (idx * ((uint64_t)tdma->period << 16)/tdma->nslots));
 #endif

@@ -10,21 +10,22 @@ The example also illustrates the WCS (Wireless Clock Synchronization) capability
 newt target create node
 newt target set node app=apps/twr_node_nranges_tdma
 newt target set node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target amend node syscfg=DEVICE_ID=0x1001:SLOT_ID=0
+
+newt target amend node syscfg=DEVICE_ID=0x1000:SLOT_ID=0:NRNG_NNODES=16:NRNG_NFRAMES=32:NODE_START_SLOT_ID=0:NODE_END_SLOT_ID=7
 newt run node 0
-newt target amend node syscfg=DEVICE_ID=0x1002:SLOT_ID=1
+newt target amend node syscfg=DEVICE_ID=0x1001:SLOT_ID=1
 newt run node 0
-newt target amend node syscfg=DEVICE_ID=0x1003:SLOT_ID=2
+newt target amend node syscfg=DEVICE_ID=0x1002:SLOT_ID=2
 newt run node 0
-newt target amend node syscfg=DEVICE_ID=0x1004:SLOT_ID=3
+newt target amend node syscfg=DEVICE_ID=0x1003:SLOT_ID=3
 newt run node 0
-newt target amend node syscfg=DEVICE_ID=0x1005:SLOT_ID=4
+newt target amend node syscfg=DEVICE_ID=0x1004:SLOT_ID=4
 newt run node 0
-newt target amend node syscfg=DEVICE_ID=0x1006:SLOT_ID=5
+newt target amend node syscfg=DEVICE_ID=0x1005:SLOT_ID=5
 newt run node 0
-newt target amend node syscfg=DEVICE_ID=0x1007:SLOT_ID=6
+newt target amend node syscfg=DEVICE_ID=0x1006:SLOT_ID=6
 newt run node 0
-newt target amend node syscfg=DEVICE_ID=0x1008:SLOT_ID=7
+newt target amend node syscfg=DEVICE_ID=0x1007:SLOT_ID=7
 newt run node 0
 
 
@@ -36,7 +37,7 @@ newt target create tag
 newt target set tag app=apps/twr_tag_nranges_tdma
 newt target set tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target set tag build_profile=debug
-newt target amend tag syscfg=NRNG_NNODES=16:NRNG_NFRAMES=32:NODE_START_SLOT_ID=0:NODE_END_SLOT_ID=8
+newt target amend tag syscfg=NRNG_NNODES=16:NRNG_NFRAMES=32:NODE_START_SLOT_ID=0:NODE_END_SLOT_ID=7
 newt run tag 0
 ```
 **NOTE:** The value of NRNG_FRAMES must be atleast NRNG_NODES*2.

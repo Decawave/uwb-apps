@@ -46,7 +46,10 @@
 #include <wcs/wcs.h>
 #endif
 #if MYNEWT_VAL(NRNG_ENABLED)
-#include <rng/nrng.h>
+#include <nrng/nrng.h>
+#endif
+#if MYNEWT_VAL(SURVEY_ENABLED)
+#include <survey/survey.h>
 #endif
 #include <config/config.h>
 #include "uwbcfg/uwbcfg.h"
@@ -95,6 +98,7 @@ static uint16_t g_slot[NSLOTS] = {0};
 static void 
 slot_cb(struct os_event *ev){
     assert(ev);
+    assert(ev->ev_arg);
 
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
     tdma_instance_t * tdma = slot->parent;
@@ -117,7 +121,7 @@ slot_cb(struct os_event *ev){
     for (uint16_t i = MYNEWT_VAL(NODE_START_SLOT_ID); i <= MYNEWT_VAL(NODE_END_SLOT_ID); i++) 
         slot_mask |= 1UL << i;
         
-    if(dw1000_nrng_request_delay_start(inst, 0xffff, dx_time, DWT_SS_TWR_NRNG, slot_mask, 0).start_tx_error){
+    if(dw1000_nrng_request_delay_start(inst, BROADCAST_ADDRESS, dx_time, DWT_SS_TWR_NRNG, slot_mask, 0).start_tx_error){
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
         printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\"}\n",utime,idx);
     }else{
@@ -174,9 +178,11 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_3, 1);
 
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    //inst->config.cir_enable = true;
-    //inst->config.rxauto_enable = false;
-
+    inst->config.cir_enable = false;
+    inst->config.rxauto_enable = true;
+    inst->config.dblbuffon_enabled = true;
+    dw1000_set_dblrxbuff(inst, inst->config.dblbuffon_enabled);  
+    
 #if MYNEWT_VAL(CCP_ENABLED)
     dw1000_ccp_start(inst, CCP_ROLE_SLAVE);
 #endif
@@ -192,7 +198,7 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,dw1000_phy_SHR_duration(&inst->attrib)); 
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst->rng->config.tx_holdoff_delay))); 
 
-    for (uint16_t i = 1; i < sizeof(g_slot)/sizeof(uint16_t); i+=4){
+    for (uint16_t i = 4; i < sizeof(g_slot)/sizeof(uint16_t); i+=2){
        g_slot[i] = i;
        tdma_assign_slot(inst->tdma, slot_cb, g_slot[i], &g_slot[i]);
     }

@@ -43,13 +43,16 @@
 #include <ccp/ccp.h>
 #endif
 #if MYNEWT_VAL(NRNG_ENABLED)
-#include <rng/nrng.h>
+#include <nrng/nrng.h>
 #endif
 #if MYNEWT_VAL(TIMESCALE)
 #include <timescale/timescale.h> 
 #endif
 #if MYNEWT_VAL(WCS_ENABLED)
 #include <wcs/wcs.h>
+#endif
+#if MYNEWT_VAL(SURVEY_ENABLED)
+#include <survey/survey.h>
 #endif
 
 #define VERBOSE0 
@@ -76,8 +79,8 @@ static void nrange_complete_cb(struct os_event *ev) {
 
     hal_gpio_toggle(LED_BLINK_PIN);
     dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *)ev->ev_arg;
-    dw1000_nrng_instance_t *nranges = inst->nrng;
-    nrng_frame_t * frame = nranges->frames[(nranges->idx)%(nranges->nframes/FRAMES_PER_RANGE)][SECOND_FRAME_IDX];
+    dw1000_nrng_instance_t * nranges = inst->nrng;
+    nrng_frame_t * frame = nranges->frames[(nranges->idx)%nranges->nframes];
 
 #ifdef VERBOSE
     if (inst->status.start_rx_error)
@@ -154,7 +157,7 @@ slot_cb(struct os_event * ev){
                         + inst->nrng->config.rx_timeout_delay;    
           
     dw1000_set_rx_timeout(inst, timeout + 0x1000);
-    dw1000_rng_listen(inst, DWT_BLOCKING);
+    dw1000_nrng_listen(inst, DWT_BLOCKING);
 
 #ifdef VERBOSE
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
@@ -171,11 +174,15 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_3, 1);
 
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+    inst->config.rxauto_enable = false;
+    inst->config.dblbuffon_enabled = true;
+    dw1000_set_dblrxbuff(inst, inst->config.dblbuffon_enabled);  
 
     dw1000_mac_interface_t cbs = (dw1000_mac_interface_t){
         .id =  DW1000_APP0,
         .complete_cb = complete_cb
     };
+
     dw1000_mac_append_interface(inst, &cbs);
     inst->slot_id = MYNEWT_VAL(SLOT_ID);
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
@@ -197,10 +204,16 @@ int main(int argc, char **argv){
         dw1000_ccp_start(inst, CCP_ROLE_SLAVE);
 #endif
 
-    for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
+    for (uint16_t i = 0; i < NSLOTS; i++)
         g_slot[i] = i;
 
+#if MYNEWT_VAL(SURVEY_ENABLED)
+    tdma_assign_slot(inst->tdma, survey_slot_range_cb, MYNEWT_VAL(SURVEY_RANGE_SLOT), NULL);
+    tdma_assign_slot(inst->tdma, survey_slot_broadcast_cb, MYNEWT_VAL(SURVEY_BROADCAST_SLOT), NULL);
+    for (uint16_t i = 4; i < NSLOTS; i++)
+#else
     for (uint16_t i = 1; i < NSLOTS; i++)
+#endif
         tdma_assign_slot(inst->tdma, slot_cb,  g_slot[i], &g_slot[i]);
 
     while (1) {
@@ -208,7 +221,6 @@ int main(int argc, char **argv){
     }
 
     assert(0);
-
     return rc;
 }
 
