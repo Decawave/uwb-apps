@@ -45,6 +45,7 @@ newt target set node_mesh bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target set node_mesh build_profile=optimized
 newt target set node_mesh syscfg=BLE_MESH_PB_GATT=1:BLE_MESH_DEV_UUID='(uint8_t[16]){0x22, 0x20, 0}'
 newt build node_mesh
+newt create-image node_mesh 1.0.0
 newt load node_mesh
 
 ```
@@ -59,6 +60,7 @@ newt target set tag_mesh bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target set tag_mesh build_profile=optimized
 newt target set tag_mesh syscfg=BLE_MESH_PB_GATT=1:BLE_MESH_DEV_UUID='(uint8_t[16]){0x22, 0x21, 0}'
 newt build tag_mesh
+newt create-image tag_mesh 1.0.0
 newt load tag_mesh
 
 ```
