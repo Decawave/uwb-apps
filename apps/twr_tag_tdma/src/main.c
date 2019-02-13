@@ -260,11 +260,10 @@ pan_slot_timer_cb(struct os_event * ev)
 
 #if MYNEWT_VAL(WCS_ENABLED)
     wcs_instance_t * wcs = ccp->wcs;
-    uint64_t dx_time = (ccp->local_epoch + (uint64_t) wcs_dtu_time_adjust(wcs, ((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
+    uint64_t dx_time = (ccp->local_epoch + (uint64_t) round((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
 #else
     uint64_t dx_time = (ccp->local_epoch + (uint64_t) (idx * ((uint64_t)tdma->period << 16)/tdma->nslots));
 #endif
-
     if (inst->pan->status.valid) return;
     dw1000_pan_blink(inst, 2, DWT_BLOCKING, dx_time);
 }

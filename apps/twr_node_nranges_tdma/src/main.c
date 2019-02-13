@@ -174,7 +174,7 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_3, 1);
 
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    inst->config.rxauto_enable = false;
+    inst->config.rxauto_enable = true;
     inst->config.dblbuffon_enabled = true;
     dw1000_set_dblrxbuff(inst, inst->config.dblbuffon_enabled);  
 
