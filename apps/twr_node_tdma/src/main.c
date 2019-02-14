@@ -48,9 +48,6 @@
 #if MYNEWT_VAL(CCP_ENABLED)
 #include <ccp/ccp.h>
 #endif
-#if MYNEWT_VAL(WCS_ENABLED)
-#include <wcs/wcs.h>
-#endif
 #if MYNEWT_VAL(DW1000_LWIP)
 #include <lwip/lwip.h>
 #endif
@@ -193,27 +190,17 @@ pan_slot_timer_cb(struct os_event * ev)
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
     tdma_instance_t * tdma = slot->parent;
     dw1000_dev_instance_t * inst = tdma->parent;
-    dw1000_ccp_instance_t * ccp = inst->ccp;
     uint16_t idx = slot->idx;
 
-#if MYNEWT_VAL(WCS_ENABLED)
-    wcs_instance_t * wcs = ccp->wcs;
-    uint64_t dx_time = (ccp->local_epoch + (uint64_t) round((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
-#else
-    uint64_t dx_time = (ccp->local_epoch + (uint64_t) ((idx * ((uint64_t)tdma->period << 16)/tdma->nslots)));
-#endif
-
 #if MYNEWT_VAL(PANMASTER_ISSUER)
-    dx_time = (dx_time - ((uint64_t)ceilf(dw1000_usecs_to_dwt_usecs(dw1000_phy_SHR_duration(&inst->attrib))) << 16)) & 0xFFFFFFFE00UL;
-
     /* Listen for pan requests */
     dw1000_set_rx_timeout(inst, tdma->period/tdma->nslots/2);
-    dw1000_set_delay_start(inst, dx_time);
+    dw1000_set_delay_start(inst, tdma_rx_slot_start(inst, idx));
     dw1000_pan_listen(inst, DWT_BLOCKING);
 #else
 
     if (inst->pan->status.valid) return;
-    dw1000_pan_blink(inst, NTWR_ROLE_NODE, DWT_BLOCKING, dx_time);
+    dw1000_pan_blink(inst, NTWR_ROLE_NODE, DWT_BLOCKING, tdma_tx_slot_start(inst, idx));
 #endif // PANMASTER_ISSUER
 }
 /*! 
@@ -241,7 +228,6 @@ slot_cb(struct os_event * ev){
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
     tdma_instance_t * tdma = slot->parent;
     dw1000_dev_instance_t * inst = tdma->parent;
-    dw1000_ccp_instance_t * ccp = inst->ccp;
     uint16_t idx = slot->idx;
 
     if (dw1000_config_updated) {
@@ -250,15 +236,7 @@ slot_cb(struct os_event * ev){
         dw1000_config_updated = false;
     }
 
-#if MYNEWT_VAL(WCS_ENABLED)
-    wcs_instance_t * wcs = ccp->wcs;
-    uint64_t dx_time = (ccp->local_epoch + (uint64_t) round((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
-#else
-    uint64_t dx_time = (ccp->local_epoch + (uint64_t) ((idx * ((uint64_t)tdma->period << 16)/tdma->nslots)));
-#endif
-    dx_time = (dx_time - ((uint64_t)ceilf(dw1000_usecs_to_dwt_usecs(dw1000_phy_SHR_duration(&inst->attrib))) << 16) ) & 0xFFFFFFFE00UL;
-
-    dw1000_set_delay_start(inst, dx_time);
+    dw1000_set_delay_start(inst, tdma_rx_slot_start(inst, idx));
     uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(ieee_rng_response_frame_t))                 
                         + inst->rng->config.rx_timeout_delay;// tx_holdoff_delay;         // Remote side turn arroud time. 
                             

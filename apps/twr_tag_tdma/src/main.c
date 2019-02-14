@@ -48,9 +48,6 @@
 #if MYNEWT_VAL(CCP_ENABLED)
 #include <ccp/ccp.h>
 #endif
-#if MYNEWT_VAL(WCS_ENABLED)
-#include <wcs/wcs.h>
-#endif
 #if MYNEWT_VAL(DW1000_LWIP)
 #include <lwip/lwip.h>
 #endif
@@ -92,7 +89,6 @@ slot_cb(struct os_event *ev){
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
     tdma_instance_t * tdma = slot->parent;
     dw1000_dev_instance_t * inst = tdma->parent;
-    dw1000_ccp_instance_t * ccp = inst->ccp;
     uint16_t idx = slot->idx;
 
 #if MYNEWT_VAL(PAN_ENABLED)
@@ -100,18 +96,7 @@ slot_cb(struct os_event *ev){
 #endif
     
     hal_gpio_toggle(LED_BLINK_PIN);  
-    
-#if MYNEWT_VAL(WCS_ENABLED)
-    wcs_instance_t * wcs = ccp->wcs;
-<<<<<<< Updated upstream
-    uint64_t dx_time = (ccp->local_epoch + (uint64_t) wcs_dtu_time_adjust(wcs, ((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
-=======
-    uint64_t dx_time = (ccp->local_epoch + (uint64_t) round((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
->>>>>>> Stashed changes
-#else
-    uint64_t dx_time = (ccp->local_epoch + (uint64_t) (idx * ((uint64_t)tdma->period << 16)/tdma->nslots));
-#endif
-    dx_time = dx_time & 0xFFFFFFFFFE00UL;
+    uint64_t dx_time = tdma_tx_slot_start(inst, idx) & 0xFFFFFFFFFE00UL;
   
 #ifdef TICTOC
     uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
@@ -255,17 +240,10 @@ pan_slot_timer_cb(struct os_event * ev)
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
     tdma_instance_t * tdma = slot->parent;
     dw1000_dev_instance_t * inst = tdma->parent;
-    dw1000_ccp_instance_t * ccp = inst->ccp;
     uint16_t idx = slot->idx;
 
-#if MYNEWT_VAL(WCS_ENABLED)
-    wcs_instance_t * wcs = ccp->wcs;
-    uint64_t dx_time = (ccp->local_epoch + (uint64_t) round((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
-#else
-    uint64_t dx_time = (ccp->local_epoch + (uint64_t) (idx * ((uint64_t)tdma->period << 16)/tdma->nslots));
-#endif
     if (inst->pan->status.valid) return;
-    dw1000_pan_blink(inst, 2, DWT_BLOCKING, dx_time);
+    dw1000_pan_blink(inst, 2, DWT_BLOCKING, tdma_tx_slot_start(inst, idx));
 }
 
 /*! 
