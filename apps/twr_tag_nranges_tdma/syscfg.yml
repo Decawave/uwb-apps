@@ -22,7 +22,7 @@ syscfg.vals:
     SHELL_TASK: 1
     CIR_VERBOSE: 0    
     CIR_SIZE: 8
-    CIR_OFFSET: 2
+    CIR_OFFSET: 2 
     WCS_VERBOSE: 1
     NRNG_VERBOSE: 1
     TDMA_SANITY_INTERVAL: 0

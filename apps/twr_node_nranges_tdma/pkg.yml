@@ -40,7 +40,7 @@ pkg.deps:
     - "@mynewt-dw1000-core/lib/ccp"
     - "@mynewt-dw1000-core/lib/wcs"
     - "@mynewt-timescale-lib/lib/timescale"
-#    - "@mynewt-dw1000-core/lib/survey"
+    - "@mynewt-dw1000-core/lib/survey"
 
 pkg.cflags:
     - "-std=gnu99"

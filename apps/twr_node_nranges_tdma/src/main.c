@@ -141,18 +141,9 @@ slot_cb(struct os_event * ev){
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
     tdma_instance_t * tdma = slot->parent;
     dw1000_dev_instance_t * inst = tdma->parent;
-    dw1000_ccp_instance_t * ccp = inst->ccp;
     uint16_t idx = slot->idx;
 
-#if MYNEWT_VAL(WCS_ENABLED)
-    wcs_instance_t * wcs = ccp->wcs;
-    uint64_t dx_time = (ccp->local_epoch + (uint64_t) round((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
-#else
-    uint64_t dx_time = (ccp->local_epoch + (uint64_t) ((idx * ((uint64_t)tdma->period << 16)/tdma->nslots)));
-#endif
-    dx_time = (dx_time - ((uint64_t)ceilf(dw1000_usecs_to_dwt_usecs(dw1000_phy_SHR_duration(&inst->attrib))) << 16) ) & 0xFFFFFFFE00UL;
-
-    dw1000_set_delay_start(inst, dx_time);
+    dw1000_set_delay_start(inst, tdma_rx_slot_start(inst, idx));
     uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(nrng_request_frame_t))
                         + inst->nrng->config.rx_timeout_delay;    
           
@@ -174,7 +165,7 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_3, 1);
 
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    inst->config.rxauto_enable = true;
+    inst->config.rxauto_enable = false;
     inst->config.dblbuffon_enabled = true;
     dw1000_set_dblrxbuff(inst, inst->config.dblbuffon_enabled);  
 
@@ -214,7 +205,7 @@ int main(int argc, char **argv){
 #else
     for (uint16_t i = 1; i < NSLOTS; i++)
 #endif
-        tdma_assign_slot(inst->tdma, slot_cb,  g_slot[i], &g_slot[i]);
+        tdma_assign_slot(inst->tdma, slot_cb, i, NULL);
 
     while (1) {
         os_eventq_run(os_eventq_dflt_get());

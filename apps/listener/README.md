@@ -36,6 +36,7 @@ newt target create dwm1001_ncbwifi_listener
 newt target set dwm1001_ncbwifi_listener app=apps/listener
 newt target set dwm1001_ncbwifi_listener bsp=@mynewt-dw1000-core/hw/bsp/dwm1001_ncbwifi
 newt target set dwm1001_ncbwifi_listener build_profile=debug
+newt target amend dwm1001_ncbwifi_listener syscfg=CONSOLE_UART_BAUD=115200
 newt run dwm1001_ncbwifi_listener 0
 
 # lps2nano_ncbwifi

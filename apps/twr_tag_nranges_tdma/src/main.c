@@ -51,8 +51,10 @@
 #if MYNEWT_VAL(SURVEY_ENABLED)
 #include <survey/survey.h>
 #endif
+#if MYNEWT_VAL(UWBCFG_ENABLED)
 #include <config/config.h>
 #include "uwbcfg/uwbcfg.h"
+#endif
 
 //#define DIAGMSG(s,u) printf(s,u)
 #ifndef DIAGMSG
@@ -103,20 +105,11 @@ slot_cb(struct os_event *ev){
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
     tdma_instance_t * tdma = slot->parent;
     dw1000_dev_instance_t * inst = tdma->parent;
-    dw1000_ccp_instance_t * ccp = inst->ccp;
     uint16_t idx = slot->idx;
 
     hal_gpio_toggle(LED_BLINK_PIN);  
-    
-#if MYNEWT_VAL(WCS_ENABLED)
-    wcs_instance_t * wcs = ccp->wcs;
-//    uint64_t dx_time = (ccp->local_epoch + (uint64_t) round((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
-    uint64_t dx_time = (ccp->local_epoch + (uint64_t) wcs_dtu_time_adjust(wcs, ((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
-#else
-    uint64_t dx_time = (ccp->local_epoch + (uint64_t) (idx * ((uint64_t)tdma->period << 16)/tdma->nslots));
-#endif
-    dx_time = dx_time & 0xFFFFFFFFFE00UL;
 
+    uint64_t dx_time = tdma_tx_slot_start(inst, idx) & 0xFFFFFFFFFE00UL;
     uint32_t slot_mask = 0;
     for (uint16_t i = MYNEWT_VAL(NODE_START_SLOT_ID); i <= MYNEWT_VAL(NODE_END_SLOT_ID); i++) 
         slot_mask |= 1UL << i;
@@ -179,7 +172,7 @@ int main(int argc, char **argv){
 
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     inst->config.cir_enable = false;
-    inst->config.rxauto_enable = true;
+    inst->config.rxauto_enable = false;
     inst->config.dblbuffon_enabled = true;
     dw1000_set_dblrxbuff(inst, inst->config.dblbuffon_enabled);  
     
