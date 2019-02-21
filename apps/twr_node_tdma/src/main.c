@@ -27,6 +27,7 @@
 #include "sysinit/sysinit.h"
 #include "os/os.h"
 #include "bsp/bsp.h"
+#include "imgmgr/imgmgr.h"
 #include "hal/hal_gpio.h"
 #include "hal/hal_bsp.h"
 #ifdef ARCH_sim
@@ -56,7 +57,7 @@
 #endif
 #if MYNEWT_VAL(PAN_ENABLED)
 #include <pan/pan.h>
-#include <pan_master.h>
+#include <panmaster/panmaster.h>
 #endif
 #if MYNEWT_VAL(CIR_ENABLED)
 #include <cir/cir.h>
@@ -271,12 +272,16 @@ int main(int argc, char **argv){
     dw1000_ccp_start(inst, CCP_ROLE_MASTER);
 #endif
 #if MYNEWT_VAL(PANMASTER_ISSUER)
-    pan_master_init(inst);
-    pan_db_t* node = pan_master_find_node(inst->my_long_address, DWT_TWR_ROLE_NODE);
-    if (node) {
-        inst->my_short_address = node->short_address;
-        inst->slot_id = node->slot_id;
-    }
+
+    struct image_version fw_ver;
+    struct panmaster_node *node;
+    panmaster_find_node(inst->my_long_address, PAN_ROLE_MASTER, &node);
+    assert(node);
+    imgr_my_version(&fw_ver);
+    panmaster_add_version(inst->my_long_address, &fw_ver);
+    inst->my_short_address = node->addr;
+    inst->slot_id = node->slot_id;
+
     dw1000_pan_start(inst, PAN_ROLE_MASTER);
 #else
     dw1000_pan_start(inst, PAN_ROLE_SLAVE);

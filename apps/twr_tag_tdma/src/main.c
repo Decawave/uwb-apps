@@ -242,8 +242,22 @@ pan_slot_timer_cb(struct os_event * ev)
     dw1000_dev_instance_t * inst = tdma->parent;
     uint16_t idx = slot->idx;
 
-    if (inst->pan->status.valid) return;
-    dw1000_pan_blink(inst, 2, DWT_BLOCKING, tdma_tx_slot_start(inst, idx));
+    if (inst->pan->status.valid &&
+        dw1000_pan_lease_remaining(inst)>MYNEWT_VAL(PAN_LEASE_EXP_MARGIN)) {
+
+        /* Listen for possible pan resets from master */
+        uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(sizeof(struct _pan_frame_t)))
+            + MYNEWT_VAL(XTALT_GUARD);
+        dw1000_set_rx_timeout(inst, timeout);
+        dw1000_set_delay_start(inst, tdma_rx_slot_start(inst, idx));
+        dw1000_set_on_error_continue(inst, true);
+        dw1000_pan_listen(inst, DWT_BLOCKING);
+    } else {
+        uint64_t dx_time = tdma_tx_slot_start(inst, idx);
+        /* Subslot 0 is for master reset, subslot 1 is for sending requests */
+        dx_time += ((uint64_t)tdma->period << 16)/tdma->nslots/16;
+        dw1000_pan_blink(inst, 2, DWT_BLOCKING, dx_time);
+    }
 }
 
 /*! 
