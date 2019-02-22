@@ -154,8 +154,8 @@ static void slot_complete_cb(struct os_event *ev)
         //json_cir_encode(&g_cir, utime, "cir", CIR_SIZE);
         frame->code = DWT_DS_TWR_END;
     }    
-    else if (frame->code == DWT_SS_TWR_T1) {
-        float time_of_flight = dw1000_rng_twr_to_tof(rng, g_idx_latest);
+    else if (frame->code == DWT_SS_TWR_FINAL) {
+        float time_of_flight = dw1000_rng_twr_to_tof(rng,g_idx_latest);
         float range = dw1000_rng_tof_to_meters(time_of_flight);
         uint32_t utime =os_cputime_ticks_to_usecs(os_cputime_get32()); 
         float rssi = dw1000_get_rssi(inst);
@@ -283,7 +283,7 @@ int main(int argc, char **argv){
     for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
         g_slot[i] = i;
 
-    for (uint16_t i = 1; i < sizeof(g_slot)/sizeof(uint16_t); i++)
+    for (uint16_t i = 2; i < sizeof(g_slot)/sizeof(uint16_t); i++)
         tdma_assign_slot(inst->tdma, slot_cb,  g_slot[i], &g_slot[i]);
 
     while (1) {

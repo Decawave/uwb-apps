@@ -1,7 +1,7 @@
 syscfg.vals:
     # Route console to RTT
     CONSOLE_UART: 0
-    CONSOLE_UART_BAUD: '9600'
+    CONSOLE_UART_BAUD: '1000000'
     CONSOLE_UART_TX_BUF_SIZE: '1024'
     CONSOLE_RTT: 1
     DW1000_DEVICE_0: 1
@@ -9,7 +9,7 @@ syscfg.vals:
     DW1000_BIAS_CORRECTION_ENABLED: 0
     DEVICE_ID: ((uint16_t){0x4321})
     CCP_VERBOSE: 0
-    TDMA_NSLOTS: 128
+    TDMA_NSLOTS: 160
     STATS_NAMES: 1
     STATS_CLI: 1
 
