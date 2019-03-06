@@ -6,7 +6,7 @@
 # to you under the Apache License, Version 2.0 (the
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
-# 
+#
 #  http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing,
@@ -17,27 +17,32 @@
 # under the License.
 #
 
-pkg.name: apps/depreciated/twr_tag_range
+pkg.name: apps/depreciated/pan_master
 pkg.type: app
-pkg.description: "Basic TWR tag ranging example"
+pkg.description: "Personal area network master example"
 pkg.author: "Paul Kettle <paul.kettle@decawave.com>"
 pkg.homepage: "http://www.decawave.com/"
 pkg.keywords:
   - dw1000
   - twr
+  - ccp
+  - pan
 
 pkg.deps:
     - "@apache-mynewt-core/kernel/os"
     - "@apache-mynewt-core/hw/hal"
-    - "@apache-mynewt-core/sys/console/full" 
+    - "@apache-mynewt-core/sys/console/full"
     - "@apache-mynewt-core/sys/shell"
+    - "@apache-mynewt-core/sys/log/full"
+    - "@apache-mynewt-core/encoding/json"
+    - "@apache-mynewt-core/mgmt/newtmgr"
     - "@mynewt-dw1000-core/hw/drivers/dw1000"
-    - "@mynewt-dw1000-core/lib/range"
+    - "@mynewt-dw1000-core/lib/pan"
 
-    
 pkg.cflags:
     - "-std=gnu99"
     - "-fms-extensions"
-    
+
 pkg.lflags:
     - "-lm"
+

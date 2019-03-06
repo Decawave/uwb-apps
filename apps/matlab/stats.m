@@ -69,7 +69,7 @@ for j=1:ntimes
             [mu,sigma,~,~] = normfit(skew((end-nwin):end));
             subplot(235);histfit(skew((end-nwin):end),16,'normal');title(sprintf("skew mu=%f (usec) sigma=%f (usec)",mu,sigma))
      end
-     if (mod(j,128) == 0 )
+     if (mod(j,32) == 0 )
             [mu,sigma,~,~] = normfit(skew_wcs);
             subplot(236);histfit(skew_wcs,16,'normal');title(sprintf("wcs mu=%f (usec) sigma=%f (usec)",mu,sigma))
      end

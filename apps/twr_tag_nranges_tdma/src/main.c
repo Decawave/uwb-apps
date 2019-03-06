@@ -85,7 +85,7 @@ void print_frame(nrng_frame_t * twr, char crlf){
 static uint16_t g_slot[NSLOTS] = {0};
 
 /*! 
- * @fn slot_cb(struct os_event * ev)
+ * @fn slot_timer_cb(struct os_event * ev)
  *
  * @brief This function each 
  *
@@ -96,7 +96,6 @@ static uint16_t g_slot[NSLOTS] = {0};
  *
  * returns none 
  */
-
 static void 
 slot_cb(struct os_event *ev){
     assert(ev);
@@ -111,7 +110,7 @@ slot_cb(struct os_event *ev){
 
     uint64_t dx_time = tdma_tx_slot_start(inst, idx) & 0xFFFFFFFFFE00UL;
     uint32_t slot_mask = 0;
-    for (uint16_t i = MYNEWT_VAL(NODE_START_SLOT_ID); i <= MYNEWT_VAL(NODE_END_SLOT_ID); i++) 
+    for (uint16_t i = MYNEWT_VAL(NODE_START_SLOT_ID); i <= MYNEWT_VAL(NODE_END_SLOT_ID); i++)
         slot_mask |= 1UL << i;
         
     if(dw1000_nrng_request_delay_start(inst, BROADCAST_ADDRESS, dx_time, DWT_SS_TWR_NRNG, slot_mask, 0).start_tx_error){
@@ -123,8 +122,6 @@ slot_cb(struct os_event *ev){
         #endif
     }
 }
-
-
 /**
  * @fn uwb_config_update
  * 
@@ -151,7 +148,6 @@ slot0_timer_cb(struct os_event *ev){
     //printf("{\"utime\": %lu,\"msg\": \"%s:[%d]:slot0_timer_cb\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()),__FILE__, __LINE__); 
 }
  */
-
 
 int main(int argc, char **argv){
     int rc;

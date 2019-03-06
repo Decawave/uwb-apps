@@ -71,8 +71,8 @@ newt load tag
 
 ### Create a newtmgr connection profile
 ```
-newtmgr conn add ble type=ble connstring="peer_name=nimble-bleprph"   (twr_tag_tdma_ota_ble)
-newtmgr conn add ble1 type=ble connstring="peer_name=nimble-bleprph-1" (twr_node_tdma_ota_ble)
+newtmgr conn add ble type=ble connstring="peer_name=DECA-1234"   (twr_tag_tdma_ota_ble)
+newtmgr conn add ble1 type=ble connstring="peer_name=DECA-4321" (twr_node_tdma_ota_ble)
 
 ```
 Now that connections are being established for tag and node.
@@ -112,7 +112,7 @@ newtmgr image test -c ble1 (hash value of secondary slot of node)
 
 ```
 Now the images of secondary slot goes to pending state.
-**NOTE:** Then power OFF and ON both the devices at a time, else one of the devices go to pending state instead of confirmed.
+Power OFF and ON both the devices, check for image status.
 
 ## Check for image status
 ```

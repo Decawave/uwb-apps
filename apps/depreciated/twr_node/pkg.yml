@@ -17,9 +17,9 @@
 # under the License.
 #
 
-pkg.name: apps/lwip_p2p_rx
+pkg.name: apps/depreciated/twr_node
 pkg.type: app
-pkg.description: "Basic lwip p2p receive example"
+pkg.description: "Basic TWR node example"
 pkg.author: "Paul Kettle <paul.kettle@decawave.com>"
 pkg.homepage: "http://www.decawave.com/"
 pkg.keywords:
@@ -33,7 +33,9 @@ pkg.deps:
     - "@apache-mynewt-core/sys/shell"
     - "@apache-mynewt-core/encoding/json"
     - "@mynewt-dw1000-core/hw/drivers/dw1000"
-
+    - "@mynewt-dw1000-core/lib/twr_ss"
+    - "@mynewt-dw1000-core/lib/twr_ds"
+    
 pkg.cflags:
     - "-std=gnu99"
     - "-fms-extensions"

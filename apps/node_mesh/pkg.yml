@@ -48,6 +48,7 @@ pkg.deps:
     - "@apache-mynewt-core/sys/log/full"
     - "@apache-mynewt-core/sys/stats/full"
 
+    
 pkg.cflags:
     - "-std=gnu99"
     - "-fms-extensions"
@@ -56,3 +57,5 @@ pkg.cflags:
 
 pkg.lflags:
     - "-lm"
+
+

@@ -239,7 +239,7 @@ slot_cb(struct os_event * ev){
 
     dw1000_set_delay_start(inst, tdma_rx_slot_start(inst, idx));
     uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(ieee_rng_response_frame_t))                 
-                        + inst->rng->config.rx_timeout_delay;// tx_holdoff_delay;         // Remote side turn arroud time. 
+                            + inst->rng->config.tx_holdoff_delay;         // Remote side turn arroud time. 
                             
     dw1000_set_rx_timeout(inst, timeout);
     dw1000_rng_listen(inst, DWT_BLOCKING);

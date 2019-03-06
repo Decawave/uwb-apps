@@ -33,7 +33,7 @@ extern "C" {
 #include <dw1000/dw1000_regs.h>
 #include <dw1000/dw1000_dev.h>
 #include <dw1000/dw1000_ftypes.h>
-#include <dw1000/dw1000_lwip.h>
+#include <lwip/dw1000_lwip.h>
 #include <lwip/init.h>
 #include <lwip/raw.h>
 #include "lwip/inet_chksum.h"

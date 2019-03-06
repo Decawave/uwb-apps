@@ -1,9 +1,9 @@
 syscfg.vals:
     # Route console to RTT
-    CONSOLE_UART: 0
+    CONSOLE_UART: 1
     CONSOLE_UART_BAUD: '1000000' 
     CONSOLE_UART_TX_BUF_SIZE: '1024'
-    CONSOLE_RTT: 1
+    CONSOLE_RTT: 0
     DW1000_DEVICE_0: 1
     OS_SYSVIEW: 0 
     FLOAT_USER: 1
@@ -11,7 +11,6 @@ syscfg.vals:
     DW1000_BIAS_CORRECTION_ENABLED: 0
     HARDFLOAT: 1
     TDMA_NSLOTS: 128
-
     STATS_NAMES: 1
     STATS_CLI: 1
 
@@ -32,7 +31,7 @@ syscfg.vals:
     CONFIG_NEWTMGR: 1
 
     # OS main/default task
-    OS_MAIN_STACK_SIZE: 468
+    OS_MAIN_STACK_SIZE: 640
 
     # Lots of smaller mbufs are required for newtmgr using typical BLE ATT MTU
     # values.

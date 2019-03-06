@@ -69,7 +69,6 @@ static void timer_ev_cb(struct os_event *ev) {
 
     twr_frame_t * previous_frame = rng->frames[(rng->idx-1)%rng->nframes];
     twr_frame_t * frame = rng->frames[(rng->idx)%rng->nframes];
-    uint16_t idx = (rng->idx)%rng->nframes; // Store valid frame pointer
 
     if (inst->status.start_rx_error)
         printf("{\"utime\": %lu,\"timer_ev_cb\": \"start_rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
@@ -87,8 +86,8 @@ static void timer_ev_cb(struct os_event *ev) {
     }
 
     else if (frame->code == DWT_SS_TWR_FINAL) {
-        uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(rng,idx);
-        float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng,idx));
+        uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(rng);
+        float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
         float rssi = dw1000_get_rssi(inst);
         print_frame("trw=", frame);
         frame->code = DWT_SS_TWR_END;
@@ -106,8 +105,8 @@ static void timer_ev_cb(struct os_event *ev) {
     }
 
     else if (frame->code == DWT_DS_TWR_FINAL || frame->code == DWT_DS_TWR_EXT_FINAL) {
-        uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(rng,idx);
-        float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng,idx));
+        uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(rng);
+        float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
         float rssi = dw1000_get_rssi(inst);
         print_frame("1st=", previous_frame);
         print_frame("2nd=", frame);

@@ -1,10 +1,8 @@
 syscfg.vals:
     # Route console to RTT
-    CONSOLE_UART: 1
-    CONSOLE_RTT: 0
+    CONSOLE_UART: 0
+    CONSOLE_RTT: 1
     DW1000_DEVICE_0: 1
-    RNG_ENABLED: 0
-    LWIP_ENABLED: 1
     DEVICE_ID: ((uint16_t){0x4321})
 
 syscfg.defs:

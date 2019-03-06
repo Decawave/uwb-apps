@@ -22,6 +22,7 @@
 #include <assert.h>
 #include <string.h>
 #include <stdio.h>
+#include <math.h>
 #include "sysinit/sysinit.h"
 #include "os/os.h"
 #include "bsp/bsp.h"
@@ -41,28 +42,23 @@
 #if MYNEWT_VAL(DW1000_CLOCK_CALIBRATION)
 #include <dw1000/dw1000_ccp.h>
 #endif
-
-#if MYNEWT_VAL(DW1000_PAN)
-#include <dw1000/dw1000_pan.h>
+#if MYNEWT_VAL(DW1000_LWIP)
+#include <lwip/dw1000_lwip.h>
 #endif
 
 #if MYNEWT_VAL(DW1000_LWIP_P2P)
 #include <dw1000_lwip_p2p.h>
-
-struct dw1000_lwip_p2p_instance_t *lwip_p2p;
-
-#define FRAME_LEN   MYNEWT_VAL(PAYLOAD_STRING_LEN)
 #define RX_STATUS false
+#endif
 
-ip_addr_t ip6_tgt_addr[LWIP_IPV6_NUM_ADDRESSES];
-
-void lwip_p2p_prep_tx_frame(dw1000_dev_instance_t *inst, dw1000_lwip_p2p_node_address_t node_addr[]);
-
+#if MYNEWT_VAL(DW1000_LWIP_P2P)
 static dw1000_lwip_config_t lwip_config = {
     .poll_resp_delay = 0x4800,
     .resp_timeout = 0xF000,
     .uwbtime_to_systime = 0
 };
+
+ip_addr_t ip6_tgt_addr[LWIP_IPV6_NUM_ADDRESSES];
 
 ip_addr_t my_ip_addr = {
     .addr[0] = MYNEWT_VAL(DEV_IP6_ADDR_1),
@@ -70,21 +66,39 @@ ip_addr_t my_ip_addr = {
     .addr[2] = MYNEWT_VAL(DEV_IP6_ADDR_3),
     .addr[3] = MYNEWT_VAL(DEV_IP6_ADDR_4)
 };
-
-dw1000_lwip_p2p_payload_info_t payload_info[1];
 #endif
 
-static dw1000_lwip_p2p_node_address_t node_addr[] = {
+
+#if MYNEWT_VAL(DW1000_LWIP_P2P)
+dw1000_lwip_p2p_payload_info_t payload_info[1];
+
+static dw1000_lwip_p2p_node_address_t master_node_addr[1] = {
     [0] = {
-        .node_addr = 0x5001,
+        .node_addr = 0x1234,
     },
 };
 
+#endif
+
+#if MYNEWT_VAL(DW1000_LWIP_P2P)
+#define FRAME_LEN   10
+void lwip_p2p_postprocess(struct os_event * ev){
+    assert(ev != NULL);
+    assert(ev->ev_arg != NULL);
+
+
+    hal_gpio_toggle(LED_BLINK_PIN);
+    dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *)ev->ev_arg;
+    char * rx_frame = (char *)inst->lwip->lwip_p2p->payload_info[0]->input_payload.payload_ptr;
+    printf("%s Received\n",rx_frame);
+
+    dw1000_lwip_start_rx(inst,0);
+}
+#endif
+
 int main(int argc, char **argv){
     int rc;
-    int nnodes = MYNEWT_VAL(MAX_NUM_NODES);
-    int payload_count = 0;
-
+    
     sysinit();
     hal_gpio_init_out(LED_BLINK_PIN, 1);
     hal_gpio_init_out(LED_1, 1);
@@ -100,7 +114,6 @@ int main(int argc, char **argv){
     dw1000_set_address16(inst, inst->my_short_address);
 
     dw1000_mac_init(inst, NULL);
- 
 #if MYNEWT_VAL(DW1000_CLOCK_CALIBRATION)
     dw1000_ccp_init(inst, 2, MYNEWT_VAL(UUID_CCP_MASTER));
 #endif
@@ -111,7 +124,7 @@ int main(int argc, char **argv){
     lwip_init();
     lowpan6_if_init(&inst->lwip->lwip_netif);
 
-    inst->lwip->lwip_netif.flags |= NETIF_FLAG_UP | NETIF_FLAG_LINK_UP;
+    inst->lwip->lwip_netif.flags |= NETIF_FLAG_UP | NETIF_FLAG_BROADCAST | NETIF_FLAG_LINK_UP;
     lowpan6_set_pan_id(MYNEWT_VAL(DEVICE_PAN_ID));
 
     dw1000_pcb_init(inst);
@@ -126,15 +139,12 @@ int main(int argc, char **argv){
 
     assert(payload_info[0].input_payload.payload_ptr != NULL);
     assert(payload_info[0].output_payload.payload_ptr != NULL);
-
     payload_info[0].output_payload.payload_size = sizeof(char) * FRAME_LEN;
     payload_info[0].input_payload.payload_size = sizeof(char) * FRAME_LEN;
 
-
-    lwip_p2p_prep_tx_frame(inst, node_addr);
-    dw1000_lwip_p2p_init(inst, nnodes, node_addr, payload_info);
-
-    dw1000_lwip_p2p_start(inst);
+    dw1000_lwip_p2p_init(inst, 2, master_node_addr, payload_info);
+    inst->lwip->dst_addr = 0x1234;
+    dw1000_lwip_p2p_set_postprocess(inst, &lwip_p2p_postprocess);
 #endif
 
     printf("device_id = 0x%lX\n",inst->device_id);
@@ -144,17 +154,11 @@ int main(int argc, char **argv){
     printf("lotID = 0x%lX\n",inst->lotID);
     printf("xtal_trim = 0x%X\n",inst->xtal_trim);
 
+    dw1000_lwip_start_rx(inst,0);
+    
     while (1) {
         os_eventq_run(os_eventq_dflt_get());
-        printf("Payload[%d] : %s\n", ++payload_count, (char *)payload_info[0].output_payload.payload_ptr);
     }
     assert(0);
     return rc;
-}
-
-
-void lwip_p2p_prep_tx_frame(dw1000_dev_instance_t *inst, dw1000_lwip_p2p_node_address_t node_addr[]){
-
-    payload_info[0].node_addr = node_addr[0].node_addr;
-    payload_info[0].output_payload.payload_ptr = "Hello!";
 }

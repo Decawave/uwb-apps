@@ -112,7 +112,7 @@ static void nrange_complete_cb(struct os_event *ev) {
 /* The timer callout */
 static struct os_callout slot_callout;
 static bool complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
-    if(inst->fctrl != FCNTL_IEEE_RANGE_16){
+    if(inst->fctrl != FCNTL_IEEE_N_RANGES_16){
         return false;
     }
     os_callout_init(&slot_callout, os_eventq_dflt_get(), nrange_complete_cb, inst);
@@ -188,8 +188,9 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,dw1000_phy_SHR_duration(&inst->attrib)); 
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst->rng->config.tx_holdoff_delay))); 
     
+    inst->slot_id = MYNEWT_VAL(SLOT_ID);
 #if MYNEWT_VAL(CCP_ENABLED)
-    if(inst->slot_id == 0)
+    if(inst->slot_id ==1)
         dw1000_ccp_start(inst, CCP_ROLE_MASTER);
     else
         dw1000_ccp_start(inst, CCP_ROLE_SLAVE);

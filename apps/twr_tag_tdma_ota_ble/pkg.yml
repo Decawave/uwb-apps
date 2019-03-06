@@ -27,7 +27,6 @@ pkg.keywords:
   - superres
 
 pkg.deps:
-
     - "@apache-mynewt-core/kernel/os"
     - "@apache-mynewt-core/hw/hal"
     - "@apache-mynewt-core/sys/console/full" 

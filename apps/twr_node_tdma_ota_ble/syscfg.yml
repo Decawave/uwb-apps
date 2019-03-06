@@ -1,13 +1,14 @@
 syscfg.vals:
     # Route console to RTT
-    CONSOLE_UART: 0
-    CONSOLE_UART_BAUD: '9600' 
+    CONSOLE_UART: 1
+    CONSOLE_UART_BAUD: '1000000' 
     CONSOLE_UART_TX_BUF_SIZE: '1024'
-    CONSOLE_RTT: 1
+    CONSOLE_RTT: 0
     DW1000_DEVICE_0: 1
     FS_XTALT_AUTOTUNE_ENABLED: 0
     DW1000_BIAS_CORRECTION_ENABLED: 0
     DEVICE_ID: ((uint16_t){0x4321})
+    CCP_VERBOSE: 0
     TDMA_NSLOTS: 128
     STATS_NAMES: 1
     STATS_CLI: 1
@@ -31,15 +32,14 @@ syscfg.vals:
     CONFIG_NEWTMGR: 1
 
     # OS main/default task
-    OS_MAIN_STACK_SIZE: 468
+    OS_MAIN_STACK_SIZE: 640
 
     # Lots of smaller mbufs are required for newtmgr using typical BLE ATT MTU
     # values.
     MSYS_1_BLOCK_COUNT: 22
     MSYS_1_BLOCK_SIZE: 110
 
-    DEVICE_ID: ((uint16_t){0x4321})
-    
+      
 syscfg.defs:
     UUID_CCP_MASTER:
         description: Clock Master UUID
