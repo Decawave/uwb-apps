@@ -206,11 +206,12 @@ process_rx_data_queue(struct os_event *ev)
         {
             printf("%02x", print_buffer[i]);
         }
+        console_out('"');
         for(int j=0;j<N_DW_INSTANCES;j++) {
             if (hdr->acc_offset[j] > 0) {
                 cirp = (cir_complex_t *) (print_buffer + hdr->acc_offset[j]);
                 float idx = ((float) hdr->diag[j].fp_idx)/64.0f;
-                printf("\",\"cir\":{\"fp_idx\":\"%d.%03d\",\"real\":",
+                printf(",\"cir\":{\"fp_idx\":\"%d.%03d\",\"real\":",
                        (int)idx, (int)(1000*(idx-(int)idx)));
                 for (int i=0;i<hdr->acc_len[j];i++) {
                     printf("%c%d", (i==0)? '[':',', cirp[i].real);
