@@ -191,9 +191,9 @@ process_rx_data_queue(struct os_event *ev)
             float rssi = dw1000_calc_rssi(hal_dw1000_inst(j), &hdr->diag[j]);
             if (rssi > -200 && rssi < 100) {
 #if N_DW_INSTANCES == 1
-                printf(",\"rssi\":\"%d.%d\"", (int)rssi, abs((int)(10*(rssi-(int)rssi))));
+                printf(",\"rssi\":\"%d.%01d\"", (int)rssi, abs((int)(10*(rssi-(int)rssi))));
 #else
-                printf(",\"rssi%d\":\"%d.%d\"", j, (int)rssi, abs((int)(10*(rssi-(int)rssi))));
+                printf(",\"rssi%d\":\"%d.%01d\"", j, (int)rssi, abs((int)(10*(rssi-(int)rssi))));
 #endif
             }
         }
