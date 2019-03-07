@@ -28,9 +28,6 @@
 #include "bsp/bsp.h"
 #include "hal/hal_gpio.h"
 #include "hal/hal_bsp.h"
-#ifdef ARCH_sim
-#include "mcu/mcu_sim.h"
-#endif
 #include <dw1000/dw1000_dev.h>
 #include <dw1000/dw1000_hal.h>
 #include <dw1000/dw1000_phy.h>
@@ -60,29 +57,10 @@
 #ifndef DIAGMSG
 #define DIAGMSG(s,u)
 #endif
-#ifndef TICTOC
-#undef TICTOC
-#endif
 
 
 static bool dw1000_config_updated = false;
 
-void print_frame(nrng_frame_t * twr, char crlf){
-    printf("{\"utime\": %lu,%c\"fctrl\": \"0x%04X\",%c", os_cputime_ticks_to_usecs(os_cputime_get32()), crlf, twr->fctrl, crlf);
-    printf("\"seq_num\": \"0x%02X\",%c", twr->seq_num, crlf);
-    printf("\"PANID\": \"0x%04X\",%c", twr->PANID, crlf);
-    printf("\"dst_address\": \"0x%04X\",%c", twr->dst_address, crlf);
-    printf("\"src_address\": \"0x%04X\",%c", twr->src_address, crlf);
-    printf("\"code\": \"0x%04X\",%c", twr->code, crlf);
-    printf("\"reception_timestamp\": \"0x%08lX\",%c", twr->reception_timestamp, crlf);
-    printf("\"transmission_timestamp\": \"0x%08lX\",%c", twr->transmission_timestamp, crlf);
-    printf("\"request_timestamp\": \"0x%08lX\",%c", twr->request_timestamp, crlf);
-    printf("\"response_timestamp\": \"0x%08lX\"}\n", twr->response_timestamp);
-}
-
-#define NSLOTS MYNEWT_VAL(TDMA_NSLOTS)
-
-static uint16_t g_slot[NSLOTS] = {0};
 
 /*! 
  * @fn slot_timer_cb(struct os_event * ev)
@@ -135,20 +113,6 @@ uwb_config_updated()
     return 0;
 }
 
-/*! 
- * @fn slot0_timer_cb(struct os_event * ev)
- * @brief This function is a place holder
- *
- * input parameters
- * @param inst - struct os_event *  
- * output parameters
- * returns none 
-static void 
-slot0_timer_cb(struct os_event *ev){
-    //printf("{\"utime\": %lu,\"msg\": \"%s:[%d]:slot0_timer_cb\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()),__FILE__, __LINE__); 
-}
- */
-
 int main(int argc, char **argv){
     int rc;
 
@@ -187,9 +151,8 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,dw1000_phy_SHR_duration(&inst->attrib)); 
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst->rng->config.tx_holdoff_delay))); 
 
-    for (uint16_t i = 4; i < sizeof(g_slot)/sizeof(uint16_t); i+=2){
-       g_slot[i] = i;
-       tdma_assign_slot(inst->tdma, slot_cb, g_slot[i], &g_slot[i]);
+    for (uint16_t i = 4; i < MYNEWT_VAL(TDMA_NSLOTS); i+=2){
+       tdma_assign_slot(inst->tdma, slot_cb, i,NULL);
     }
     while (1) {
         os_eventq_run(os_eventq_dflt_get());

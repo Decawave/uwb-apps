@@ -29,10 +29,6 @@
 #include "bsp/bsp.h"
 #include "hal/hal_gpio.h"
 #include "hal/hal_bsp.h"
-#ifdef ARCH_sim
-#include "mcu/mcu_sim.h"
-#endif
-
 #include <dw1000/dw1000_dev.h>
 #include <dw1000/dw1000_hal.h>
 #include <dw1000/dw1000_phy.h>
@@ -55,25 +51,7 @@
 #include <survey/survey.h>
 #endif
 
-#define VERBOSE0 
-#define NSLOTS MYNEWT_VAL(TDMA_NSLOTS)
-static uint16_t g_slot[NSLOTS] = {0};
-
-
-void print_frame(const char * name, nrng_frame_t *twr ){
-    printf("%s{\n\tfctrl:0x%04X,\n", name, twr->fctrl);
-    printf("\tseq_num:0x%02X,\n", twr->seq_num);
-    printf("\tPANID:0x%04X,\n", twr->PANID);
-    printf("\tdst_address:0x%04X,\n", twr->dst_address);
-    printf("\tsrc_address:0x%04X,\n", twr->src_address);
-    printf("\tcode:0x%04X,\n", twr->code);
-    printf("\treception_timestamp:0x%08lX,\n", twr->reception_timestamp);
-    printf("\ttransmission_timestamp:0x%08lX,\n", twr->transmission_timestamp);
-    printf("\trequest_timestamp:0x%08lX,\n", twr->request_timestamp);
-    printf("\tresponse_timestamp:0x%08lX\n}\n", twr->response_timestamp);
-}
-
-static void nrange_complete_cb(struct os_event *ev) {
+static void nrng_complete_cb(struct os_event *ev) {
     assert(ev != NULL);
     assert(ev->ev_arg != NULL);
 
@@ -97,7 +75,7 @@ static void nrange_complete_cb(struct os_event *ev) {
     }
 }
 /*! 
- * @fn superres_complete_cb(dw1000_dev_instance_t * inst)
+ * @fn complete_cb(dw1000_dev_instance_t * inst)
  *
  * @brief This callback is in the interrupt context and is uses to schedule an pdoa_complete event on the default event queue.  
  * Processing should be kept to a minimum giving the context. All algorithms should be deferred to a thread on an event queue. 
@@ -115,7 +93,7 @@ static bool complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * c
     if(inst->fctrl != FCNTL_IEEE_N_RANGES_16){
         return false;
     }
-    os_callout_init(&slot_callout, os_eventq_dflt_get(), nrange_complete_cb, inst);
+    os_callout_init(&slot_callout, os_eventq_dflt_get(), nrng_complete_cb, inst);
     os_eventq_put(os_eventq_dflt_get(), &slot_callout.c_ev);
     return true;
 }
@@ -149,11 +127,6 @@ slot_cb(struct os_event * ev){
           
     dw1000_set_rx_timeout(inst, timeout + 0x1000);
     dw1000_nrng_listen(inst, DWT_BLOCKING);
-
-#ifdef VERBOSE
-    uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
-    printf("{\"utime\": %lu,\"slot\": %d,\"dx_time\": %llu}\n",utime, idx, dx_time);
-#endif
 }
 
 int main(int argc, char **argv){
@@ -196,15 +169,12 @@ int main(int argc, char **argv){
         dw1000_ccp_start(inst, CCP_ROLE_SLAVE);
 #endif
 
-    for (uint16_t i = 0; i < NSLOTS; i++)
-        g_slot[i] = i;
-
 #if MYNEWT_VAL(SURVEY_ENABLED)
     tdma_assign_slot(inst->tdma, survey_slot_range_cb, MYNEWT_VAL(SURVEY_RANGE_SLOT), NULL);
     tdma_assign_slot(inst->tdma, survey_slot_broadcast_cb, MYNEWT_VAL(SURVEY_BROADCAST_SLOT), NULL);
-    for (uint16_t i = 4; i < NSLOTS; i++)
+    for (uint16_t i = 4; i < MYNEWT_VAL(TDMA_NSLOTS); i++)
 #else
-    for (uint16_t i = 1; i < NSLOTS; i++)
+    for (uint16_t i = 1; i < MYNEWT_VAL(TDMA_NSLOTS); i++)
 #endif
         tdma_assign_slot(inst->tdma, slot_cb, i, NULL);
 
