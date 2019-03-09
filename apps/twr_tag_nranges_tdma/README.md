@@ -33,6 +33,7 @@ newt target set tag app=apps/twr_tag_nranges_tdma
 newt target set tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target set tag build_profile=debug
 newt target amend tag syscfg=NRNG_NNODES=16:NRNG_NFRAMES=32:NODE_START_SLOT_ID=0:NODE_END_SLOT_ID=7
+newt run tag 0
 ```
 **NOTE:** The value of NRNG_FRAMES must be atleast NRNG_NODES*2.
 

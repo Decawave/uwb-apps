@@ -38,7 +38,6 @@ pkg.deps:
     - "@mynewt-dw1000-core/lib/cir"
     - "@mynewt-dw1000-core/lib/wcs"
     - "@mynewt-timescale-lib/lib/timescale"
-    - "@mynewt-dw1000-core/lib/nranges"
     - "@mynewt-dw1000-core/lib/twr_ss_nrng"
     - "@apache-mynewt-core/sys/log/full"
     - "@apache-mynewt-core/sys/log/modlog"

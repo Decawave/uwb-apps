@@ -86,31 +86,18 @@ for j=1:ntimes
         refreshdata;
      end
      if (mod(j,1) == 0)
-            ax = subplot(311);
+            ax = subplot(211);
             plot(utime,tdoa);
-            title(sprintf("tdoa (tdu)"))
+            title(sprintf("tdoa (tdu), sigma %f",median(std(tdoa,'omitnan' ),'omitnan')))
 
-            ax = subplot(312);
+            ax = subplot(212);
             plot(utime,rng);
             [mu,sigma,~,~] = normfit(rng);
-            title(sprintf("rng (m)"))
+            title(sprintf("rng (m), sigma %f",median(std(rng,'omitnan' ),'omitnan')))
 
-            %  [mu,sigma,~,~] = normfit(rng);
+          %  [mu,sigma,~,~] = normfit(rng);
           %  title(sprintf("rng (m)"))
-      end
-%      if (mod(j,4) == 0 && length(rng) > nwin)
-%             [mu,sigma,~,~] = normfit(rng((end-nwin):end));
-%             subplot(234);histfit(rng((end-nwin):end,:),16,'normal');title(sprintf("range mu=%f (m) sigma=%f (m)",mu,sigma))
-%      end
-%      if (mod(j,4) == 0 && length(skew) > nwin)
-%             [mu,sigma,~,~] = normfit(skew((end-nwin):end));
-%             subplot(235);histfit(skew((end-nwin):end),16,'normal');title(sprintf("skew mu=%f (usec) sigma=%f (usec)",mu,sigma))
-%      end
-%      if (mod(j,32) == 0 )
-%             [mu,sigma,~,~] = normfit(skew_wcs);
-%             subplot(236);histfit(skew_wcs,16,'normal');title(sprintf("wcs mu=%f (usec) sigma=%f (usec)",mu,sigma))
-%      end
-
+     end
 end
  
 
