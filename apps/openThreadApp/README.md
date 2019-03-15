@@ -1,3 +1,4 @@
+
 <!--
 #
 # Licensed to the Apache Software Foundation (ASF) under one
@@ -22,15 +23,61 @@
 # Decawave DW1000 Application openThreadApp
 
 ## Overview
+**Openthread + Mynewt + NRF52832 + DW1000**
+
+   Openthread is a mesh networking protocol based on the Thread specifications.
+More Information on the Openthread can be found here https://github.com/openthread/openthread.
+
+   In this project Openthread is ported on the mynewt supporting DWM1001 platfrom. This project uses the Openthread stack in the form of libraries which are built standalone and copied to the **mynewt-dw1000-core/lib/openthread/src/ot_prebuilt**. The various abstraction layers are written in the mynewt style to run OT on the DWM1001, the abstraction layers can be found in the **mynewt-dw1000-core/lib/openthread/src** and relative headers in **mynewt-dw1000-core/lib/openthread/include/openthread**.
 This example application demonstrates a minimal OpenThread application that exposes the OpenThread configuration and management interfaces via a basic command-line interface.
 
 The steps below take you through the minimal steps required to ping one emulated Thread device from another emulated Thread device.
 
-**NOTE** : Currently only nrf52xxx platform is supported for this application.
+**NOTE** : Currently only nrf52xxx platform & dwm1001 bsp is supported for this application.
 
-## Building
+## Generating the Openthread static libraries
+1. This step is optional, as already the static libraries are built and copied to openthread/lib.
+2. This step required , only if any changes/additions required to do in the ot stack, or to debug ot stack.
+3. Do the following steps in Linux PC through the Command Line.
+```no-highlight
+git clone https://github.com/openthread/openthread.git
+cd openthread
+git checkout thread-reference-20180926
+./bootstrap
+make -f examples/Makefile.nrf52840
+(OR )
+make -f ./examples/Makefile-nrf52840 FULL_LOGS=1    #( Build With Debug Logs enabled)
 
-### 1. To erase the default flash image that shipped with the DWM1001.
+```
+The static libraries of openthread stack can found in **output/nrf52840/lib/**
+
+
+## Building openthread mynewt app
+
+1. Download and install Apache Newt.
+   You will need to download the Apache Newt tool, as documented in the [Getting Started Guide](http://mynewt.apache.org/latest/get_started/index.html).
+   
+**Prerequisites:** You should follow the generic tutorials at http://mynewt.apache.org/latest/tutorials/tutorials.html, particularly the basic Blinky example that will guide you through the basic setup.
+
+2. Download the DW1000 Mynewt apps.
+
+```no-highlight
+    git clone git@github.com:Decawave/mynewt-dw1000-apps.git
+    cd mynewt-dw1000-apps
+    git checkout openthread
+```
+
+3. Running the newt install command downloads the apache-mynewt-core, mynewt-dw1000-core, and mynewt-timescale-lib packages, these are dependent repos of the mynewt-dw1000-apps project and are automatically checked-out by the newt tools.
+
+```no-highlight
+    $ newt install -v
+```
+
+4. Copying the Openthread Libraries mynewt project.
+   (This step is required only if any updates/changes done in the actual OT source code, as already standard ot libraries are available).
+ Copy **libmbedcrypto.a  libopenthread-cli-ftd.a  libopenthread-diag.a  libopenthread-ftd.a   libopenthread-platform-utils.a** into **repos/mynewt-dw1000-core/lib/openthread/src/ot_prebuilt/**
+
+## Erase the default flash image that shipped with the DWM1001.
 
 ```no-highlight
 $ JLinkExe -device nRF52 -speed 4000 -if SWD
@@ -57,7 +104,7 @@ J-Link>exit
 $
 ```
 
-### 2. Build the new bootloader applicaiton for the DWM1001 target.
+### Build and load the bootloader applicaiton for the DWM1001 target.
 
 (executed from the mynewt-dw1000-app directory).
 
@@ -72,13 +119,13 @@ newt create-image dwm1001_boot 1.0.0
 newt load dwm1001_boot
 
 ```
-### 3. Build and flash the openThreadApp app on two devices
+### Build and flash the openThreadApp app on two devices
 
 ```no-highlight
 newt target create openThreadApp
 newt target set openThreadApp app=apps/openThreadApp
 newt target set openThreadApp bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target set openThreadApp build_profile=debug
+newt target set openThreadApp build_profile=optimized
 newt build openThreadApp
 newt create-image openThreadApp 1.0.0
 newt load openThreadApp
