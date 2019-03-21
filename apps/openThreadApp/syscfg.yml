@@ -9,6 +9,7 @@ syscfg.vals:
     OPEN_THREAD_ENABLED: 1
     CONSOLE_UART_TX_BUF_SIZE: 1024
     CONSOLE_UART_RX_BUF_SIZE: 512
+    OT_FLASH_AREA: FLASH_AREA_NFFS # Flash Section used for OT platform settings
 syscfg.defs:
     COMMAND:
         value: 1

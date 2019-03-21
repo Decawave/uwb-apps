@@ -39,7 +39,7 @@
 #include <dw1000/dw1000_mac.h>
 #include <dw1000/dw1000_ftypes.h>
 
-#include <ot_common.h>
+#include <openthread/ot_common.h>
 
 #include <openthread/platform/platform.h>
 #include <openthread/platform/uart.h>

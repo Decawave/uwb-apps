@@ -40,7 +40,7 @@
 //#include "drivers/nrf_drv_clock.h"
 #include <nrfx/hal/nrf_rtc.h>
 #include "hal/nrf_rtc.h"
-#include "ot_common.h"
+#include "openthread/ot_common.h"
 //#include <openthread-config.h>
 #include <openthread/types.h>
 #include <nrfx.h>
