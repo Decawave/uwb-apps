@@ -66,9 +66,6 @@ int main(int argc, char **argv){
 
     shell_cmd_register(&shell_cmd_ot_struct);
 
-
-	ot_instance_t * ot;
-
     hal_gpio_init_out(LED_BLINK_PIN, 1);
 
 	inst->PANID = MYNEWT_VAL(PANID);
@@ -82,15 +79,8 @@ int main(int argc, char **argv){
     printf("xtal_trim = 0x%X\n",inst->xtal_trim);
     printf("Long add = 0x%llX\n",inst->my_long_address);
 
-    ot = ot_init(inst);
-	assert(ot != NULL);
-	printf("global ot Inst %p\n",ot);
-
 	sInstance = otInstanceInit();
-	printf("SInst %p\n",sInstance);
 	ot_post_init(inst, sInstance);
-	printf("Inst %p\n",sInstance);
-
 
     otCliUartInit(sInstance);
 
