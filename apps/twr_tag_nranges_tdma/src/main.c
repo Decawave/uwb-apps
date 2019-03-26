@@ -53,6 +53,16 @@
 #include "uwbcfg/uwbcfg.h"
 #endif
 
+#include <pan/pan.h>
+
+//! Network Roles
+typedef enum {
+    NTWR_ROLE_INVALID = 0x0,   /*!< Invalid role */
+    NTWR_ROLE_NODE,            /*!< NTWR Node */
+    NTWR_ROLE_TAG              /*!< NTWR Tag */
+} ntwr_role_t;
+static void pan_slot_timer_cb(struct os_event * ev);
+
 //#define DIAGMSG(s,u) printf(s,u)
 #ifndef DIAGMSG
 #define DIAGMSG(s,u)
@@ -83,7 +93,9 @@ slot_cb(struct os_event *ev){
     tdma_instance_t * tdma = slot->parent;
     dw1000_dev_instance_t * inst = tdma->parent;
     uint16_t idx = slot->idx;
+    dw1000_ccp_instance_t * ccp = inst->ccp;
 
+    if (ccp->local_epoch==0 || inst->pan->status.valid == false) return;
     hal_gpio_toggle(LED_BLINK_PIN);  
 
     uint64_t dx_time = tdma_tx_slot_start(inst, idx) & 0xFFFFFFFFFE00UL;
@@ -100,6 +112,101 @@ slot_cb(struct os_event *ev){
         #endif
     }
 }
+
+/*! 
+ * @fn tdma_allocate_slots(struct os_event * ev)
+ *
+ * @brief This function assigns the ranging slots for this tag
+ * according to the tag-slot_id we've received.
+ */
+static void
+tdma_allocate_slots(dw1000_dev_instance_t * inst, bool reset_tdma)
+{
+    static int old_slot_id = -1;
+#ifdef PAN_VERBOSE
+    printf("tdma_allocate_slots for slot_id:%d\n", inst->slot_id);
+#endif
+
+    if (old_slot_id == inst->slot_id) {
+        /* Using the same slots as previously, no need to do anything */
+        return;
+    }
+    old_slot_id = inst->slot_id;
+
+    /* Slots 0-4 are management slots (ccp, pan, anchor ranging) */
+    for (uint16_t i = 5;
+         (i+MYNEWT_VAL(NRNG_NTAGS)) < MYNEWT_VAL(TDMA_NSLOTS);
+         i+=(MYNEWT_VAL(NRNG_NTAGS))) {
+        
+        for (int j=0;j<MYNEWT_VAL(NRNG_NTAGS);j++) {
+            tdma_release_slot(inst->tdma, i+j);
+            if (j == (inst->slot_id-1)) {
+                tdma_assign_slot(inst->tdma, slot_cb, i+j, NULL);
+#ifdef PAN_VERBOSE
+                printf("tdma_slot:%03d\n", i);
+#endif
+            }
+        }
+    }
+    
+    if (reset_tdma) {
+#ifdef TDMA_TASKS_ENABLE
+        os_eventq_put(&inst->tdma->eventq, &inst->tdma->event_cb.c_ev);
+#else
+        os_eventq_put(&inst->eventq, &inst->tdma->event_cb.c_ev);
+#endif
+    }
+}
+
+static void
+pan_complete_cb(struct os_event * ev)
+{
+    assert(ev != NULL);
+    assert(ev->ev_arg != NULL);
+    dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *)ev->ev_arg;
+    
+    if (inst->slot_id != 0xffff) {
+        tdma_allocate_slots(inst, true);
+    }
+}
+
+static void 
+pan_slot_timer_cb(struct os_event * ev)
+{
+    assert(ev);
+
+    tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
+    tdma_instance_t * tdma = slot->parent;
+    dw1000_dev_instance_t * inst = tdma->parent;
+    uint16_t idx = slot->idx;
+
+    if (dw1000_config_updated) {
+        dw1000_mac_config(inst, NULL);
+        dw1000_phy_config_txrf(inst, &inst->config.txrf);
+        dw1000_config_updated = false;
+        dw1000_set_dblrxbuff(inst, true);
+    }
+    hal_gpio_write(LED_BLINK_PIN, 1);
+
+    /* Check if out lease has run out and if so renew, otherwise just listen
+     * for possible network resets / changes */
+    if (inst->pan->status.valid &&
+        dw1000_pan_lease_remaining(inst)>MYNEWT_VAL(PAN_LEASE_EXP_MARGIN)) {
+        uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(sizeof(struct _pan_frame_t)))
+            + MYNEWT_VAL(XTALT_GUARD);
+        dw1000_set_rx_timeout(inst, timeout);
+        dw1000_set_delay_start(inst, tdma_rx_slot_start(inst, idx));
+        dw1000_pan_listen(inst, DWT_BLOCKING);
+    } else {
+        /* We need to renew / aquire a lease */
+        uint64_t dx_time = tdma_tx_slot_start(inst, idx);
+        /* Subslot 0 is for master reset, subslot 1 is for sending requests */
+        dx_time += ((uint64_t)tdma->period << 16)/tdma->nslots/16;
+        dw1000_pan_blink(inst, NTWR_ROLE_TAG, DWT_BLOCKING, dx_time);
+    }
+    hal_gpio_write(LED_BLINK_PIN, 0);
+}
+
 /**
  * @fn uwb_config_update
  * 
@@ -135,10 +242,16 @@ int main(int argc, char **argv){
     inst->config.rxauto_enable = false;
     inst->config.dblbuffon_enabled = true;
     dw1000_set_dblrxbuff(inst, inst->config.dblbuffon_enabled);  
+    inst->slot_id = 0xffff;
+    inst->my_long_address = ((uint64_t) inst->lotID << 32) + inst->partID;
     
 #if MYNEWT_VAL(CCP_ENABLED)
     dw1000_ccp_start(inst, CCP_ROLE_SLAVE);
 #endif
+
+    dw1000_pan_set_postprocess(inst, pan_complete_cb);
+    dw1000_pan_start(inst, PAN_ROLE_SLAVE);
+
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
     printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 
     printf("{\"utime\": %lu,\"msg\": \"device_id = 0x%lX\"}\n",utime,inst->device_id);
@@ -151,9 +264,10 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,dw1000_phy_SHR_duration(&inst->attrib)); 
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst->rng->config.tx_holdoff_delay))); 
 
-    for (uint16_t i = 4; i < MYNEWT_VAL(TDMA_NSLOTS); i+=2){
-       tdma_assign_slot(inst->tdma, slot_cb, i,NULL);
-    }
+    /* Pan is assigned to slots 1 and 2 */
+    tdma_assign_slot(inst->tdma, pan_slot_timer_cb, 1, NULL);
+    tdma_assign_slot(inst->tdma, pan_slot_timer_cb, 2, NULL);
+
     while (1) {
         os_eventq_run(os_eventq_dflt_get());
     }

@@ -4,19 +4,25 @@
 This Demo uses 1 tag and 4 nodes for demonstrating tdma based slotting and nranges based ranging.
 
 ### Building target for nodes
+
+Master node (only one allowed per network):
 ```no-highlight
-newt target create node
-newt target set node app=apps/twr_node_nranges_tdma
-newt target set node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target amend node syscfg=DEVICE_ID=0x1001:SLOT_ID=1
-newt run node 0
-newt target amend node syscfg=DEVICE_ID=0x1002:SLOT_ID=2
-newt run node 0
-newt target amend node syscfg=DEVICE_ID=0x1003:SLOT_ID=3
-newt run node 0
-newt target amend node syscfg=DEVICE_ID=0x1004:SLOT_ID=4
-newt run node 0
+newt target create master_node
+newt target set master_node app=apps/twr_node_nranges_tdma
+newt target set master_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target amend master_node syscfg=PANMASTER_ISSUER=1
+newt run master_node 0
 ```
+
+Slave nodes
+```no-highlight
+newt target create slave_node
+newt target set slave_node app=apps/twr_node_nranges_tdma
+newt target set slave_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target amend slave_node syscfg=PANMASTER_ISSUER=0
+newt run slave_node 0
+```
+
 ### Building target for tags
 ```
 newt target create tag
@@ -25,8 +31,8 @@ newt target set tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target set tag build_profile=debug
 newt target amend tag syscfg=NRNG_NNODES=4:NRNG_NFRAMES=12:NODE_START_SLOT_ID=1:NODE_END_SLOT_ID=4
 newt run tag 0
-
 ```
+
 **NOTE:** The NRNG_NFRAMES must be atleast NRNG_NNODES*2
 
 **NOTE:** The number of slots is inversly proportional to the number of nodes in the network. The current configuration 

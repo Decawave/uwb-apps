@@ -10,7 +10,6 @@ syscfg.vals:
     TDMA_NSLOTS: 64
     NRNG_DEVICE_TYPE: 1
     HARDFLOAT: 1
-    DEVICE_ID: ((uint16_t){0x2222})
     STATS_NAMES: 1
     STATS_CLI: 1
     CONFIG_CLI: 1
@@ -21,12 +20,34 @@ syscfg.vals:
     NRNG_VERBOSE: 0
     TDMA_SANITY_INTERVAL: 10
 
+    # Pan related paramters, lease in s, lease exp margin in ms
+    PAN_ENABLED: 1
+    PAN_RX_TIMEOUT: ((uint16_t){4000})
+    PAN_LEASE_TIME: 3600
+    PAN_LEASE_EXP_MARGIN: 60000
+    
+    ## Panmaster    
+    PANMASTER_FCB: 1
+    PANMASTER_FCB_FLASH_AREA: FLASH_AREA_REBOOT_LOG
+    REBOOT_LOG_FLASH_AREA: ""
+    PANMASTER_NFFS: 0
+    PANMASTER_MAXNUM_NODES: 64
+    PANMASTER_DEFAULT_PANID: '"0xDECA"'
+    PANMASTER_CLI: 1
+
+    SURVEY_RANGE_SLOT: 3
+    SURVEY_BROADCAST_SLOT: 4
+    
 syscfg.defs:
-    UUID_CCP_MASTER:
-        description: >
-            Clock Master UUID
-        value: ((uint16_t){0x8000})
-    SLOT_ID:
-        description: >
-            SLOT_ID for the Device
-        value: 1
+    PANMASTER_ISSUER:
+        description: 'Act as panmaster in the network'
+        value: 0
+    CCP_TOF_COMP_LOCATION_X:
+        description: 'x-location of this node in relation to the ccp master'
+        value: ((float){2.0})
+    CCP_TOF_COMP_LOCATION_Y:
+        description: 'y-location of this node in relation to the ccp master'
+        value: ((float){0.0})
+    CCP_TOF_COMP_LOCATION_Z:
+        description: 'z-location of this node in relation to the ccp master'
+        value: ((float){0.0})
