@@ -13,7 +13,7 @@ syscfg.vals:
     RNG_VERBOSE: 0
     STATS_NAMES: 0
     STATS_CLI: 0
-    DEVICE_ID: ((uint16_t){0x1234})
+    DW1000_DEVICE_ID_0: ((uint16_t){0x1234})
 
     # Enable the shell task.
     SHELL_TASK: 1

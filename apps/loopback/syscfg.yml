@@ -29,14 +29,11 @@ syscfg.vals:
     DW1000_DEVICE_1_RX_ANT_DLY: 0x401A
     DW1000_DEVICE_0_TX_ANT_DLY: 0x4053
     DW1000_DEVICE_0_RX_ANT_DLY: 0x4012
+
+    DW1000_DEVICE_ID_0: ((uint16_t){0x4321})
+    DW1000_DEVICE_ID_1: ((uint16_t){0x1234})
     
 syscfg.defs:
     UUID_CCP_MASTER:
         description: Clock Master UUID
         value: ((uint64_t){0x8000}) 
-    DEVICE_ID_0:  
-        description: 'Master Device'
-        value: ((uint16_t){0x4321})
-    DEVICE_ID_1:  
-        description: 'Slave Device'
-        value: ((uint16_t){0x1234})

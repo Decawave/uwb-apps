@@ -10,12 +10,8 @@ syscfg.vals:
     DW1000_CLOCK_CALIBRATION: 1
     DW1000_RANGE: 1
     # OS_SYSVIEW: 1
-
+    DW1000_DEVICE_ID_0: ((uint16_t){0xDEC1})
 syscfg.defs:
-    DEVICE_ID:
-        description: >
-            Device ID
-        value: ((uint16_t){0xDEC1})
     UUID_CCP_MASTER:
         description: >
             Clock Master UUID

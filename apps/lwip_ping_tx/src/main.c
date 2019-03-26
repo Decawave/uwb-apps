@@ -91,7 +91,7 @@ static void timer_ev_cb(struct os_event *ev) {
     os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/SAMPLE_FREQ);
 
 	struct ping_payload *ping_pl = (struct ping_payload*)payload;
-	ping_pl->src_addr = MYNEWT_VAL(DEVICE_ID);
+	ping_pl->src_addr = MYNEWT_VAL(DW1000_DEVICE_ID_0);
 	ping_pl->dst_addr = 0x4321;
 	ping_pl->ping_id = PING_ID;
 	ping_pl->seq_no  = seq_no++;
@@ -138,7 +138,7 @@ int main(int argc, char **argv){
 
 	dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
 	inst->PANID = MYNEWT_VAL(PANID);
-	inst->my_short_address = MYNEWT_VAL(DEVICE_ID);
+	inst->my_short_address = MYNEWT_VAL(DW1000_DEVICE_ID_0);
 	inst->fctrl_array[0] = 'L';
 	inst->fctrl_array[1] = 'W';
 

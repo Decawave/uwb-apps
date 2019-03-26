@@ -7,7 +7,7 @@ syscfg.vals:
     SHELL_TASK: 0
     PROVISION_ENABLED: 1
     INCLUDE_PAN_LIB: 0
-    DEVICE_ID: ((uint16_t){0x4321})
+    DW1000_DEVICE_ID_0: ((uint16_t){0x4321})
 
 syscfg.defs:
     SLOT_ID:
