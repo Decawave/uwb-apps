@@ -57,6 +57,7 @@ static struct shell_cmd shell_cmd_ot_struct = {
     .sc_cmd_func = shell_cmd_ot
 };
 
+extern void nrf5AlarmInit(dw1000_dev_instance_t* inst);
 
 int main(int argc, char **argv){
     otInstance *sInstance;
@@ -70,6 +71,8 @@ int main(int argc, char **argv){
 
 	inst->PANID = MYNEWT_VAL(PANID);
 	inst->my_short_address = 0xDECA;
+
+    nrf5AlarmInit(inst);
 
     printf("device_id = 0x%lX\n",inst->device_id);
     printf("PANID = 0x%X\n",inst->PANID);
