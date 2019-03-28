@@ -11,6 +11,9 @@ syscfg.vals:
     UART_0: 0
     CONSOLE_UART: 0
     CONSOLE_RTT: 1
+    CONSOLE_UART_BAUD: 115200
+    CONSOLE_UART_TX_BUF_SIZE: 1024
+    CONSOLE_UART_RX_BUF_SIZE: 256
 
     # Shell
     SHELL_TASK: 1
@@ -31,7 +34,7 @@ syscfg.vals:
     
     # ST Mems
     I2C_1: 0
-    LSM6DSL_ONB: 1
+    LSM6DSL_ONB: 0
     LIS2MDL_ONB: 0
     LPS22HB_ONB: 0
     SENSOR_OIC: 0
@@ -41,6 +44,11 @@ syscfg.vals:
     CONFIG_NEWTMGR: 1
     CONFIG_FCB_FLASH_AREA: FLASH_AREA_NFFS
     
+    # BLE Disable central and observer roles.
+    BLE_ROLE_BROADCASTER: 1
+    BLE_ROLE_CENTRAL: 0
+    BLE_ROLE_OBSERVER: 0
+    BLE_ROLE_PERIPHERAL: 1
     
 syscfg.vals.CONSOLE_UART:
     UART_0:1
