@@ -71,7 +71,7 @@ newt target create dwm1002_listener
 newt target set dwm1002_listener app=apps/listener
 newt target set dwm1002_listener bsp=@mynewt-dw1000-core/hw/bsp/dwm1002
 newt target set dwm1002_listener build_profile=debug
-newt target amend dwm1002_listener syscfg=CONSOLE_UART_BAUD=460800:DW1000_DEVICE_0=1:DW1000_DEVICE_1=1
+newt target amend dwm1002_listener syscfg=CONSOLE_UART_BAUD=460800:DW1000_DEVICE_0=1:DW1000_DEVICE_1=1:
 newt run dwm1002_listener 0
 ```
 

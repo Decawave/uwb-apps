@@ -90,11 +90,29 @@ def packet_length_symb(data_len, datarate, preamble_len, prf):
     preamble_sy = preambleleni / 1.0256;
     data_sy	    = (msgdataleni/1000.0)/1.0256;
     total_sy    = preamble_sy + data_sy #+ 16/1.0256 + 
-	
+
     return [preamble_sy,data_sy,total_sy];
     
-
-	
+def plotHistogram(data, args, label=None):
+    fig = plt.figure(num=1,figsize=(10,10))
+    ax = fig.add_subplot(111) #, aspect='equal'
+    plt.tight_layout()
+    ax.grid()
+    field = 'pd'
+    l = args.split(',')
+    if (len(l)>0):
+        field=l[0]
+    pdata = []
+    for x in data:
+        try:
+            pdata.append(float(x[field])*180.0/np.pi)
+        except:
+            pass
+    stats = "Histogram: records: {:d} average: {:.3f} stddev:  {:.3f}".format(len(pdata), np.mean(pdata), np.std(pdata))    
+    print(stats)
+    plt.hist(pdata, bins=96, normed=0)
+    if (label):
+        plt.title(label + " " + stats)
     
 def main():
     global _bins, _normalize
@@ -106,6 +124,9 @@ def main():
     parser.add_argument('-b',metavar='data_rate',type=int,dest='data_rate',default=6800,help='Data rate, 110, 850 or 6800(default)')
     parser.add_argument('-s',metavar='status',dest='status',default='',help='Interpret status register')
     parser.add_argument('-p', dest='plot', action='store_true',help='generate a plot')
+    parser.add_argument('--histogram', metavar='field[,bins]', type=str, help='generate a histogram')
+    parser.add_argument('--plot_label', metavar='title', type=str, help='Label to apply to plot')
+    parser.add_argument('--save-plot', dest='save_plot', metavar='filename', type=str, help='file to save plot to (png)')
     parser.add_argument('-v', dest='verbose', action='store_true',help='verbose')
     args = parser.parse_args()
     
@@ -141,7 +162,16 @@ def main():
 	    except ValueError:
 		pass
 
-    if (args.plot) :
+
+    if (args.histogram):
+        plotHistogram(data, args.histogram, label=args.plot_label)
+        if (args.save_plot):
+            plt.savefig(args.save_plot, bbox_inches='tight')
+        else:
+            plt.show()
+        sys.exit(0)
+        
+    if (args.plot):
         fig = plt.figure()
         ax = fig.add_subplot(111) #, aspect='equal'
         plt.tight_layout()
@@ -164,6 +194,8 @@ def main():
             t=(int(d["ts"],16)-t0)/0xffff
         except TypeError:
             t=(d["ts"]-t0)/0xffff
+        except KeyError:
+            t=(int(d["ts0"],16)-t0)/0xffff
 
         data="(no data)"
         try:

@@ -122,7 +122,8 @@ lstnr_export(void (*export_func)(char *name, char *val),
 
 /* Incoming messages mempool and queue */
 struct uwb_msg_hdr {
-    uint64_t ts;
+    uint32_t utime;
+    uint64_t ts[N_DW_INSTANCES];
     uint16_t dlen;
     uint16_t acc_len[N_DW_INSTANCES];
     uint16_t acc_offset[N_DW_INSTANCES];
@@ -184,10 +185,11 @@ process_rx_data_queue(struct os_event *ev)
             goto end_msg;
         }
 
-        printf("{\"ts\":%llu,\"utime\":%lu", hdr->ts,
-               os_cputime_ticks_to_usecs(os_cputime_get32()));
+        printf("{\"utime\":%lu", hdr->utime);
         
         for(int j=0;j<N_DW_INSTANCES;j++) {
+            /* Print individual data for each instance */
+            printf(",\"ts%d\":%llu", j, hdr->ts[j]);
             float rssi = dw1000_calc_rssi(hal_dw1000_inst(j), &hdr->diag[j]);
             if (rssi > -200 && rssi < 100) {
 #if N_DW_INSTANCES == 1
@@ -198,7 +200,8 @@ process_rx_data_queue(struct os_event *ev)
             }
         }
         if (fabsf(hdr->pd) > 0.0) {
-            printf(",\"pd\":\"%d.%03d\"",(int)hdr->pd, abs((int)(1000*(hdr->pd-(int)hdr->pd))));
+            printf(",\"pd\":\"");
+            printf((hdr->pd < 0)?"-%d.%03d\"":"%d.%03d\"", abs((int)hdr->pd), abs((int)(1000*(hdr->pd-(int)hdr->pd))));
         }
         printf(",\"dlen\":%d", hdr->dlen);
         printf(",\"d\":\"");
@@ -211,8 +214,8 @@ process_rx_data_queue(struct os_event *ev)
             if (hdr->acc_offset[j] > 0) {
                 cirp = (cir_complex_t *) (print_buffer + hdr->acc_offset[j]);
                 float idx = ((float) hdr->diag[j].fp_idx)/64.0f;
-                printf(",\"cir\":{\"fp_idx\":\"%d.%03d\",\"real\":",
-                       (int)idx, (int)(1000*(idx-(int)idx)));
+                printf(",\"cir%d\":{\"fp_idx\":\"%d.%03d\",\"real\":",
+                       j, (int)idx, (int)(1000*(idx-(int)idx)));
                 for (int i=0;i<hdr->acc_len[j];i++) {
                     printf("%c%d", (i==0)? '[':',', cirp[i].real);
                 }
@@ -259,10 +262,13 @@ rx_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
         memset(hdr, 0, sizeof(struct uwb_msg_hdr));
         hdr->dlen = inst->frame_len;
         
-        hdr->ts = inst->rxtimestamp;
+        hdr->utime = os_cputime_ticks_to_usecs(os_cputime_get32());
 
         for(int i=0;i<N_DW_INSTANCES;i++) {
             memcpy(&hdr->diag[i], &hal_dw1000_inst(i)->rxdiag, sizeof(struct _dw1000_dev_rxdiag_t));
+            if (!hal_dw1000_inst(i)->status.lde_error) {
+                hdr->ts[i] = hal_dw1000_inst(i)->rxtimestamp;
+            }
         }
         rc = os_mbuf_copyinto(om, 0, inst->rxbuf, hdr->dlen);
         if (rc != 0) {
