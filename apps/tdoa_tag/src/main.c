@@ -102,7 +102,7 @@ void tdoa_timer_ev_cb(struct os_event *ev) {
     dw1000_dev_enter_sleep_after_tx(inst, 1);
 
     dw1000_write_tx(inst, tdoa_blink_frame.array, 0, sizeof(ieee_blink_frame_t));
-    dw1000_write_tx_fctrl(inst, sizeof(ieee_blink_frame_t), 0, true);
+    dw1000_write_tx_fctrl(inst, sizeof(ieee_blink_frame_t), 0);
 
     if (dw1000_start_tx(inst).start_tx_error){
         printf("err\n");
