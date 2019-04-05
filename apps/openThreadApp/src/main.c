@@ -41,15 +41,16 @@
 
 #include <openthread/ot_common.h>
 
-#include <openthread/platform/platform.h>
+//#include <openthread/platform/platform.h>
 #include <openthread/platform/uart.h>
 #include <openthread/platform/radio.h>
-#include <openthread/types.h>
+//#include <openthread/types.h>
 #include <openthread/instance.h>
 #include <openthread/cli.h>
 #include <openthread/tasklet.h>
 #include <openthread/diag.h>
 
+#include<openthread/platform/openthread-system.h>
 static int shell_cmd_ot(int argc, char **argv);
 
 static struct shell_cmd shell_cmd_ot_struct = {
@@ -64,7 +65,6 @@ int main(int argc, char **argv){
 	dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
 
     PlatformInit(inst);
-
     shell_cmd_register(&shell_cmd_ot_struct);
 
     hal_gpio_init_out(LED_BLINK_PIN, 1);
@@ -81,8 +81,12 @@ int main(int argc, char **argv){
     printf("lotID = 0x%lX\n",inst->lotID);
     printf("xtal_trim = 0x%X\n",inst->xtal_trim);
     printf("Long add = 0x%llX\n",inst->my_long_address);
-
-	sInstance = otInstanceInit();
+#if OPENTHREAD_ENABLE_MULTIPLE_INSTANCES
+    sInstance = otInstanceInit();
+#else 
+    sInstance = otInstanceInitSingle();
+#endif    
+//    printf("sInstance %d\n",((Instance *)sInstance)->mIsInitialized);
 	ot_post_init(inst, sInstance);
 
     otCliUartInit(sInstance);
