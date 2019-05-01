@@ -129,6 +129,8 @@ struct uwb_msg_hdr {
     uint16_t acc_offset[N_DW_INSTANCES];
     float    pd;
     struct _dw1000_dev_rxdiag_t diag[N_DW_INSTANCES];
+    float    cir_rcphase[N_DW_INSTANCES];
+    float    cir_angle[N_DW_INSTANCES];
 };
 
 #define MBUF_PKTHDR_OVERHEAD    sizeof(struct os_mbuf_pkthdr) + sizeof(struct uwb_msg_hdr)
@@ -214,8 +216,13 @@ process_rx_data_queue(struct os_event *ev)
             if (hdr->acc_offset[j] > 0) {
                 cirp = (cir_complex_t *) (print_buffer + hdr->acc_offset[j]);
                 float idx = ((float) hdr->diag[j].fp_idx)/64.0f;
-                printf(",\"cir%d\":{\"fp_idx\":\"%d.%03d\",\"real\":",
-                       j, (int)idx, (int)(1000*(idx-(int)idx)));
+                float ph = hdr->cir_rcphase[j];
+                float an = hdr->cir_angle[j];
+                printf(",\"cir%d\":{\"o\":%d,\"fp_idx\":\"%d.%03d\",\"rcphase\":\"%d.%03d\",\"angle\":\"%d.%03d\",\"real\":",
+                       MYNEWT_VAL(CIR_OFFSET), j, (int)idx, (int)(1000*(idx-(int)idx)),
+                       (int)ph, (int)fabsf((1000*(ph-(int)ph))),
+                       (int)an, (int)fabsf((1000*(an-(int)an)))
+                    );
                 for (int i=0;i<hdr->acc_len[j];i++) {
                     printf("%c%d", (i==0)? '[':',', cirp[i].real);
                 }
@@ -288,11 +295,12 @@ rx_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
 
             for(int i=0;i<N_DW_INSTANCES;i++) {
                 if (hal_dw1000_inst(i)->cir->status.valid) {
-                    hdr->acc_offset[i] = hdr->dlen;
+                    hdr->cir_rcphase[i] = cir[i]->rcphase;
+                    hdr->cir_angle[i] = cir[i]->angle;
+                    hdr->acc_offset[i] = OS_MBUF_PKTLEN(om);
                     rc = os_mbuf_copyinto(om, hdr->acc_offset[i],
                                           (uint8_t*)hal_dw1000_inst(i)->cir->cir.array,
                                           acc_len * sizeof(cir_complex_t));
-                    hdr->dlen += acc_len * sizeof(cir_complex_t);
                     hdr->acc_len[i] = acc_len;
                 }
             }

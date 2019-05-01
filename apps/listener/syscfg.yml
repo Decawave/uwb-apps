@@ -20,6 +20,7 @@ syscfg.vals:
     CONSOLE_UART_BAUD: 1000000
     CONSOLE_UART_TX_BUF_SIZE: 1024
     CONSOLE_UART_RX_BUF_SIZE: 256
+    CONSOLE_HISTORY_SIZE: 8
     
     # Shell
     SHELL_TASK: 1
@@ -39,8 +40,8 @@ syscfg.vals:
     UWBCFG_APPLY_AT_INIT: 1
     CIR_ENABLED: 1
     CIR_VERBOSE: 0
-    CIR_OFFSET: 3
-    CIR_SIZE: 5
+    CIR_OFFSET: 8
+    CIR_SIZE: 16
 
     ## Where to store config 
     CONFIG_FCB: 1
