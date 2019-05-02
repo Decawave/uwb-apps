@@ -195,7 +195,7 @@ pan_slot_timer_cb(struct os_event * ev)
 
 #if MYNEWT_VAL(PANMASTER_ISSUER)
     /* Listen for pan requests */
-    dw1000_set_rx_timeout(inst, tdma->period/tdma->nslots/2);
+    dw1000_set_rx_timeout(inst, inst->ccp->period/tdma->nslots/2);
     dw1000_set_delay_start(inst, tdma_rx_slot_start(inst, idx));
     dw1000_pan_listen(inst, DWT_BLOCKING);
 #else

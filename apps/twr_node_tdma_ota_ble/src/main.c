@@ -206,17 +206,9 @@ slot_cb(struct os_event * ev){
         dw1000_config_updated = false;
     }
 
-#if MYNEWT_VAL(WCS_ENABLED)
-    wcs_instance_t * wcs = ccp->wcs;
-    uint64_t dx_time = (ccp->local_epoch + (uint64_t) round((1.0l + wcs->skew) * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
-#else
-    uint64_t dx_time = (ccp->local_epoch + (uint64_t) ((idx * ((uint64_t)tdma->period << 16)/tdma->nslots)));
-#endif
-    dx_time = (dx_time - ((uint64_t)ceilf(dw1000_usecs_to_dwt_usecs(dw1000_phy_SHR_duration(&inst->attrib))) << 16) ) & 0xFFFFFFFE00UL;
-
-    dw1000_set_delay_start(inst, dx_time);
+    dw1000_set_delay_start(inst, tdma_rx_slot_start(inst, idx));
     uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(ieee_rng_response_frame_t))                 
-                            + inst->rng->config.rx_timeout_delay;         // Remote side turn arroud time.
+                            + inst->rng->config.rx_timeout_delay;         // Remote side turn around time.
     dw1000_set_rx_timeout(inst, timeout);
     dw1000_rng_listen(inst, DWT_BLOCKING);
 }

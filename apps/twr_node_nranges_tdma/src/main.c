@@ -86,7 +86,7 @@ pan_slot_timer_cb(struct os_event * ev)
         dw1000_pan_reset(inst, tdma_tx_slot_start(inst, idx));
     } else {
         uint64_t dx_time = tdma_rx_slot_start(inst, idx);
-        dw1000_set_rx_timeout(inst, 3*tdma->period/tdma->nslots/4);
+        dw1000_set_rx_timeout(inst, 3*inst->ccp->period/tdma->nslots/4);
         dw1000_set_delay_start(inst, dx_time);
         dw1000_set_on_error_continue(inst, true);
         dw1000_pan_listen(inst, DWT_BLOCKING);
@@ -96,7 +96,7 @@ pan_slot_timer_cb(struct os_event * ev)
     if (inst->pan->status.valid && dw1000_pan_lease_remaining(inst)>MYNEWT_VAL(PAN_LEASE_EXP_MARGIN)) {
         uint16_t timeout;
         if (inst->pan->config->role == PAN_ROLE_RELAY) {
-            timeout = 3*tdma->period/tdma->nslots/4;
+            timeout = 3*inst->ccp->period/tdma->nslots/4;
         } else {
             /* Only listen long enough to get any resets from master */
             timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(sizeof(struct _pan_frame_t)))
@@ -109,9 +109,8 @@ pan_slot_timer_cb(struct os_event * ev)
             printf("{\"utime\": %lu,\"msg\": \"pan_listen_err\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
         }
     } else {
-        uint64_t dx_time = tdma_tx_slot_start(inst, idx);
         /* Subslot 0 is for master reset, subslot 1 is for sending requests */
-        dx_time += ((uint64_t)tdma->period << 16)/tdma->nslots/16;
+        uint64_t dx_time = tdma_tx_slot_start(inst, idx + 1.0f/16);
         dw1000_pan_blink(inst, NTWR_ROLE_NODE, DWT_BLOCKING, dx_time);
     }
 #endif // PANMASTER_ISSUER

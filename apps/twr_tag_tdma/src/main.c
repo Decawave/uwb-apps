@@ -253,9 +253,8 @@ pan_slot_timer_cb(struct os_event * ev)
         dw1000_set_on_error_continue(inst, true);
         dw1000_pan_listen(inst, DWT_BLOCKING);
     } else {
-        uint64_t dx_time = tdma_tx_slot_start(inst, idx);
         /* Subslot 0 is for master reset, subslot 1 is for sending requests */
-        dx_time += ((uint64_t)tdma->period << 16)/tdma->nslots/16;
+        uint64_t dx_time = tdma_tx_slot_start(inst, idx + 1.0f/16);
         dw1000_pan_blink(inst, 2, DWT_BLOCKING, dx_time);
     }
 }
