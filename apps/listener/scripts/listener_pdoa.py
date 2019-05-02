@@ -110,16 +110,30 @@ class CirPlots(tk.Frame):
         toolbar.update()
         self.canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
 
-        self.right_frame = tk.Frame(self.center_frame, bg='white', pady=3)
-        self.right_frame.grid(row=0, column=1, sticky="sw")
+        # RSSI
+        self.middle_frame = tk.Frame(self.center_frame, bg='white', pady=3)
+        self.middle_frame.grid(row=0, column=1, sticky="sw")
 
-        self.hist_fig = Figure(figsize=(4,6), dpi=100)
-        self.hist_ax = self.hist_fig.add_subplot(111)
-        self.hist_canvas = FigureCanvasTkAgg(self.hist_fig, self.right_frame)
-        self.hist_canvas.show()
-        self.hist_canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
-        self.hist_stats = tk.Label(self.right_frame, text="stats", font=("Verdana", 10))
-        self.hist_stats.pack(pady=10,padx=10)
+        self.rssi_fig = Figure(figsize=(2,6), dpi=100)
+        self.rssi_a0 = self.rssi_fig.add_subplot(211)
+        self.rssi_a1 = self.rssi_fig.add_subplot(212, sharex=self.rssi_a0)
+        self.rssi_canvas = FigureCanvasTkAgg(self.rssi_fig, self.middle_frame)
+        self.rssi_canvas.show()
+        self.rssi_canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+        self.rssi_stats = tk.Label(self.middle_frame, text="RSSI", font=("Verdana", 10))
+        self.rssi_stats.pack(pady=10,padx=10)
+        
+        # PDOA
+        self.right_frame = tk.Frame(self.center_frame, bg='white', pady=3)
+        self.right_frame.grid(row=0, column=2, sticky="sw")
+
+        self.pdoa_fig = Figure(figsize=(4,6), dpi=100)
+        self.pdoa_ax = self.pdoa_fig.add_subplot(111)
+        self.pdoa_canvas = FigureCanvasTkAgg(self.pdoa_fig, self.right_frame)
+        self.pdoa_canvas.show()
+        self.pdoa_canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+        self.pdoa_stats = tk.Label(self.right_frame, text="stats", font=("Verdana", 10))
+        self.pdoa_stats.pack(pady=10,padx=10)
         
         self.resetplot()
         self.updateplot(data_queue)
@@ -156,14 +170,12 @@ class CirPlots(tk.Frame):
                     self.line_0i.set_ydata([float(x) for x in cir['imag']])
                     ymin = np.min([float(x) for x in cir['real']])
                     if (ymin < self.cir_ymin and ymin > -65000):
-                        print('min', [self.cir_ymin, self.cir_ymax])
                         self.cir_ymin = ymin
                         self.a0.set_ylim([self.cir_ymin, self.cir_ymax])
                         self.a1.set_ylim([self.cir_ymin, self.cir_ymax])
                     mag = [np.sqrt(float(x*x)+float(y*y)) for x,y in zip(cir['real'], cir['imag'])]
                     ymax = np.max(mag)
                     if (ymax > self.cir_ymax and ymax < 65000):
-                        print('max', [self.cir_ymin, self.cir_ymax])
                         self.cir_ymax = ymax
                         self.a0.set_ylim([self.cir_ymin, self.cir_ymax])
                         self.a1.set_ylim([self.cir_ymin, self.cir_ymax])
@@ -213,11 +225,17 @@ class CirPlots(tk.Frame):
 
             if (q.qsize()>10):
                 if (self.idx%100==0):
-                    self.drawHistogram(result, self.right_frame)
+                    self.drawHistogram(result, self.pdoa_stats, self.pdoa_ax, self.pdoa_canvas, max_hist=1000)
+                if (self.idx%50==0):
+                    self.drawHistogram(result, self.rssi_stats, self.rssi_a0, self.rssi_canvas, field='rssi0', max_hist=200)
+                    self.drawHistogram(result, self.rssi_stats, self.rssi_a1, self.rssi_canvas, field='rssi1', max_hist=200)
                 self.parent.after(0, self.updateplot, q)
             else:
+                if (self.idx%50==0):
+                    self.drawHistogram(result, self.pdoa_stats, self.pdoa_ax, self.pdoa_canvas, max_hist=1000)
                 if (self.idx%10==0):
-                    self.drawHistogram(result, self.right_frame)
+                    self.drawHistogram(result, self.rssi_stats, self.rssi_a0, self.rssi_canvas, field='rssi0', max_hist=200)
+                    self.drawHistogram(result, self.rssi_stats, self.rssi_a1, self.rssi_canvas, field='rssi1', max_hist=200)
                 self.parent.after(10, self.updateplot, q)
 
         else:
@@ -228,29 +246,37 @@ class CirPlots(tk.Frame):
         a=a[abs(a - np.mean(a)) < m * np.std(a)]
         return a
             
-    def drawHistogram(self, d, target):
-        field = 'pd'
-        n_bins = 96
+    def drawHistogram(self, d, stats_label, fig_axis, fig_canvas, field='pd', max_hist=None):
+        n_bins = 64
         filter_m = 0
 
         pdata = []
-        for x in self.history:
+        if max_hist == None:
+            h=self.history
+        else:
+            h=self.history[-max_hist:]
+            
+        for x in h:
             try:
-                pdata.append(float(x[field])*180.0/np.pi)
+                if (field=='pd'):
+                    pdata.append(float(x[field])*180.0/np.pi)
+                else:
+                    pdata.append(float(x[field]))
             except:
                 pass
         if (filter_m):
             pdata = self.pdoa_filter(pdata, m=filter_m)
         if len(pdata) < 10: return
         
-        stats = "Histogram: records: {:d} average: {:.3f} stddev:  {:.3f}".format(len(pdata), np.mean(pdata), np.std(pdata))    
+        stats = "Hist({}):{:04d} average: {:.3f} stddev:  {:.3f}".format(field, len(pdata), np.mean(pdata), np.std(pdata))    
         print(stats)
-        self.hist_stats['text']=stats
-        self.hist_ax.cla()
-        self.hist_ax.hist(pdata, bins=n_bins, normed=0)
-        self.hist_canvas.draw()
+        stats_label['text']=stats
+        fig_axis.cla()
+        fig_axis.set_xlabel(field)
+        fig_axis.hist(pdata, bins='auto', normed=0, rwidth=0.85)
+        fig_canvas.draw()
         
-        # self.hist_ax.title("Pdoa " + stats)
+        # self.pdoa_ax.title("Pdoa " + stats)
 
         
 class ListenerData:
