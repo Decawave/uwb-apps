@@ -14,17 +14,23 @@ syscfg.defs:
         
 syscfg.vals:
     # Route console to UART
-    CONSOLE_UART: 1
     CONSOLE_RTT: 0
+    CONSOLE_UART: 1
+    #CONSOLE_UART_BAUD: 460800  # Max baudrate if using ACM through jlink (/dev/ttyACMx)
     CONSOLE_UART_BAUD: 1000000
     CONSOLE_UART_TX_BUF_SIZE: 1024
+    CONSOLE_UART_RX_BUF_SIZE: 256
+    CONSOLE_HISTORY_SIZE: 8
     
     # Shell
     SHELL_TASK: 1
     SHELL_PROMPT_MODULE: 1
+    SHELL_NEWTMGR: 1
     CONFIG_CLI: 1
     CONFIG_CLI_DEBUG: 1
     DW1000_CLI: 1
+    STATS_NAMES: 1
+    STATS_CLI: 1
     
     # Enable DW1000
     DW1000_DEVICE_0: 1
@@ -34,8 +40,8 @@ syscfg.vals:
     UWBCFG_APPLY_AT_INIT: 1
     CIR_ENABLED: 1
     CIR_VERBOSE: 0
-    CIR_OFFSET: 3
-    CIR_SIZE: 12
+    CIR_OFFSET: 8
+    CIR_SIZE: 16
 
     ## Where to store config 
     CONFIG_FCB: 1

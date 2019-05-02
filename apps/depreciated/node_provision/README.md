@@ -38,22 +38,22 @@ newt target create node0
 newt target set node0 app=apps/node_provision
 newt target set node0 bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target set node0 build_profile=debug 
-newt target amend node0 syscfg=DEVICE_ID=0x1111
+newt target amend node0 syscfg=DW1000_DEVICE_ID_0=0x1111
 newt target amend node0 syscfg=SLOT_ID=0
 newt build node0
 newt create-image node0 1.0.0
 newt load node0
-newt target amend node0 syscfg=DEVICE_ID=0x1112
+newt target amend node0 syscfg=DW1000_DEVICE_ID_0=0x1112
 newt target amend node0 syscfg=SLOT_ID=1
 newt build node0
 newt create-image node0 1.0.0
 newt load node0
-newt target amend node0 syscfg=DEVICE_ID=0x1113
+newt target amend node0 syscfg=DW1000_DEVICE_ID_0=0x1113
 newt target amend node0 syscfg=SLOT_ID=2
 newt build node0
 newt create-image node0 1.0.0
 newt load node0
-newt target amend node0 syscfg=DEVICE_ID=0x1114
+newt target amend node0 syscfg=DW1000_DEVICE_ID_0=0x1114
 newt target amend node0 syscfg=SLOT_ID=3
 newt build node0
 newt create-image node0 1.0.0

@@ -10,12 +10,9 @@ syscfg.vals:
     DW1000_PAN: 0
     TDMA_ENABLED: 1
    
-
+    DW1000_DEVICE_ID_0: ((uint16_t){0x8000})
+    
 syscfg.defs:
-    DEVICE_ID:
-        description: >
-            Device ID
-        value: ((uint16_t){0x8000})
     DEVICE_UUID:
         description: >
             UUID

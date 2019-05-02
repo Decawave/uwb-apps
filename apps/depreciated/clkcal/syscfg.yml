@@ -13,10 +13,6 @@ syscfg.vals:
     FS_XTALT_AUTOTUNE_ENABLED: 1
    
 syscfg.defs:
-    DEVICE_ID:
-        description: >
-            Device ID
-        value: ((uint16_t){0x1234})
     DEVICE_UUID:
         description: >
             UUID

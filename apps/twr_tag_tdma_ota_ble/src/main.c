@@ -94,12 +94,7 @@ slot_cb(struct os_event *ev){
 
     hal_gpio_toggle(LED_BLINK_PIN);  
     
-#if MYNEWT_VAL(WCS_ENABLED)
-    wcs_instance_t * wcs = ccp->wcs;
-    uint64_t dx_time = (ccp->local_epoch + (uint64_t) wcs_dtu_time_adjust(wcs, ((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
-#else
-    uint64_t dx_time = (ccp->local_epoch + (uint64_t) (idx * ((uint64_t)tdma->period << 16)/tdma->nslots));
-#endif
+    uint64_t dx_time = tdma_tx_slot_start(inst, idx);
     dx_time = dx_time & 0xFFFFFFFFFE00UL;
   
 #ifdef TICTOC

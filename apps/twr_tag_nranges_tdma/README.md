@@ -6,39 +6,35 @@ This example pair demonstrates the nrng use case--n ranges measurements with 2*n
 The example also illustrates the WCS (Wireless Clock Synchronization) capability, here the TOA (Time Of Arrival) timestamps are reported in master clock (node0) reference frame.
 
 ### Building target for 4 nodes
+
+Master node (only one allowed per network):
 ```no-highlight
-newt target create node
-newt target set node app=apps/twr_node_nranges_tdma
-newt target set node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target amend node syscfg=DEVICE_ID=0x1001:SLOT_ID=0
-newt run node 0
-newt target amend node syscfg=DEVICE_ID=0x1002:SLOT_ID=1
-newt run node 0
-newt target amend node syscfg=DEVICE_ID=0x1003:SLOT_ID=2
-newt run node 0
-newt target amend node syscfg=DEVICE_ID=0x1004:SLOT_ID=3
-newt run node 0
-newt target amend node syscfg=DEVICE_ID=0x1005:SLOT_ID=4
-newt run node 0
-newt target amend node syscfg=DEVICE_ID=0x1006:SLOT_ID=5
-newt run node 0
-newt target amend node syscfg=DEVICE_ID=0x1007:SLOT_ID=6
-newt run node 0
-newt target amend node syscfg=DEVICE_ID=0x1008:SLOT_ID=7
-newt run node 0
-
-
-
+newt target create master_node
+newt target set master_node app=apps/twr_node_nranges_tdma
+newt target set master_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target amend master_node syscfg=PANMASTER_ISSUER=1
+newt run master_node 0
 ```
+
+Slave nodes
+```no-highlight
+newt target create slave_node
+newt target set slave_node app=apps/twr_node_nranges_tdma
+newt target set slave_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target amend slave_node syscfg=PANMASTER_ISSUER=0
+newt run slave_node 0
+```
+
 ### Building target for tags
 ```
 newt target create tag
 newt target set tag app=apps/twr_tag_nranges_tdma
 newt target set tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target set tag build_profile=debug
-newt target amend tag syscfg=NRNG_NNODES=16:NRNG_NFRAMES=32:NODE_START_SLOT_ID=0:NODE_END_SLOT_ID=8
+newt target amend tag syscfg=NRNG_NNODES=4:NRNG_NFRAMES=12:NODE_START_SLOT_ID=1:NODE_END_SLOT_ID=4
 newt run tag 0
 ```
+
 **NOTE:** The value of NRNG_FRAMES must be atleast NRNG_NODES*2.
 
 

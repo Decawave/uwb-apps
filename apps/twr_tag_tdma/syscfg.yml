@@ -7,7 +7,6 @@ syscfg.vals:
     DW1000_DEVICE_0: 1
     FS_XTALT_AUTOTUNE_ENABLED: 0
     DW1000_BIAS_CORRECTION_ENABLED: 0
-    PAN_ENABLED: 1
     HARDFLOAT: 1
     TDMA_NSLOTS: 160
     WCS_VERBOSE: 1
@@ -23,7 +22,13 @@ syscfg.vals:
     LOG_NEWTMGR: 1
     CONFIG_NEWTMGR: 1
 
-#    DEVICE_ID: ((uint16_t){0x1234})
+    ## Pan
+    PAN_ENABLED: 1
+    PAN_RX_TIMEOUT: ((uint16_t){4000})
+    PAN_LEASE_TIME: 600
+    PAN_LEASE_EXP_MARGIN: 30500
+
+#    DW1000_DEVICE_ID_0: ((uint16_t){0x1234})
 syscfg.defs:
     UUID_CCP_MASTER:
         description: Clock Master UUID

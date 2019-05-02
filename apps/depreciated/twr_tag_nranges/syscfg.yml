@@ -8,12 +8,8 @@ syscfg.vals:
     DW1000_DS_TWR_EXT_ENABLED: 0
     DW1000_CLOCK_CALIBRATION: 0
     DW1000_PAN: 0
-
+    DW1000_DEVICE_ID_0: ((uint16_t){0xAAAA})
 syscfg.defs:
-    DEVICE_ID:
-        description: >
-            Device ID
-        value: ((uint16_t){0xAAAA})
     UUID_CCP_MASTER:
         description: >
             Clock Master UUID
