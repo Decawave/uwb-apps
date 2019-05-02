@@ -218,7 +218,7 @@ pan_complete_cb(struct os_event * ev)
  * the ccp packet is relayed through another node.
  */
 static uint32_t 
-tof_comp_cb(uint64_t euid) 
+tof_comp_cb(uint64_t euid, uint16_t short_addr) 
 {
     float x = MYNEWT_VAL(CCP_TOF_COMP_LOCATION_X);
     float y = MYNEWT_VAL(CCP_TOF_COMP_LOCATION_Y);
