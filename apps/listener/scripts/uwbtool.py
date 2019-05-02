@@ -92,25 +92,40 @@ def packet_length_symb(data_len, datarate, preamble_len, prf):
     total_sy    = preamble_sy + data_sy #+ 16/1.0256 + 
 
     return [preamble_sy,data_sy,total_sy];
-    
+
+def pdoa_filter(data, m=2):
+    a=np.array(data)
+    a=a[abs(a - np.mean(a)) < m * np.std(a)]
+    return a
+
 def plotHistogram(data, args, label=None):
     fig = plt.figure(num=1,figsize=(10,10))
     ax = fig.add_subplot(111) #, aspect='equal'
     plt.tight_layout()
     ax.grid()
     field = 'pd'
+    n_bins = 96
+    filter_m = None
     l = args.split(',')
     if (len(l)>0):
         field=l[0]
+    if (len(l)>1):
+        n_bins=int(l[1])
+    if (len(l)>2):
+        filter_m=int(l[2])
+
     pdata = []
     for x in data:
         try:
             pdata.append(float(x[field])*180.0/np.pi)
         except:
             pass
+    if (filter_m):
+        pdata = pdoa_filter(pdata, m=filter_m)
+
     stats = "Histogram: records: {:d} average: {:.3f} stddev:  {:.3f}".format(len(pdata), np.mean(pdata), np.std(pdata))    
     print(stats)
-    plt.hist(pdata, bins=96, normed=0)
+    plt.hist(pdata, bins=n_bins, normed=0)
     if (label):
         plt.title(label + " " + stats)
     
@@ -124,7 +139,7 @@ def main():
     parser.add_argument('-b',metavar='data_rate',type=int,dest='data_rate',default=6800,help='Data rate, 110, 850 or 6800(default)')
     parser.add_argument('-s',metavar='status',dest='status',default='',help='Interpret status register')
     parser.add_argument('-p', dest='plot', action='store_true',help='generate a plot')
-    parser.add_argument('--histogram', metavar='field[,bins]', type=str, help='generate a histogram')
+    parser.add_argument('--histogram', metavar='field[,bins][,filt-stddev]', type=str, help='generate a histogram')
     parser.add_argument('--plot_label', metavar='title', type=str, help='Label to apply to plot')
     parser.add_argument('--save-plot', dest='save_plot', metavar='filename', type=str, help='file to save plot to (png)')
     parser.add_argument('-v', dest='verbose', action='store_true',help='verbose')
