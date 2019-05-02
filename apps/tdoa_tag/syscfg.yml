@@ -1,7 +1,7 @@
 syscfg.defs:
     TDOA_TAG_BLINK_RATE:
         description: 'blinks per second'
-        value: ((float)1.0)
+        value: '"1"'
     BLE_ENABLED:
         description: 'Activate BLE'
         value: 1
@@ -14,6 +14,7 @@ syscfg.vals:
     CONSOLE_UART_BAUD: 115200
     CONSOLE_UART_TX_BUF_SIZE: 1024
     CONSOLE_UART_RX_BUF_SIZE: 256
+    CONSOLE_HISTORY_SIZE: 8
 
     # Shell
     SHELL_TASK: 1
@@ -51,4 +52,4 @@ syscfg.vals:
     BLE_ROLE_PERIPHERAL: 1
     
 syscfg.vals.CONSOLE_UART:
-    UART_0:1
+    UART_0: 1

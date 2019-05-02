@@ -50,8 +50,73 @@
 
 /* The timer callout */
 static struct os_callout tdoa_callout;
-
+static int16_t g_blink_rate;
 static bool config_changed = false;
+
+/*
+ * Config
+ */
+static char *uwb_conf_get(int argc, char **argv, char *val, int val_len_max);
+static int uwb_conf_set(int argc, char **argv, char *val);
+static int uwb_conf_commit(void);
+static int uwb_conf_export(void (*export_func)(char *name, char *val),
+  enum conf_export_tgt tgt);
+
+static struct uwb_config_s {
+    char blink_rate[8];
+} uwb_config = { .blink_rate = {MYNEWT_VAL(TDOA_TAG_BLINK_RATE)} };
+
+static struct conf_handler uwb_conf_cbs = {
+    .ch_name = "main",
+    .ch_get = uwb_conf_get,
+    .ch_set = uwb_conf_set,
+    .ch_commit = uwb_conf_commit,
+    .ch_export = uwb_conf_export,
+};
+
+static char *
+uwb_conf_get(int argc, char **argv, char *val, int val_len_max)
+{
+    if (argc == 1) {
+        if (!strcmp(argv[0], "blink_rate")) {
+            return uwb_config.blink_rate;
+        }
+    }
+    return NULL;
+}
+
+static int
+uwb_conf_set(int argc, char **argv, char *val)
+{
+    if (argc == 1) {
+        if (!strcmp(argv[0], "blink_rate")) {
+            return CONF_VALUE_SET(val, CONF_STRING, uwb_config.blink_rate);
+        }
+    }
+    return OS_ENOENT;
+}
+
+static int
+uwb_conf_commit(void)
+{
+    int16_t old_blink_rate = g_blink_rate;
+    conf_value_from_str(uwb_config.blink_rate, CONF_INT16,
+                        (void*)&g_blink_rate, 0);
+
+    /* Start blinking if we weren't before */
+    if (g_blink_rate > 0 && old_blink_rate==0) {
+        os_callout_reset(&tdoa_callout, OS_TICKS_PER_SEC/g_blink_rate);
+    }
+    return 0;
+}
+
+static int
+uwb_conf_export(void (*export_func)(char *name, char *val),
+  enum conf_export_tgt tgt)
+{
+    export_func("main/blink_rate", uwb_config.blink_rate);
+    return 0;
+}
 
 
 int
@@ -90,7 +155,9 @@ void tdoa_timer_ev_cb(struct os_event *ev) {
     hal_gpio_write(LED_BLINK_PIN, 1);
 
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    dw1000_dev_wakeup(inst);
+    if (inst->status.sleeping) {
+        dw1000_dev_wakeup(inst);
+    }
 
     if (config_changed) {
         dw1000_mac_config(inst, NULL);
@@ -99,18 +166,28 @@ void tdoa_timer_ev_cb(struct os_event *ev) {
     }
 
     dw1000_dev_configure_sleep(inst);
-    dw1000_dev_enter_sleep_after_tx(inst, 1);
+    dw1000_dev_enter_sleep_after_tx(inst, g_blink_rate < 10);
 
-    dw1000_write_tx(inst, tdoa_blink_frame.array, 0, sizeof(ieee_blink_frame_t));
     dw1000_write_tx_fctrl(inst, sizeof(ieee_blink_frame_t), 0);
 
+    /* Should not really need this section but due to sleeping the dw1000 post tx
+     * it may be needed */
+    if(os_sem_get_count(&inst->tx_sem) == 0) {
+        printf("sem rel\n");
+        os_sem_release(&inst->tx_sem);
+    }
+
     if (dw1000_start_tx(inst).start_tx_error){
-        printf("err\n");
+        printf("start tx err\n");
+    } else {
+        dw1000_write_tx(inst, tdoa_blink_frame.array, 0, sizeof(ieee_blink_frame_t));
     }
     hal_gpio_write(LED_BLINK_PIN, 0);
     
     tdoa_blink_frame.seq_num++;
-    os_callout_reset(&tdoa_callout, OS_TICKS_PER_SEC/MYNEWT_VAL(TDOA_TAG_BLINK_RATE));
+    if (g_blink_rate) {
+        os_callout_reset(&tdoa_callout, OS_TICKS_PER_SEC/g_blink_rate);
+    }
 }
 
 
@@ -119,7 +196,9 @@ static void init_timer(void) {
      * Initialize the callout for a timer event.
      */
     os_callout_init(&tdoa_callout, os_eventq_dflt_get(), tdoa_timer_ev_cb, NULL);
-    os_callout_reset(&tdoa_callout, OS_TICKS_PER_SEC);
+    if (g_blink_rate) {
+        os_callout_reset(&tdoa_callout, OS_TICKS_PER_SEC/g_blink_rate);
+    }
 }
 
 int
@@ -140,8 +219,14 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_BLINK_PIN, 1);
 
     uwbcfg_register(&uwb_cb);
+
+    /* Register local config */
+    rc = conf_register(&uwb_conf_cbs);
+    assert(rc == 0);
+
+    /* Load config from flash */
     conf_load();
-    
+
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     inst->config.dblbuffon_enabled = 0;
     inst->config.framefilter_enabled = 0;
