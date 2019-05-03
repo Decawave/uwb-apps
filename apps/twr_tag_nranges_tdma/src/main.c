@@ -141,7 +141,7 @@ tdma_allocate_slots(dw1000_dev_instance_t * inst, bool reset_tdma)
         
         for (int j=0;j<MYNEWT_VAL(NRNG_NTAGS);j++) {
             tdma_release_slot(inst->tdma, i+j);
-            if (j == (inst->slot_id-1)) {
+            if (j == inst->slot_id) {
                 tdma_assign_slot(inst->tdma, slot_cb, i+j, NULL);
 #ifdef PAN_VERBOSE
                 printf("tdma_slot:%03d\n", i);
