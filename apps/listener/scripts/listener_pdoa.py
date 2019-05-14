@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# socat tcp-listen:8002,reuseaddr,fork /dev/ttyACM0,b460800,raw,echo=0,crnl
 
 import sys, argparse
 import socket
@@ -62,6 +63,8 @@ class CirPlots(tk.Frame):
         self.cir_ymin = -1000
         self.cir_ymax = 1000
         self.tic = time.time()
+        self.pause = 0
+        self.pdoa_field = 'pd'
 
         self.parent = parent;
         tk.Frame.__init__(self, parent)
@@ -79,8 +82,14 @@ class CirPlots(tk.Frame):
         reset_btn = tk.Button(self.top_frame, text="RESET", fg="black",
                               command=lambda: self.resetplot())
         reset_btn.grid(row=0, column=1)
+        pd_toggle_btn = tk.Button(self.top_frame, text="PDSRC", fg="black",
+                              command=lambda: self.toggle_pd_src())
+        pd_toggle_btn.grid(row=0, column=2)
+        pause_btn = tk.Button(self.top_frame, text="PAUSE", fg="black",
+                              command=lambda: self.pauseplot())
+        pause_btn.grid(row=0, column=3)
         self.queue_stats = tk.Label(self.top_frame, text="stats", font=("Verdana", 10))
-        self.queue_stats.grid(row=0, column=2, sticky="w")
+        self.queue_stats.grid(row=0, column=4, sticky="w")
 
         self.center_frame = tk.Frame(self, bg='gray2', pady=1)
         self.center_frame.grid(row=1, sticky="sw")
@@ -93,7 +102,9 @@ class CirPlots(tk.Frame):
         
         self.fig = Figure(figsize=(6,6), dpi=100)
         self.a0 = self.fig.add_subplot(211)
+        self.a0.set_xlabel("cir0")
         self.a1 = self.fig.add_subplot(212)
+        self.a1.set_xlabel("cir1")
         self.canvas = FigureCanvasTkAgg(self.fig, self.left_frame)
         self.canvas.show()
         self.canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
@@ -101,6 +112,7 @@ class CirPlots(tk.Frame):
         self.line_0i, = self.a0.plot(xrange(16), 8*[self.cir_ymin, self.cir_ymax], 'b')
         self.line_0a, = self.a0.plot(xrange(16), 8*[self.cir_ymin, self.cir_ymax], 'k', linewidth=2.0)
         self.line_0fp, = self.a0.plot([0,0], [-100,100], 'g--', linewidth=2.0)
+        self.line_01fp, = self.a0.plot([5,5], [-100,100], 'b--', linewidth=2.0)
         self.line_1r, = self.a1.plot(xrange(16), 8*[self.cir_ymin, self.cir_ymax], 'r')
         self.line_1i, = self.a1.plot(xrange(16), 8*[self.cir_ymin, self.cir_ymax], 'b')
         self.line_1a, = self.a1.plot(xrange(16), 8*[self.cir_ymin, self.cir_ymax], 'k', linewidth=2.0)
@@ -122,6 +134,7 @@ class CirPlots(tk.Frame):
         self.rssi_canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
         self.rssi_stats = tk.Label(self.middle_frame, text="RSSI", font=("Verdana", 10))
         self.rssi_stats.pack(pady=10,padx=10)
+        self.rssi_rssi0, = self.rssi_a0.plot(range(-110,75), len(range(-110,75))*[0], 'k', linewidth=1.0)
         
         # PDOA
         self.right_frame = tk.Frame(self.center_frame, bg='white', pady=3)
@@ -140,28 +153,87 @@ class CirPlots(tk.Frame):
 
 
     def resetplot(self):
+        self.pause=0
         self.history=[]
+
+    def toggle_pd_src(self):
+        if (self.pdoa_field == 'pd'):
+            self.pdoa_field = 'adj_pd'
+        else:
+            self.pdoa_field = 'pd'
+        self.drawHistogram(None, self.pdoa_stats, self.pdoa_ax, self.pdoa_canvas, field=self.pdoa_field, max_hist=500)
+
+    def pauseplot(self):
+        self.pause=1
+        self.tic = time.time()
+        self.idx = 0
+        
+    def calc_adjusted_pd(self, d):
+        try:
+            cir0 = d['cir0']
+            cir1 = d['cir1']
+            # Check if they aleady match
+            fp_idx0 = float(cir0['fp_idx'])
+            fp_idx1 = float(cir1['fp_idx'])
+            if (abs(fp_idx0-fp_idx1) < 0.5):
+                return d['pd']
+
+            # Use the first detected LDE
+            acc_idx0 = int(np.floor(fp_idx0 + 0.5))
+            acc_idx1 = int(np.floor(fp_idx1 + 0.5))
+            if (fp_idx0 < fp_idx1):
+                # Remap cir0's fp_index into cir1
+                print("0 fp0:{:.1f}, fp1:{:.1f}, adj: {:d}".format(fp_idx0, fp_idx1, acc_idx0 - acc_idx1)) 
+                acc_real = float(cir1['real'][8+acc_idx0-acc_idx1])
+                acc_imag = float(cir1['imag'][8+acc_idx0-acc_idx1])
+                angle1 = np.arctan2(acc_imag,acc_real)
+                rcphase1 = float(cir1['rcphase'])
+                return np.fmod(float(cir0['angle']) - float(cir0['rcphase']) - (angle1 - rcphase1) + 3*np.pi, 2*np.pi) - np.pi;
+            else:
+                # Remap cir1's fp_index into cir0
+                print("1 fp0:{:.1f}, fp1:{:.1f}, adj: {:d}".format(fp_idx0, fp_idx1, acc_idx0 - acc_idx1)) 
+                acc_real = float(cir0['real'][8+acc_idx1-acc_idx0])
+                acc_imag = float(cir0['imag'][8+acc_idx1-acc_idx0])
+                angle0 = np.arctan2(acc_imag,acc_real)
+                rcphase0 = float(cir0['rcphase'])
+                return np.fmod((angle0 - rcphase0) - (float(cir1['angle']) - float(cir1['rcphase'])) + 3*np.pi, 2*np.pi) - np.pi;
+                
+        except:
+            return None
+            pass
+                    
+        
         
     def updateplot(self, q):
+        if self.pause == 1:
+            self.parent.after(10,self.updateplot,q)
+            return
+        
         try:       #Try to check if there is data in the queue
             result=q.get_nowait()
         except:
             self.parent.after(10,self.updateplot,q)
-            return
-
+            return        
+        
         if result !='Q':
             self.idx += 1
             self.queue_stats['text']="Queue: {:3d} Rate:{:6.2f}".format(q.qsize(), self.idx/(time.time()-self.tic))
+            result['adj_pd'] = self.calc_adjusted_pd(result)
             try:
                 self.history.append(result)
             except:
                 self.history = [result]
 
+            # Limit the size of the history to 10000 values
+            if (len(self.history) > 10000):
+                self.history = self.history[-10000:]
+                
             div = 1
             if (q.qsize()>10):
                 div = 10
                 
             if (self.idx%div==0):
+                fp_idx0 = 0
                 try:
                     cir = result['cir0']
                     self.line_0r.set_xdata(xrange(len(cir['real'])))
@@ -184,10 +256,13 @@ class CirPlots(tk.Frame):
                     self.line_0a.set_ydata(mag)
                     try:
                         fp_idx = float(cir['fp_idx'])
+                        fp_idx0 = fp_idx
+                        rcphase = float(cir['rcphase'])
                         acc_idx = np.floor(fp_idx + 0.5)
                         acc_adj = fp_idx - acc_idx
                         self.line_0fp.set_xdata([8+acc_adj, 8+acc_adj])
                         self.line_0fp.set_ydata([0, 0.9*self.cir_ymax])
+                        self.a0.set_xlabel("cir0 fp_idx:{:.2f} rcph:{:.1f}".format(fp_idx, rcphase*180.0/np.pi))
                     except:
                         pass
 
@@ -208,11 +283,15 @@ class CirPlots(tk.Frame):
                     mag = [np.sqrt(float(x*x)+float(y*y)) for x,y in zip(cir['real'], cir['imag'])]
                     self.line_1a.set_ydata(mag)
                     try:
-                        fp_idx = float(cir['fp_idx'])
-                        acc_idx = np.floor(fp_idx + 0.5)
-                        acc_adj = fp_idx - acc_idx
+                        fp_idx1 = float(cir['fp_idx'])
+                        acc_idx = np.floor(fp_idx1 + 0.5)
+                        acc_adj = fp_idx1 - acc_idx
                         self.line_1fp.set_xdata([8+acc_adj, 8+acc_adj])
                         self.line_1fp.set_ydata([0, 0.9*self.cir_ymax])
+                        acc_adj = fp_idx0 - acc_idx
+                        self.line_01fp.set_xdata([8-acc_adj, 8-acc_adj])
+                        self.line_01fp.set_ydata([0, 0.9*self.cir_ymax])
+                        self.a1.set_xlabel("cir1 fp_idx:{:.2f} rcph:{:.1f}".format(fp_idx1, rcphase*180.0/np.pi))
                     except:
                         pass
                     
@@ -225,14 +304,15 @@ class CirPlots(tk.Frame):
 
             if (q.qsize()>10):
                 if (self.idx%100==0):
-                    self.drawHistogram(result, self.pdoa_stats, self.pdoa_ax, self.pdoa_canvas, max_hist=1000)
+                    self.drawHistogram(result, self.pdoa_stats, self.pdoa_ax, self.pdoa_canvas, field=self.pdoa_field, max_hist=500)
                 if (self.idx%50==0):
+                    #self.drawHistogramMan(result, self.rssi_stats, self.rssi_rssi0, self.rssi_canvas, field='rssi0', max_hist=200)
                     self.drawHistogram(result, self.rssi_stats, self.rssi_a0, self.rssi_canvas, field='rssi0', max_hist=200)
                     self.drawHistogram(result, self.rssi_stats, self.rssi_a1, self.rssi_canvas, field='rssi1', max_hist=200)
                 self.parent.after(0, self.updateplot, q)
             else:
                 if (self.idx%50==0):
-                    self.drawHistogram(result, self.pdoa_stats, self.pdoa_ax, self.pdoa_canvas, max_hist=1000)
+                    self.drawHistogram(result, self.pdoa_stats, self.pdoa_ax, self.pdoa_canvas, field=self.pdoa_field, max_hist=500)
                 if (self.idx%10==0):
                     self.drawHistogram(result, self.rssi_stats, self.rssi_a0, self.rssi_canvas, field='rssi0', max_hist=200)
                     self.drawHistogram(result, self.rssi_stats, self.rssi_a1, self.rssi_canvas, field='rssi1', max_hist=200)
@@ -257,8 +337,9 @@ class CirPlots(tk.Frame):
             h=self.history[-max_hist:]
             
         for x in h:
+            if x == None: continue
             try:
-                if (field=='pd'):
+                if (field=='pd' or field=='adj_pd'):
                     pdata.append(float(x[field])*180.0/np.pi)
                 else:
                     pdata.append(float(x[field]))
@@ -278,6 +359,45 @@ class CirPlots(tk.Frame):
         
         # self.pdoa_ax.title("Pdoa " + stats)
 
+    def drawHistogramMan(self, n, stats_label, fig_axis, fig_canvas, field='pd', max_hist=None):
+        filter_m = 0
+
+        # Add new data (last n)
+        for x in self.history[-n:]:
+            try:
+                self.hist_data[field]['y'][int(x[field])] += 1
+            except:
+                self.hist_data[field]['y'][int(x[field])] = 0*{  }
+            
+        pdata = []
+        if max_hist == None:
+            h=self.history
+        else:
+            h=self.history[-max_hist:]
+            
+        for x in h:
+            try:
+                if (field=='pd' or field=='adj_pd'):
+                    pdata.append(float(x[field])*180.0/np.pi)
+                else:
+                    pdata.append(float(x[field]))
+            except:
+                pass
+        if (filter_m):
+            pdata = self.pdoa_filter(pdata, m=filter_m)
+        if len(pdata) < 10: return
+        
+        stats = "Hist({}):{:04d} average: {:.3f} stddev:  {:.3f}".format(field, len(pdata), np.mean(pdata), np.std(pdata))    
+        print(stats)
+        stats_label['text']=stats
+        fig_axis.cla()
+        fig_axis.set_xlabel(field)
+        fig_axis.hist(pdata, bins='auto', normed=0, rwidth=0.85)
+        fig_canvas.draw()
+        
+        # self.pdoa_ax.title("Pdoa " + stats)
+
+        
         
 class ListenerData:
     def __init__(self, socket_s=None, serial_s=None):
