@@ -50,8 +50,42 @@ def interpret_status(status):
     if (s & 0x0200000000): print("  0x0200000000 Receiver Preamble Rejection");
     if (s & 0x0400000000): print("  0x0400000000 Transmit power up time error" );
     
+def interpret_framectrl(fctrl):
+    print("Frame Control " + fctrl + ":")
+    s = int(fctrl, 16)
+    # 0x41 0x88 - Range frame control
+    # 0x41 Data
+    if (s & 0x0007 == 0x0001): print("  0x0001 Data");
+    if (s & 0x0007 == 0x0002): print("  0x0002 Ack");
+    if (s & 0x0007 == 0x0003): print("  0x0003 Mac command");
+    if (s & 0x0007 == 0x0004): print("  0x0004 Reserved");
+    if (s & 0x0007 == 0x0005): print("  0x0005 Reserved");
+    if (s & 0x0007 == 0x0006): print("  0x0006 Reserved");
+    if (s & 0x0007 == 0x0007): print("  0x0007 Reserved");
     
+    if (s & 0x0008 == 0x0008): print("  0x0008 Security Enabeled");
+    if (s & 0x0010 == 0x0010): print("  0x0010 Frame Pending");
+    if (s & 0x0020 == 0x0020): print("  0x0020 ACK Request");
+    if (s & 0x0040 == 0x0040): print("  0x0040 PAN ID Compress");
+    if (s & 0x0080 == 0x0080): print("  0x0080 Reserved");
+    if (s & 0x0100 == 0x0100): print("  0x0100 Reserved");
+    if (s & 0x0200 == 0x0200): print("  0x0200 Reserved");
 
+    if (s & 0x0C00 == 0x0000): print("  0x0000 Dest Addr: No address");
+    if (s & 0x0C00 == 0x0400): print("  0x0400 Dest Addr: Reserved");
+    if (s & 0x0C00 == 0x0800): print("  0x0800 Dest Addr: 16-bit address");
+    if (s & 0x0C00 == 0x0C00): print("  0x0800 Dest Addr: 64-bit address");
+
+    if (s & 0x3000 == 0x0000): print("  0x0000 Frame version: IEEE 802.15.4-2003");
+    if (s & 0x3000 == 0x1000): print("  0x1000 Frame version: IEEE 802.15.4");
+    if (s & 0x3000 == 0x2000): print("  0x2000 Frame version: Invalid");
+    if (s & 0x3000 == 0x3000): print("  0x3000 Frame version: Invalid");
+    
+    if (s & 0xC000 == 0x0000): print("  0x0000 Src Addr: No address");
+    if (s & 0xC000 == 0x4000): print("  0x4000 Src Addr: Reserved");
+    if (s & 0xC000 == 0x8000): print("  0x8000 Src Addr: 16-bit address");
+    if (s & 0xC000 == 0xC000): print("  0x8000 Src Addr: 64-bit address");
+    
 def packet_length_symb(data_len, datarate, preamble_len, prf):
     msgdataleni = data_len
     preambleleni = 0;
@@ -65,30 +99,30 @@ def packet_length_symb(data_len, datarate, preamble_len, prf):
     #SFD length is 64 for 110k (always)
     #SFD length is 8 for 6.81M, and 16 for 850k, but can vary between 8 and 16 bytes
     if(datarate == 110):
-	msgdataleni *= 8205.13;
-	msgdataleni += 172308;
+        msgdataleni *= 8205.13;
+        msgdataleni += 172308;
         sfdlen = 64;
     elif(datarate == 850):
-	msgdataleni *= 1025.64;
-	msgdataleni += 21539;
-	sfdlen = 16;
+        msgdataleni *= 1025.64;
+        msgdataleni += 21539;
+        sfdlen = 16;
     else:
-	msgdataleni *= 128.21;
-	msgdataleni += 21539;
-	sfdlen = 8;
+        msgdataleni *= 128.21;
+        msgdataleni += 21539;
+        sfdlen = 8;
         
     preambleleni = preamble_len
 
     #preamble  = plen * (994 or 1018) depending on 16 or 64 PRF
     if(prf == 16):
-	preambleleni = (sfdlen + preambleleni) * 0.99359
+        preambleleni = (sfdlen + preambleleni) * 0.99359
     else:
-	preambleleni = (sfdlen + preambleleni) * 1.01763
-	
+        preambleleni = (sfdlen + preambleleni) * 1.01763
+        
     #set the frame wait timeout time - total time the frame takes in symbols
     # 16 - receiver startup margin
     preamble_sy = preambleleni / 1.0256;
-    data_sy	    = (msgdataleni/1000.0)/1.0256;
+    data_sy         = (msgdataleni/1000.0)/1.0256;
     total_sy    = preamble_sy + data_sy #+ 16/1.0256 + 
 
     return [preamble_sy,data_sy,total_sy];
@@ -138,6 +172,7 @@ def main():
     parser.add_argument('-l',metavar='message_length',type=int,dest='data_len',help='Number of bytes in message')
     parser.add_argument('-b',metavar='data_rate',type=int,dest='data_rate',default=6800,help='Data rate, 110, 850 or 6800(default)')
     parser.add_argument('-s',metavar='status',dest='status',default='',help='Interpret status register')
+    parser.add_argument('-f',metavar='fctrl',dest='fctrl',default='',help='Interpret frame control bytes')
     parser.add_argument('-p', dest='plot', action='store_true',help='generate a plot')
     parser.add_argument('--histogram', metavar='field[,bins][,filt-stddev]', type=str, help='generate a histogram')
     parser.add_argument('--plot_label', metavar='title', type=str, help='Label to apply to plot')
@@ -154,13 +189,16 @@ def main():
     if (args.data_rate): data_rate = args.data_rate
     if (args.preamble_len): preamble_len = args.preamble_len
     if (args.status):
-        interpret_status(args.status)
+        Interpret_status(args.status)
+        return
+    if (args.fctrl):
+        interpret_framectrl(args.fctrl)
         return
     
     [preamble_sy,data_sy,total_sy] = packet_length_symb(data_len,data_rate,preamble_len,prf)
     uus = (total_sy)*1.0256
     
-    print("Prf:	   %3d"%(prf))
+    print("Prf:    %3d"%(prf))
     print("Datarate: %4d"%(data_rate))
     print("Preamble:  %3d: %.3f sy"%(preamble_len,preamble_sy))
     print("Data:      %3d: %.3f sy"%(data_len,data_sy))
@@ -171,11 +209,11 @@ def main():
     
     data = []
     with open(args.files[0]) as f:
-	for line in f:
-	    try:
-		data.append(json.loads(line))
-	    except ValueError:
-		pass
+        for line in f:
+            try:
+                data.append(json.loads(line))
+            except ValueError:
+                pass
 
 
     if (args.histogram):
