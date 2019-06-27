@@ -219,7 +219,7 @@ process_rx_data_queue(struct os_event *ev)
                 float ph = hdr->cir_rcphase[j];
                 float an = hdr->cir_angle[j];
                 printf(",\"cir%d\":{\"o\":%d,\"fp_idx\":\"%d.%03d\",\"rcphase\":\"%d.%03d\",\"angle\":\"%d.%03d\",\"real\":",
-                       MYNEWT_VAL(CIR_OFFSET), j, (int)idx, (int)(1000*(idx-(int)idx)),
+                       j, MYNEWT_VAL(CIR_OFFSET), (int)idx, (int)(1000*(idx-(int)idx)),
                        (int)ph, (int)fabsf((1000*(ph-(int)ph))),
                        (int)an, (int)fabsf((1000*(an-(int)an)))
                     );

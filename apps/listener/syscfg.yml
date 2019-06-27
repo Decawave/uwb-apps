@@ -40,7 +40,7 @@ syscfg.vals:
     UWBCFG_APPLY_AT_INIT: 1
     CIR_ENABLED: 1
     CIR_VERBOSE: 0
-    CIR_OFFSET: 8
+    CIR_OFFSET: 6
     CIR_SIZE: 16
 
     ## Where to store config 
