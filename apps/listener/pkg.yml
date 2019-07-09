@@ -35,10 +35,7 @@ pkg.deps:
     - "@apache-mynewt-core/sys/config"
     - "@mynewt-dw1000-core/sys/uwbcfg"
     - "@mynewt-dw1000-core/hw/drivers/dw1000"
-
-pkg.deps.CIR_ENABLED:
     - "@mynewt-dw1000-core/lib/cir"
-
 
 pkg.deps.BLE_ENABLED:
     - "@apache-mynewt-core/mgmt/newtmgr/transport/ble"

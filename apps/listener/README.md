@@ -1,78 +1,70 @@
-<!--
-#
-# Licensed to the Apache Software Foundation (ASF) under one
-# or more contributor license agreements.  See the NOTICE file
-# distributed with this work for additional information
-# regarding copyright ownership.  The ASF licenses this file
-# to you under the Apache License, Version 2.0 (the
-# "License"); you may not use this file except in compliance
-# with the License.  You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an
-# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-#  KIND, either express or implied.  See the License for the
-# specific language governing permissions and limitations
-# under the License.
-#
--->
-
-# Decawave Listener Example 
-Listens to all uwb traffic and outputs json to uart:
-
-```
-# Example with two receivers
-{"ts":418793104067,"utime":92619018,"rssi0":"-90.9","rssi1":"-94.4","pd":"1.374","dlen":10,"d":"c5cbf01c0010c2bf4020"}
-{"ts":419282763488,"utime":92626678,"rssi0":"-90.9","rssi1":"-94.4","pd":"0.305","dlen":10,"d":"c5ccf01c0010c2bf4020"}
-{"ts":419784023582,"utime":92634521,"rssi0":"-91.1","rssi1":"-94.0","pd":"0.014","dlen":10,"d":"c5cdf01c0010c2bf4020"}
-{"ts":420283186433,"utime":92642333,"rssi0":"-90.8","rssi1":"-93.9","pd":"0.234","dlen":10,"d":"c5cef01c0010c2bf4020"}
-```
+# UWB sniffer / listener
 
 ## Overview
+This example is really a very useful tool for assisting you develop UWB applications. It allows you to monitor the traffic and get accurate
+timestamps for each package. 
 
-# DWM1001  
+### Building target for dwm1001
 
-```
-newt target create listener
-newt target set listener app=apps/listener
-newt target set listener bsp=@mynewt-dw1000-core/hw/bsp/dwm1003
-newt target set listener build_profile=debug 
-newt run listener 0
-```
-
-# dwm1001_ncbwifi
-
-```
-newt target create dwm1001_ncbwifi_listener
-newt target set dwm1001_ncbwifi_listener app=apps/listener
-newt target set dwm1001_ncbwifi_listener bsp=@mynewt-dw1000-core/hw/bsp/dwm1001_ncbwifi
-newt target set dwm1001_ncbwifi_listener build_profile=debug
-newt target amend dwm1001_ncbwifi_listener syscfg=CONSOLE_UART_BAUD=115200
-newt run dwm1001_ncbwifi_listener 0
+```no-highlight
+newt target create dwm1001_listener
+newt target set dwm1001_listener app=apps/listener
+newt target set dwm1001_listener bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target amend dwm1001_listener syscfg=CONSOLE_UART_BAUD=115200
+newt run dwm1001_listener 0
 ```
 
-# lps2nano_ncbwifi
-
+If you connect to the virtual serial port, on linux /dev/ttyACMx where x is a number assigned by your computer, you should
+see json packaged coming similar to the ones below if you have UWB traffic within range of the dwm1001:
 ```
-newt target create lps2nano_ncbwifi_listener
-newt target set lps2nano_ncbwifi_listener app=apps/listener
-newt target set lps2nano_ncbwifi_listener bsp=@mynewt-dw1000-core/hw/bsp/lps2nano_ncbwifi
-newt target set lps2nano_ncbwifi_listener build_profile=debug
-newt target amend lps2nano_ncbwifi_listener syscfg=CONSOLE_UART_RX_BUF_SIZE=256:ESP12F_ENABLED=1:SHELL_NEWTMGR=1:CONSOLE_ECHO=0:NCBWIFI_ESP_PASSTHROUGH=1
-newt run lps2nano_ncbwifi_listener 0
+$ socat /dev/ttyACM0,b115200,raw,echo=0,nonblock $(tty),raw,echo=0,escape=0x03
+
+{"utime":32240936,"ts":959949481290,"rssi":-84.0,"dlen":30,"d":"c5939204b2cf86c102049204000000000400000050c03791490713000004"}
+{"utime":32509826,"ts":977129894189,"rssi":-84.1,"dlen":30,"d":"c5949204b2cf86c1020492040000000004000000500038914d0713000004"}
 ```
 
-# dwm1002_devkit
+The fields are:
 
-```
+- utime: Microcontroller time, usec
+- ts0: dw1000 timestamp
+- rssi: estimated received signal strength in dBm
+- dlen: length of data packet
+- d: data in hexadecimal
+
+
+### Building target for dwm1002
+
+The dwm1002 has the advantage of having two receivers and can thus extract information about the phase difference to estimate
+a direction to the incoming packet. In the example below all this data (and more) is included in the json stream.
+
+```no-highlight
 newt target create dwm1002_listener
 newt target set dwm1002_listener app=apps/listener
 newt target set dwm1002_listener bsp=@mynewt-dw1000-core/hw/bsp/dwm1002
-newt target set dwm1002_listener build_profile=debug
-newt target amend dwm1002_listener syscfg=CONSOLE_UART_BAUD=460800:DW1000_DEVICE_0=1:DW1000_DEVICE_1=1:
+newt target amend dwm1002_listener syscfg=CONSOLE_UART_BAUD=460800:DW1000_DEVICE_0=1:DW1000_DEVICE_1=1:CIR_ENABLED=1:USE_DBLBUFFER=0
 newt run dwm1002_listener 0
 ```
 
+If you connect to the virtual serial port, on linux /dev/ttyACMx where x is a number assigned by your computer, you should
+see json packaged coming similar to the ones below if you have UWB traffic within range of the dwm1001:
+```
+$ socat /dev/ttyACM0,b460800,raw,echo=0,nonblock -
 
+{"utime":3219787,"ts0":203624381252,"rssi0":-80.5,"ts1":203624381278,"rssi1":-81.3,"pd":1.267","dlen":30,"d":"c5439204b2cf86c102049204000000000400000050c0639c09ba13000004","cir0":{"o":6,"fp_idx":745.187,"rcphase":1.030,"angle":2.588,"real":[92,2,79,127,-36,-429,-2656,-6108,-6876,-5448,1261,4428,1492,-1380,-1113,275],"imag":[-172,-82,37,61,35,232,1641,3090,2532,-642,-4520,-3425,470,2132,467,-806]},"cir1":{"o":6,"fp_idx":745.593,"rcphase":0.932,"angle":1.222,"real":[-164,1,111,36,16,619,1620,312,-3040,-3991,-948,1312,717,-467,-372,165],"imag":[-89,-140,-6,85,102,1132,4460,6440,5022,-1016,-4559,-1405,2121,1369,-1023,-1252]}}
+
+```
+
+The fields are:
+
+- utime: Microcontroller time, usec
+- ts0: dw1000_0 timestamp
+- ts1: dw1000_1 timestamp
+- rssi0: estimated received signal strength in dBm for receiver 0
+- rssi1: estimated received signal strength in dBm for receiver 1
+- pd: estimated phase difference in radians
+- cir0: accumulator data for receiver 0
+  - o: offset relative detected leading edge (how many samples before the edge to extract)
+  - fp_idx: leading edge location in accumulator (floating point)
+- cir1: accumulator data for receiver 1
+- dlen: length of data packet
+- d: data in hexadecimal

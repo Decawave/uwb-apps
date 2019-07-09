@@ -190,20 +190,24 @@ process_rx_data_queue(struct os_event *ev)
         
         for(int j=0;j<N_DW_INSTANCES;j++) {
             /* Print individual data for each instance */
+#if N_DW_INSTANCES == 1
+            printf(",\"ts\":%llu", hdr->ts[j]);
+#else
             printf(",\"ts%d\":%llu", j, hdr->ts[j]);
+#endif
             float rssi = dw1000_calc_rssi(hal_dw1000_inst(j), &hdr->diag[j]);
             if (rssi > -200 && rssi < 100) {
 #if N_DW_INSTANCES == 1
-                printf(",\"rssi\":\"%d.%01d\"", (int)rssi, abs((int)(10*(rssi-(int)rssi))));
+                printf(",\"rssi\":%d.%01d", (int)rssi, abs((int)(10*(rssi-(int)rssi))));
 #else
-                printf(",\"rssi%d\":\"%d.%01d\"", j, (int)rssi, abs((int)(10*(rssi-(int)rssi))));
+                printf(",\"rssi%d\":%d.%01d", j, (int)rssi, abs((int)(10*(rssi-(int)rssi))));
 #endif
             }
         }
 #if MYNEWT_VAL(CIR_ENABLED)
         if (fabsf(hdr->pd) > 0.0) {
-            printf(",\"pd\":\"");
-            printf((hdr->pd < 0)?"-%d.%03d\"":"%d.%03d\"", abs((int)hdr->pd), abs((int)(1000*(hdr->pd-(int)hdr->pd))));
+            printf(",\"pd\":");
+            printf((hdr->pd < 0)?"-%d.%03d":"%d.%03d\"", abs((int)hdr->pd), abs((int)(1000*(hdr->pd-(int)hdr->pd))));
         }
 #endif
         printf(",\"dlen\":%d", hdr->dlen);
@@ -221,7 +225,7 @@ process_rx_data_queue(struct os_event *ev)
                 float idx = ((float) hdr->diag[j].fp_idx)/64.0f;
                 float ph = hdr->cir_rcphase[j];
                 float an = hdr->cir_angle[j];
-                printf(",\"cir%d\":{\"o\":%d,\"fp_idx\":\"%d.%03d\",\"rcphase\":\"%d.%03d\",\"angle\":\"%d.%03d\",\"real\":",
+                printf(",\"cir%d\":{\"o\":%d,\"fp_idx\":%d.%03d,\"rcphase\":%d.%03d,\"angle\":%d.%03d,\"real\":",
                        j, MYNEWT_VAL(CIR_OFFSET), (int)idx, (int)(1000*(idx-(int)idx)),
                        (int)ph, (int)fabsf((1000*(ph-(int)ph))),
                        (int)an, (int)fabsf((1000*(an-(int)an)))
@@ -341,7 +345,9 @@ uwb_config_update(struct os_event * ev)
     for(int i=0;i<N_DW_INSTANCES;i++) {
         dw1000_dev_instance_t * inst = hal_dw1000_inst(i);
         dw1000_mac_config(inst, NULL);
+#if MYNEWT_VAL(USE_DBLBUFFER)
         dw1000_set_dblrxbuff(inst, true);
+#endif
         dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst);
     }
@@ -386,7 +392,6 @@ int main(int argc, char **argv){
     
     for(int i=0;i<N_DW_INSTANCES;i++) {
         inst[i] = hal_dw1000_inst(i);
-        inst[i]->config.dblbuffon_enabled = 1;
         inst[i]->config.rxdiag_enable = 1;
         inst[i]->config.framefilter_enabled = 0;
         inst[i]->config.bias_correction_enable = 0;
@@ -395,11 +400,20 @@ int main(int argc, char **argv){
         inst[i]->config.sleep_enable = 0;
         inst[i]->config.wakeup_rx_enable = 1;
         inst[i]->config.rxauto_enable = 1;
+#if MYNEWT_VAL(USE_DBLBUFFER)
+        dw1000_set_dblrxbuff(inst[i], true);
+        inst[i]->config.dblbuffon_enabled = 1;
+#else
+        dw1000_set_dblrxbuff(inst[i], false);
+        inst[i]->config.dblbuffon_enabled = 0;
+#endif
+#if MYNEWT_VAL(CIR_ENABLED)
         inst[i]->config.cir_enable = (N_DW_INSTANCES>1) ? true : false;
+        inst[i]->config.cir_enable = true;
+#endif
         inst[i]->my_short_address = inst[i]->partID&0xffff;
         inst[i]->my_long_address = ((uint64_t) inst[i]->lotID << 33) + inst[i]->partID;
         /* Make sure to enable double buffring */
-        dw1000_set_dblrxbuff(inst[i], true);
         printf("{\"device_id\"=\"%lX\"",inst[i]->device_id);
         printf(",\"PANID=\"%X\"",inst[i]->PANID);
         printf(",\"addr\"=\"%X\"",inst[i]->my_short_address);
