@@ -169,7 +169,6 @@ process_rx_data_queue(struct os_event *ev)
     int rc;
     struct os_mbuf *om;
     struct uwb_msg_hdr *hdr;
-    cir_complex_t *cirp;
     int payload_len;
 
     hal_gpio_init_out(LED_BLINK_PIN, 0);
@@ -201,10 +200,12 @@ process_rx_data_queue(struct os_event *ev)
 #endif
             }
         }
+#if MYNEWT_VAL(CIR_ENABLED)
         if (fabsf(hdr->pd) > 0.0) {
             printf(",\"pd\":\"");
             printf((hdr->pd < 0)?"-%d.%03d\"":"%d.%03d\"", abs((int)hdr->pd), abs((int)(1000*(hdr->pd-(int)hdr->pd))));
         }
+#endif
         printf(",\"dlen\":%d", hdr->dlen);
         printf(",\"d\":\"");
         for (int i=0;i<sizeof(print_buffer) && i<hdr->dlen;i++)
@@ -212,6 +213,8 @@ process_rx_data_queue(struct os_event *ev)
             printf("%02x", print_buffer[i]);
         }
         console_out('"');
+#if MYNEWT_VAL(CIR_ENABLED)
+        cir_complex_t *cirp;
         for(int j=0;j<N_DW_INSTANCES;j++) {
             if (hdr->acc_offset[j] > 0) {
                 cirp = (cir_complex_t *) (print_buffer + hdr->acc_offset[j]);
@@ -233,6 +236,7 @@ process_rx_data_queue(struct os_event *ev)
                 printf("]}");
             }
         }
+#endif
         printf("}\n");
     end_msg:
         os_mbuf_free_chain(om);
@@ -248,12 +252,14 @@ rx_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
     struct os_mbuf *om;
     inst->control.on_error_continue_enabled = 1;
 
+#if MYNEWT_VAL(CIR_ENABLED)
     cir_instance_t * cir[] = {
         hal_dw1000_inst(0)->cir
 #if N_DW_INSTANCES > 1
         , hal_dw1000_inst(1)->cir
 #endif
     };
+#endif
 
 #if N_DW_INSTANCES == 2
     /* Skip packet if other dw instance doesn't have the same data in it's buffer */
@@ -282,6 +288,7 @@ rx_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
             return true;
         }
 
+#if MYNEWT_VAL(CIR_ENABLED)
         if (N_DW_INSTANCES == 2) {
             if (cir[0]->status.valid && cir[1]->status.valid) {
                 hdr->pd = fmodf((cir[0]->angle - cir[0]->rcphase) - (cir[1]->angle - cir[1]->rcphase) + 3*M_PI, 2*M_PI) - M_PI;
@@ -305,6 +312,8 @@ rx_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
                 }
             }
         }
+#endif
+
         rc = os_mqueue_put(&rxpkt_q, os_eventq_dflt_get(), om);
         if (rc != 0) {
             return true;
@@ -332,7 +341,7 @@ uwb_config_update(struct os_event * ev)
     for(int i=0;i<N_DW_INSTANCES;i++) {
         dw1000_dev_instance_t * inst = hal_dw1000_inst(i);
         dw1000_mac_config(inst, NULL);
-        dw1000_set_dblrxbuff(inst, false);
+        dw1000_set_dblrxbuff(inst, true);
         dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst);
     }
@@ -377,7 +386,7 @@ int main(int argc, char **argv){
     
     for(int i=0;i<N_DW_INSTANCES;i++) {
         inst[i] = hal_dw1000_inst(i);
-        inst[i]->config.dblbuffon_enabled = 0;
+        inst[i]->config.dblbuffon_enabled = 1;
         inst[i]->config.rxdiag_enable = 1;
         inst[i]->config.framefilter_enabled = 0;
         inst[i]->config.bias_correction_enable = 0;
@@ -389,8 +398,8 @@ int main(int argc, char **argv){
         inst[i]->config.cir_enable = (N_DW_INSTANCES>1) ? true : false;
         inst[i]->my_short_address = inst[i]->partID&0xffff;
         inst[i]->my_long_address = ((uint64_t) inst[i]->lotID << 33) + inst[i]->partID;
-        /* Make sure to disable double buffring */
-        dw1000_set_dblrxbuff(inst[i], false);
+        /* Make sure to enable double buffring */
+        dw1000_set_dblrxbuff(inst[i], true);
         printf("{\"device_id\"=\"%lX\"",inst[i]->device_id);
         printf(",\"PANID=\"%X\"",inst[i]->PANID);
         printf(",\"addr\"=\"%X\"",inst[i]->my_short_address);
