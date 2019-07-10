@@ -88,7 +88,7 @@ main(int argc, char **argv){
 	dw1000_lwip_context_t *cntxt;
 
 	inst->PANID = MYNEWT_VAL(PANID);
-	inst->my_short_address = MYNEWT_VAL(DEVICE_ID);
+	inst->my_short_address = MYNEWT_VAL(DW_DEVICE_ID_0);
 	inst->fctrl_array[0] = 'L';
 	inst->fctrl_array[1] = 'W';
 

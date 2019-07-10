@@ -3,7 +3,7 @@ syscfg.vals:
     CONSOLE_UART: 0
     CONSOLE_RTT: 1
     DW1000_DEVICE_0: 1
-    DW1000_DEVICE_ID_0: ((uint16_t){0x1234})
+    DW_DEVICE_ID_0: 0x1234
 
 syscfg.defs:
     DEV_IP6_ADDR_1:
