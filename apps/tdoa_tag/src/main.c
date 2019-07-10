@@ -50,7 +50,7 @@
 
 /* The timer callout */
 static struct os_callout tdoa_callout;
-static int16_t g_blink_rate;
+static int16_t g_blink_rate = 1;
 static bool config_changed = false;
 
 /*
@@ -237,13 +237,6 @@ int main(int argc, char **argv){
     inst->config.wakeup_rx_enable = 0;
     inst->config.rxauto_enable = 0;
 
-    /* Use the lot and device id as the defaul euid/long address */
-    inst->my_short_address = inst->partID&0xffff;
-    inst->my_long_address = ((uint64_t) inst->lotID << 33) + inst->partID;
-
-    dw1000_set_eui(inst,inst->my_long_address);
-    dw1000_set_panid(inst,inst->PANID);
-    dw1000_set_rx_timeout(inst, 0);
     uwb_sleep();
     
     printf("{\"device_id\"=\"%lX\"",inst->device_id);
