@@ -37,6 +37,7 @@
 #include <dw1000/dw1000_phy.h>
 #include <dw1000/dw1000_mac.h>
 #include <dw1000/dw1000_ftypes.h>
+#include <nmgr_uwb/nmgr_uwb.h> 
 #include <rng/rng.h>
 #include <mgmt/mgmt.h>
 #include <nmgr_os/nmgr_os.h>
@@ -62,6 +63,21 @@
 #undef TICTOC 
 #endif 
 
+static struct os_callout uwb_callout;
+
+static void
+uwb_ev_cb(struct os_event *ev) {
+    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+    os_callout_reset(&uwb_callout, OS_TICKS_PER_SEC/25);
+
+    if (uwb_nmgr_process_tx_queue(inst, 0) == false) {
+        return;
+    }
+
+    dw1000_set_rx_timeout(inst, 0);
+    dw1000_start_rx(inst);
+}
+
 int main(int argc, char **argv){
     int rc;
 
@@ -85,9 +101,12 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst->rng->config.tx_holdoff_delay))); 
     printf("{\"utime\":,\"msg\": \"DeviceID = 0x%X\"}\n",inst->my_short_address);
 
+    os_callout_init(&uwb_callout, os_eventq_dflt_get(), uwb_ev_cb, NULL);
+    os_callout_reset(&uwb_callout, OS_TICKS_PER_SEC/25);
+
     dw1000_set_rx_timeout(inst, 0);
     dw1000_start_rx(inst);
-    
+
     while (1) {
         os_eventq_run(os_eventq_dflt_get());
     }

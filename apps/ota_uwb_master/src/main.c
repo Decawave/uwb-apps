@@ -23,7 +23,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <math.h>
-#include <float.h>
 #include "sysinit/sysinit.h"
 #include "os/os.h"
 #include "bsp/bsp.h"
@@ -38,12 +37,28 @@
 #include <dw1000/dw1000_phy.h>
 #include <dw1000/dw1000_mac.h>
 #include <dw1000/dw1000_ftypes.h>
+#include <nmgr_uwb/nmgr_uwb.h> 
+#include <nmgr_cmds/nmgr_cmds.h> 
 #include "bleprph.h"
 //#define DIAGMSG(s,u) printf(s,u)
 #ifndef DIAGMSG
 #define DIAGMSG(s,u)
 #endif
 
+static struct os_callout uwb_callout;
+
+static void
+uwb_ev_cb(struct os_event *ev) {
+    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+    os_callout_reset(&uwb_callout, OS_TICKS_PER_SEC/25);
+
+    if (uwb_nmgr_process_tx_queue(inst, 0) == false) {
+        return;
+    }
+
+    dw1000_set_rx_timeout(inst, 0);
+    dw1000_start_rx(inst);
+}
 
 int main(int argc, char **argv){
     int rc;
@@ -63,6 +78,9 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"lotID = 0x%lX\"}\n",utime,inst->lotID);
     printf("{\"utime\": %lu,\"msg\": \"xtal_trim = 0x%X\"}\n",utime,inst->xtal_trim);  
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,dw1000_phy_SHR_duration(&inst->attrib)); 
+
+    os_callout_init(&uwb_callout, nmgr_cmds_get_eventq(), uwb_ev_cb, NULL);
+    os_callout_reset(&uwb_callout, OS_TICKS_PER_SEC/25);
 
     dw1000_set_rx_timeout(inst, 0);
     dw1000_start_rx(inst);

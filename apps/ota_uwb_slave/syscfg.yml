@@ -26,7 +26,7 @@ syscfg.vals:
     LOG_NEWTMGR: 1
     CONFIG_NEWTMGR: 1
 
-    DEVICE_ID: ((uint16_t){0x1234})
+    DW_DEVICE_ID_0: 0x1234
 
 syscfg.defs:
     UUID_CCP_MASTER:
