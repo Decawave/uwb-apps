@@ -191,7 +191,6 @@ slot_cb(struct os_event * ev){
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
     tdma_instance_t * tdma = slot->parent;
     dw1000_dev_instance_t * inst = tdma->parent;
-    dw1000_ccp_instance_t * ccp = inst->ccp;
     uint16_t idx = slot->idx;
 
     dw1000_set_delay_start(inst, tdma_rx_slot_start(inst, idx));
