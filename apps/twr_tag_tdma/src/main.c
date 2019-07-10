@@ -101,7 +101,9 @@ slot_cb(struct os_event *ev){
 #ifdef TICTOC
     uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
 #endif
-    if(dw1000_rng_request_delay_start(inst, 0xDEC1, dx_time, DWT_SS_TWR).start_tx_error){
+    /* Range with the clock master by default */
+    uint16_t node_address = inst->ccp->frames[0]->short_address;
+    if(dw1000_rng_request_delay_start(inst, node_address, dx_time, DWT_SS_TWR).start_tx_error){
     }else{
 #ifdef TICTOC
         os_error_t err = os_sem_pend(&inst->rng->sem, OS_TIMEOUT_NEVER); // Wait for completion of transactions 

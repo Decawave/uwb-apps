@@ -32,11 +32,12 @@
 ├── node_mesh                // BLE mesh demo apps with TWR ranging
 ├── tag_mesh                 // ~
 ├── tdoa_tag                 // Blink service app intended for TDOA ranging scheme
-├── twr_node_nranges_tdma    // 2n+2 example with TDMA scheme
-├── twr_tag_nranges_tdma     // ~
+├── twr_nranges_tdma         // 2n+2 example with TDMA scheme
 ├── twr_node_tdma            // Two-Way-Ranging example with TDMA scheme
 ├── twr_tag_tdma             // ~
 ├── twr_node_tdma_ota_ble    // OTA over BLE demonstration with Two way ranging
-└── twr_tag_tdma_ota_ble     // ~
+├── twr_tag_tdma_ota_ble     // ~
+├── ota_uwb_master           // OTA over UWB demonstration
+└── ota_uwb_slave            // ~
 
 ```
