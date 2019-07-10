@@ -45,7 +45,7 @@ newt load dwm1002_boot
 newt target create loopback
 newt target set loopback app=apps/loopback
 newt target set loopback bsp=@mynewt-dw1000-core/hw/bsp/dwm1002
-newt target set loopbackbuild_profile=debug 
+newt target set loopback build_profile=debug 
 newt run loopback 0
 
 newt target create listener
