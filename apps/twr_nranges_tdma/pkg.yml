@@ -17,9 +17,9 @@
 # under the License.
 #
 
-pkg.name: apps/twr_node_nranges_tdma
+pkg.name: apps/twr_nranges_tdma
 pkg.type: app
-pkg.description: "Basic reverse superres anchor node"
+pkg.description: "Basic reverse superres anchor/tag node"
 pkg.author: "Paul Kettle <paul.kettle@decawave.com>"
 pkg.homepage: "http://www.decawave.com/"
 pkg.keywords:

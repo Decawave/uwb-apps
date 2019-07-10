@@ -13,7 +13,7 @@ newt target create master_node
 newt target set master_node app=apps/twr_nranges_tdma
 newt target set master_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target amend master_node syscfg=PANMASTER_ISSUER=1
-newt run master_node 0
+newt run master_node 0.1.0
 ```
 
 Slave nodes
@@ -22,7 +22,7 @@ newt target create slave_node
 newt target set slave_node app=apps/twr_nranges_tdma
 newt target set slave_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target amend slave_node syscfg=NRANGES_ANCHOR=1
-newt run slave_node 0
+newt run slave_node 0.1.0
 ```
 
 ### Building target for tags
@@ -32,7 +32,7 @@ newt target set tag app=apps/twr_nranges_tdma
 newt target set tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target set tag build_profile=debug
 newt target amend tag syscfg=NRNG_NNODES=4:NRNG_NFRAMES=8:NODE_START_SLOT_ID=0:NODE_END_SLOT_ID=7
-newt run tag 0
+newt run tag 0.1.0
 ```
 
 If you'd prefer to be able to read the ranges in mm rather than getting the float cast to uint32_t as the output replace the tag target amend line above with the one below:
@@ -132,4 +132,15 @@ Note that the command runs for about a minute and you should let it finish befor
 again.
 
 To check if all nodes are on the same firmware use the ```panm list``` command on the master
-node. This will show the active firmware on all nodes in the network.
+node. This will show the active firmware on all nodes in the network. Example below:
+
+```
+441467 compat> panm list
+441494 #idx, addr, role, slot, p,  lease, euid,             flags,          date-added, fw-ver
+441494    0,  bad,    1,    0,  ,       , 010B1044C2230BAD,  1000, 1970-01-01T00:00:00, 0.0.4
+441494    1,  ca8,    1,    1,  , 3597.8, 010B1044C2230CA8,  1000, 1970-01-01T00:00:05, 0.0.4
+441495    2, 9211,    2,    0,  , 3597.8, 05A2610048E19211,  2000, 1970-01-01T00:00:58, 0.0.4
+...
+```
+
+where role 1=anchor and 2=tag.
