@@ -35,6 +35,8 @@
 #include <dw1000/dw1000_phy.h>
 #include <dw1000/dw1000_mac.h>
 #include <dw1000/dw1000_ftypes.h>
+#include "uwbcfg/uwbcfg.h"
+#include <config/config.h>
 #include <tdma/tdma.h>
 #if MYNEWT_VAL(CCP_ENABLED)
 #include <ccp/ccp.h>
@@ -52,12 +54,13 @@
 #include <survey/survey.h>
 #endif
 
+#if MYNEWT_VAL(NMGR_UWB_ENABLED)
+#include <nmgr_uwb/nmgr_uwb.h> 
+#endif
+
 #if MYNEWT_VAL(PAN_ENABLED)
 #include <pan/pan.h>
-
-#if MYNEWT_VAL(PANMASTER_ISSUER)
 #include <panmaster/panmaster.h>
-#endif
 
 //! Network Roles
 typedef enum {
@@ -68,6 +71,30 @@ typedef enum {
 
 #endif
 
+static bool dw1000_config_updated = false;
+int
+uwb_config_updated()
+{
+    /* Workaround in case we're stuck waiting for ccp with the 
+     * wrong radio settings */
+    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+    if (os_sem_get_count(&inst->ccp->sem) == 0) {
+        dw1000_phy_forcetrxoff(inst);
+        dw1000_mac_config(inst, NULL);
+        dw1000_phy_config_txrf(inst, &inst->config.txrf);
+        dw1000_start_rx(inst);
+        return 0;
+    }
+
+    dw1000_config_updated = true;
+    return 0;
+}
+struct uwbcfg_cbs uwb_cb = {
+    .uc_update = uwb_config_updated
+};
+
+
+
 static void 
 pan_slot_timer_cb(struct os_event * ev)
 {
@@ -76,44 +103,54 @@ pan_slot_timer_cb(struct os_event * ev)
     tdma_instance_t * tdma = slot->parent;
     dw1000_dev_instance_t * inst = tdma->parent;
     uint16_t idx = slot->idx;
-    //printf("idx %02d pan slt:%d\n", idx, inst->slot_id);
-    
-#if MYNEWT_VAL(PANMASTER_ISSUER)
-    /* Send pan-reset packages at startup to release all leases */
-    static uint8_t _pan_cycles = 0;
+    // printf("idx %02d pan slt:%d role:%x\n", idx, inst->slot_id, inst->role);
 
-    if (_pan_cycles++ < 8) {
-        dw1000_pan_reset(inst, tdma_tx_slot_start(inst, idx));
-    } else {
-        uint64_t dx_time = tdma_rx_slot_start(inst, idx);
-        dw1000_set_rx_timeout(inst, 3*inst->ccp->period/tdma->nslots/4);
-        dw1000_set_delay_start(inst, dx_time);
-        dw1000_set_on_error_continue(inst, true);
-        dw1000_pan_listen(inst, DWT_BLOCKING);
+    /* Check for pending config update */
+    if (dw1000_config_updated) {
+        dw1000_phy_forcetrxoff(inst);
+        dw1000_mac_config(inst, NULL);
+        dw1000_phy_config_txrf(inst, &inst->config.txrf);
+        dw1000_config_updated = false;
     }
-#else
 
-    if (inst->pan->status.valid && dw1000_pan_lease_remaining(inst)>MYNEWT_VAL(PAN_LEASE_EXP_MARGIN)) {
-        uint16_t timeout;
-        if (inst->pan->config->role == PAN_ROLE_RELAY) {
-            timeout = 3*inst->ccp->period/tdma->nslots/4;
+    if (inst->role&DW1000_ROLE_PAN_MASTER) {
+        /* Send pan-reset packages at startup to release all leases */
+        static uint8_t _pan_cycles = 0;
+
+        if (_pan_cycles++ < 8) {
+            dw1000_pan_reset(inst, tdma_tx_slot_start(inst, idx));
         } else {
-            /* Only listen long enough to get any resets from master */
-            timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(sizeof(struct _pan_frame_t)))
-                + MYNEWT_VAL(XTALT_GUARD);
-        }
-        dw1000_set_rx_timeout(inst, timeout);
-        dw1000_set_delay_start(inst, tdma_rx_slot_start(inst, idx));
-        dw1000_set_on_error_continue(inst, true);
-        if (dw1000_pan_listen(inst, DWT_BLOCKING).start_rx_error) {
-            printf("{\"utime\": %lu,\"msg\": \"pan_listen_err\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
+            uint64_t dx_time = tdma_rx_slot_start(inst, idx);
+            dw1000_set_rx_timeout(inst, 3*inst->ccp->period/tdma->nslots/4);
+            dw1000_set_delay_start(inst, dx_time);
+            dw1000_set_on_error_continue(inst, true);
+            dw1000_pan_listen(inst, DWT_BLOCKING);
         }
     } else {
-        /* Subslot 0 is for master reset, subslot 1 is for sending requests */
-        uint64_t dx_time = tdma_tx_slot_start(inst, idx + 1.0f/16);
-        dw1000_pan_blink(inst, NTWR_ROLE_NODE, DWT_BLOCKING, dx_time);
+        /* Check if our pan lease is still valid or if we need to renew */
+        if (inst->pan->status.valid && dw1000_pan_lease_remaining(inst)>MYNEWT_VAL(PAN_LEASE_EXP_MARGIN)) {
+            uint16_t timeout;
+            if (inst->pan->config->role == PAN_ROLE_RELAY) {
+                timeout = 3*inst->ccp->period/tdma->nslots/4;
+            } else {
+                /* Only listen long enough to get any resets from master */
+                timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(sizeof(struct _pan_frame_t)))
+                    + MYNEWT_VAL(XTALT_GUARD);
+            }
+            dw1000_set_rx_timeout(inst, timeout);
+            dw1000_set_delay_start(inst, tdma_rx_slot_start(inst, idx));
+            dw1000_set_on_error_continue(inst, true);
+            if (dw1000_pan_listen(inst, DWT_BLOCKING).start_rx_error) {
+                printf("{\"utime\": %lu,\"msg\": \"pan_listen_err\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
+            }
+        } else {
+            /* Subslot 0 is for master reset, subslot 1 is for sending requests */
+            uint64_t dx_time = tdma_tx_slot_start(inst, idx + 1.0f/16);
+            dw1000_pan_blink(
+                inst, (inst->role&DW1000_ROLE_ANCHOR) ? NTWR_ROLE_NODE : NTWR_ROLE_TAG,
+                DWT_BLOCKING, dx_time);
+        }
     }
-#endif // PANMASTER_ISSUER
 }
 
 static void nrng_complete_cb(struct os_event *ev) {
@@ -186,15 +223,53 @@ slot_cb(struct os_event * ev){
     dw1000_dev_instance_t * inst = tdma->parent;
     uint16_t idx = slot->idx;
 
-    dw1000_set_delay_start(inst, tdma_rx_slot_start(inst, idx));
-    uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(nrng_request_frame_t))
-                        + inst->nrng->config.rx_timeout_delay;    
-          
-    dw1000_set_rx_timeout(inst, timeout + 0x1000);
-    dw1000_nrng_listen(inst, DWT_BLOCKING);
+    /* Avoid colliding with the ccp in case we've got out of sync */
+    if (os_sem_get_count(&inst->ccp->sem) == 0) {
+        return;
+    }
+    if (inst->ccp->local_epoch==0 || inst->pan->status.valid == false) return;
+
+    /* Process any newtmgr packages queued up */
+    if (idx > 6 && idx < (tdma->nslots-6) && (idx%4)==0) {
+        if (uwb_nmgr_process_tx_queue(inst, tdma_tx_slot_start(inst, idx))) {
+            return;
+        }
+    }
+
+    if (inst->role&DW1000_ROLE_ANCHOR) {
+        /* Listen for a ranging tag */
+        dw1000_set_delay_start(inst, tdma_rx_slot_start(inst, idx));
+        uint16_t timeout = dw1000_phy_frame_duration(
+            &inst->attrib, sizeof(nrng_request_frame_t))
+            + inst->nrng->config.rx_timeout_delay;    
+
+        /* Padded timeout to allow us to receive any nmgr packets too */
+        dw1000_set_rx_timeout(inst, timeout + 0x1000);
+        dw1000_nrng_listen(inst, DWT_BLOCKING);
+    } else {
+        /* Range with the anchors */
+        if (idx%MYNEWT_VAL(NRNG_NTAGS) != inst->slot_id) {
+            return;
+        }
+
+        /* Range with the anchors */
+        uint64_t dx_time = tdma_tx_slot_start(inst, idx) & 0xFFFFFFFFFE00UL;
+        uint32_t slot_mask = 0;
+        for (uint16_t i = MYNEWT_VAL(NODE_START_SLOT_ID);
+             i <= MYNEWT_VAL(NODE_END_SLOT_ID); i++) {
+            slot_mask |= 1UL << i;
+        }
+
+        if(dw1000_nrng_request_delay_start(
+               inst, BROADCAST_ADDRESS, dx_time,
+               DWT_SS_TWR_NRNG, slot_mask, 0).start_tx_error) {
+            uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
+            printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\"}\n",
+                   utime,idx);
+        }
+    }
 }
 
-#if MYNEWT_VAL(PANMASTER_ISSUER) == 0
 static void
 pan_complete_cb(struct os_event * ev)
 {
@@ -208,16 +283,14 @@ pan_complete_cb(struct os_event * ev)
         printf("{\"utime\": %lu,\"msg\": \"euid16 = 0x%X\"}\n", utime, inst->my_short_address);
     }
 }
-#endif
 
-#if MYNEWT_VAL(PANMASTER_ISSUER) == 0
 /* This function allows the ccp to compensate for the time of flight
  * from the master anchor to the current anchor. 
  * Ideally this should use a map generated and make use of the euid in case 
  * the ccp packet is relayed through another node.
  */
 static uint32_t 
-tof_comp_cb(uint64_t euid, uint16_t short_addr) 
+tof_comp_cb(uint16_t short_addr) 
 {
     float x = MYNEWT_VAL(CCP_TOF_COMP_LOCATION_X);
     float y = MYNEWT_VAL(CCP_TOF_COMP_LOCATION_Y);
@@ -229,12 +302,15 @@ tof_comp_cb(uint64_t euid, uint16_t short_addr)
 #endif
     return dist_in_meters/dw1000_rng_tof_to_meters(1.0);
 }
-#endif
+
 
 int main(int argc, char **argv){
     int rc;
 
     sysinit();
+    uwbcfg_register(&uwb_cb);
+    conf_load();
+
     hal_gpio_init_out(LED_BLINK_PIN, 1);
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
@@ -253,29 +329,31 @@ int main(int argc, char **argv){
     inst->slot_id = 0xffff;
     inst->my_long_address = ((uint64_t) inst->lotID << 32) + inst->partID;
 
-#if MYNEWT_VAL(PANMASTER_ISSUER)
-    /* Pan-master also is the clock-master */
-    dw1000_ccp_start(inst, CCP_ROLE_MASTER);
+    if (inst->role&DW1000_ROLE_CCP_MASTER) {
+        /* Start as clock-master */
+        dw1000_ccp_start(inst, CCP_ROLE_MASTER);
+    } else {
+        dw1000_ccp_start(inst, CCP_ROLE_SLAVE);
+        dw1000_ccp_set_tof_comp_cb(inst->ccp, tof_comp_cb);
+    }
 
-    /* As pan-master, first lookup our address and slot_id */
-    struct image_version fw_ver;
-    struct panmaster_node *node;
-    panmaster_find_node(inst->my_long_address, NTWR_ROLE_NODE, &node);
-    assert(node);
-    /* Update my fw-version in the panmaster db */
-    imgr_my_version(&fw_ver);
-    panmaster_add_version(inst->my_long_address, &fw_ver);
-    /* Set short address and slot id */
-    inst->my_short_address = node->addr;
-    inst->slot_id = node->slot_id;
-    dw1000_pan_start(inst, PAN_ROLE_MASTER);
-#else    
-    dw1000_ccp_start(inst, CCP_ROLE_SLAVE);
-    dw1000_ccp_set_tof_comp_cb(inst->ccp, tof_comp_cb);
-
-    dw1000_pan_set_postprocess(inst, pan_complete_cb);
-    dw1000_pan_start(inst, PAN_ROLE_RELAY);
-#endif
+    if (inst->role&DW1000_ROLE_PAN_MASTER) {
+        /* As pan-master, first lookup our address and slot_id */
+        struct image_version fw_ver;
+        struct panmaster_node *node;
+        panmaster_find_node(inst->my_long_address, NTWR_ROLE_NODE, &node);
+        assert(node);
+        /* Update my fw-version in the panmaster db */
+        imgr_my_version(&fw_ver);
+        panmaster_add_version(inst->my_long_address, &fw_ver);
+        /* Set short address and slot id */
+        inst->my_short_address = node->addr;
+        inst->slot_id = node->slot_id;
+        dw1000_pan_start(inst, PAN_ROLE_MASTER);
+    } else {
+        dw1000_pan_set_postprocess(inst, pan_complete_cb);
+        dw1000_pan_start(inst, PAN_ROLE_RELAY);
+    }
     
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
     printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 

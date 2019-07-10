@@ -21,17 +21,17 @@ Slave nodes
 newt target create slave_node
 newt target set slave_node app=apps/twr_node_nranges_tdma
 newt target set slave_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target amend slave_node syscfg=PANMASTER_ISSUER=0
+newt target amend slave_node syscfg=PANMASTER_ISSUER=0:NRANGES_ANCHOR=1
 newt run slave_node 0
 ```
 
 ### Building target for tags
 ```
 newt target create tag
-newt target set tag app=apps/twr_tag_nranges_tdma
+newt target set tag app=apps/twr_node_nranges_tdma
 newt target set tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target set tag build_profile=debug
-newt target amend tag syscfg=NRNG_NNODES=4:NRNG_NFRAMES=8:NODE_START_SLOT_ID=0:NODE_END_SLOT_ID=7
+newt target amend tag syscfg=NRNG_NNODES=4:NRNG_NFRAMES=8:NODE_START_SLOT_ID=0:NODE_END_SLOT_ID=7:NRNG_HUMAN_READABLE_RANGES=1
 newt run tag 0
 ```
 

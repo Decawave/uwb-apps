@@ -44,8 +44,8 @@ pkg.deps:
     - "@mynewt-dw1000-core/lib/wcs"
     - "@mynewt-timescale-lib/lib/timescale"
     - "@mynewt-dw1000-core/lib/survey"
-
-pkg.deps.PANMASTER_ISSUER:
+    - "@mynewt-dw1000-core/lib/nmgr_uwb"
+    - "@mynewt-dw1000-core/mgmt/bcast_ota"
     - "@mynewt-dw1000-core/lib/panmaster"
 
 pkg.cflags:
