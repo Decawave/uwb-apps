@@ -266,6 +266,10 @@ rx_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
 #endif
 
 #if N_DW_INSTANCES == 2
+    /* Only use incoming data from the first instance */
+    if (inst != hal_dw1000_inst(0)) {
+        return true;
+    }
     /* Skip packet if other dw instance doesn't have the same data in it's buffer */
     if (memcmp(hal_dw1000_inst(0)->rxbuf, hal_dw1000_inst(1)->rxbuf, hal_dw1000_inst(0)->frame_len)) {
         return false;
