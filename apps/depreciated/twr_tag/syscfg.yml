@@ -3,4 +3,4 @@ syscfg.vals:
     CONSOLE_UART: 0
     CONSOLE_RTT: 1
     DW1000_DEVICE_0: 1
-    DW1000_DEVICE_ID_0: ((uint16_t){0x4321})
+    DW_DEVICE_ID_0: ((uint16_t){0x4321})

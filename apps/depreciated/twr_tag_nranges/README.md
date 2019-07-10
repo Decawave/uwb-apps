@@ -16,13 +16,13 @@ In this example
 newt target create node
 newt target set node app=apps/twr_node_nranges
 newt target set node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target amend node syscfg=DW1000_DEVICE_ID_0=0x1001:SLOT_ID=1
+newt target amend node syscfg=DW_DEVICE_ID_0=0x1001:SLOT_ID=1
 newt run node 0
-newt target amend node syscfg=DW1000_DEVICE_ID_0=0x1002:SLOT_ID=2
+newt target amend node syscfg=DW_DEVICE_ID_0=0x1002:SLOT_ID=2
 newt run node 0
-newt target amend node syscfg=DW1000_DEVICE_ID_0=0x1003:SLOT_ID=3
+newt target amend node syscfg=DW_DEVICE_ID_0=0x1003:SLOT_ID=3
 newt run node 0
-newt target amend node syscfg=DW1000_DEVICE_ID_0=0x1004:SLOT_ID=4
+newt target amend node syscfg=DW_DEVICE_ID_0=0x1004:SLOT_ID=4
 newt run node 0
 
 

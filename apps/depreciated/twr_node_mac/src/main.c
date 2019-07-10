@@ -175,7 +175,7 @@ int main(int argc, char **argv){
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
 
     inst->PANID = 0xDECA;
-    inst->my_short_address = MYNEWT_VAL(DW1000_DEVICE_ID_0);
+    inst->my_short_address = MYNEWT_VAL(DW_DEVICE_ID_0);
     
 #if MYNEWT_VAL(DW1000_MAC_FILTERING)
     dw1000_set_address16(inst, inst->my_short_address);

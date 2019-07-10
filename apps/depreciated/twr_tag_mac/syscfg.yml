@@ -10,7 +10,7 @@ syscfg.vals:
     DW1000_PAN: 1
     DW1000_MAC_FILTERING: 1
     # OS_SYSVIEW: 1
-    DW1000_DEVICE_ID_0: ((uint16_t){0x4321})
+    DW_DEVICE_ID_0: ((uint16_t){0x4321})
 syscfg.defs:
     UUID_CCP_MASTER:
         description: >

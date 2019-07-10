@@ -10,7 +10,7 @@ syscfg.vals:
     DW1000_PAN: 0
     DW1000_RANGE: 1
     DW1000_LWIP: 1
-    DW1000_DEVICE_ID_0: ((uint16_t){0x5001})
+    DW_DEVICE_ID_0: ((uint16_t){0x5001})
 
 syscfg.defs:
     DW1000_LWIP_P2P:

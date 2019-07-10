@@ -178,7 +178,7 @@ int main(int argc, char **argv){
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
 
     inst->PANID = 0xDECA;
-    inst->my_short_address = MYNEWT_VAL(DW1000_DEVICE_ID_0);
+    inst->my_short_address = MYNEWT_VAL(DW_DEVICE_ID_0);
     inst->my_long_address = ((uint64_t) inst->device_id << 32) + inst->partID;
 
     dw1000_set_panid(inst,inst->PANID);
