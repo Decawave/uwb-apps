@@ -145,10 +145,11 @@ uwb_config_updated()
     /* Workaround in case we're stuck waiting for ccp with the 
      * wrong radio settings */
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    if (os_sem_get_count(&inst->ccp->sem) == 0 || !inst->ccp->status.valid) {
+    dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
+    if (os_sem_get_count(&ccp->sem) == 0 || !ccp->status.valid) {
         dw1000_mac_config(inst, NULL);
         dw1000_phy_config_txrf(inst, &inst->config.txrf);
-        if (os_sem_get_count(&inst->ccp->sem) == 0) {
+        if (os_sem_get_count(&ccp->sem) == 0) {
             dw1000_start_rx(inst);
         }
         return 0;
@@ -173,27 +174,29 @@ rtdoa_slot_timer_cb(struct os_event *ev)
     assert(ev);
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
     tdma_instance_t * tdma = slot->parent;
+    dw1000_ccp_instance_t *ccp = tdma->ccp;
     dw1000_dev_instance_t * inst = tdma->parent;
     uint16_t idx = slot->idx;
 
     /* Avoid colliding with the ccp */
-    if (os_sem_get_count(&inst->ccp->sem) == 0) {
+    if (os_sem_get_count(&ccp->sem) == 0) {
         return;
     }
 
     hal_gpio_write(LED_BLINK_PIN,1);
-    uint64_t dx_time = tdma_rx_slot_start(inst, idx);
-    if(dw1000_rtdoa_listen(inst, DWT_BLOCKING, dx_time, 3*inst->ccp->period/tdma->nslots/4).start_rx_error) {
+    uint64_t dx_time = tdma_rx_slot_start(tdma, idx);
+    dw1000_rtdoa_instance_t * rtdoa = (dw1000_rtdoa_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_RTDOA);
+    if(dw1000_rtdoa_listen(rtdoa, DWT_BLOCKING, dx_time, 3*ccp->period/tdma->nslots/4).start_rx_error) {
         printf("#rse\n");
     }
     hal_gpio_write(LED_BLINK_PIN,0);
 
-    if (os_sem_get_count(&inst->ccp->sem) == 0) {
+    if (os_sem_get_count(&ccp->sem) == 0) {
         return;
     }
-    uint64_t measurement_ts = wcs_local_to_master64(inst->ccp->wcs, dx_time);
+    uint64_t measurement_ts = wcs_local_to_master64(ccp->wcs, dx_time);
     rtdoa_backhaul_set_ts(measurement_ts>>16);
-    rtdoa_backhaul_send(inst, inst->rtdoa, 0); //tdma_tx_slot_start(inst, idx+2)
+    rtdoa_backhaul_send(inst, rtdoa, 0); //tdma_tx_slot_start(inst, idx+2)
     os_callout_reset(&sensor_callout, 0);
 }
 
@@ -203,6 +206,7 @@ nmgr_slot_timer_cb(struct os_event * ev)
     assert(ev);
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
     tdma_instance_t * tdma = slot->parent;
+    dw1000_ccp_instance_t *ccp = tdma->ccp;
     dw1000_dev_instance_t * inst = tdma->parent;
     uint16_t idx = slot->idx;
     // printf("idx %02d nmgr\n", idx);
@@ -214,13 +218,13 @@ nmgr_slot_timer_cb(struct os_event * ev)
     }
 
     /* Avoid colliding with the ccp */
-    if (os_sem_get_count(&inst->ccp->sem) == 0) {
+    if (os_sem_get_count(&ccp->sem) == 0) {
         return;
     }
 
-    if (uwb_nmgr_process_tx_queue(inst, tdma_tx_slot_start(inst, idx)) == false) {
-        nmgr_uwb_listen(inst, DWT_BLOCKING, tdma_rx_slot_start(inst, idx),
-             3*inst->ccp->period/tdma->nslots/4);
+    if (uwb_nmgr_process_tx_queue(inst, tdma_tx_slot_start(tdma, idx)) == false) {
+        nmgr_uwb_listen(inst, DWT_BLOCKING, tdma_rx_slot_start(tdma, idx),
+             3*ccp->period/tdma->nslots/4);
     }
 }
 
@@ -230,6 +234,8 @@ tdma_allocate_slots(dw1000_dev_instance_t * inst)
 {
     uint16_t i;
     /* Pan is slot 1,2 */
+    tdma_instance_t * tdma = (tdma_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_TDMA);
+    assert(tdma);
     /* anchor-to-anchor range slot is 31 */
     // tdma_assign_slot(inst->tdma, nrng_slot_timer_cb, 31, NULL);
     for (i=3;i < MYNEWT_VAL(TDMA_NSLOTS);i++) {
@@ -237,10 +243,10 @@ tdma_allocate_slots(dw1000_dev_instance_t * inst)
             continue;
         }
         if (i%12==0) {
-            tdma_assign_slot(inst->tdma, nmgr_slot_timer_cb, i, NULL);
+            tdma_assign_slot(tdma, nmgr_slot_timer_cb, i, NULL);
             /* TODO: REMOVE below! */
         } else if (i%2==0){
-            tdma_assign_slot(inst->tdma, rtdoa_slot_timer_cb, i, NULL);
+            tdma_assign_slot(tdma, rtdoa_slot_timer_cb, i, NULL);
         }
     }
 }
@@ -250,7 +256,8 @@ low_battery_mode()
 {
     /* Shutdown and sleep dw1000 */
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    tdma_stop(inst->tdma);
+    tdma_instance_t * tdma = (tdma_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_TDMA);
+    tdma_stop(tdma);
     dw1000_ccp_stop(inst);
     hal_gpio_irq_disable(inst->irq_pin);
     inst->config.rxauto_enable = 0;

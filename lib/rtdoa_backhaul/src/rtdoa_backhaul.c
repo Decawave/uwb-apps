@@ -573,7 +573,7 @@ rtdoa_backhaul_send(dw1000_dev_instance_t * inst, dw1000_rtdoa_instance_t *rtdoa
         //if (g_result_pkg.ref_anchor_addr == rtdoa->frames[i]->src_address) {
         //    continue;
         //}
-        float diff = rtdoa_tdoa_between_frames(inst, rtdoa->req_frame, rtdoa->frames[i]);
+        float diff = rtdoa_tdoa_between_frames(rtdoa, rtdoa->req_frame, rtdoa->frames[i]);
         if (isnan(diff)) continue;
 
         int32_t diff_mm = (int32_t)(diff*1000.0f + 0.5f);
