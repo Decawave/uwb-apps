@@ -78,7 +78,8 @@ uwb_config_updated()
     /* Workaround in case we're stuck waiting for ccp with the 
      * wrong radio settings */
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    if (os_sem_get_count(&inst->ccp->sem) == 0) {
+    dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
+    if (os_sem_get_count(&ccp->sem) == 0) {
         dw1000_phy_forcetrxoff(inst);
         dw1000_mac_config(inst, NULL);
         dw1000_phy_config_txrf(inst, &inst->config.txrf);
@@ -101,7 +102,10 @@ pan_slot_timer_cb(struct os_event * ev)
     assert(ev);
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
     tdma_instance_t * tdma = slot->parent;
+    dw1000_ccp_instance_t *ccp = tdma->ccp;
     dw1000_dev_instance_t * inst = tdma->parent;
+    dw1000_pan_instance_t *pan = (dw1000_pan_instance_t*)slot->arg;
+
     uint16_t idx = slot->idx;
     // printf("idx %02d pan slt:%d role:%x\n", idx, inst->slot_id, inst->role);
 
@@ -118,36 +122,36 @@ pan_slot_timer_cb(struct os_event * ev)
         static uint8_t _pan_cycles = 0;
 
         if (_pan_cycles++ < 8) {
-            dw1000_pan_reset(inst, tdma_tx_slot_start(inst, idx));
+            dw1000_pan_reset(pan, tdma_tx_slot_start(tdma, idx));
         } else {
-            uint64_t dx_time = tdma_rx_slot_start(inst, idx);
-            dw1000_set_rx_timeout(inst, 3*inst->ccp->period/tdma->nslots/4);
+            uint64_t dx_time = tdma_rx_slot_start(tdma, idx);
+            dw1000_set_rx_timeout(inst, 3*ccp->period/tdma->nslots/4);
             dw1000_set_delay_start(inst, dx_time);
             dw1000_set_on_error_continue(inst, true);
-            dw1000_pan_listen(inst, DWT_BLOCKING);
+            dw1000_pan_listen(pan, DWT_BLOCKING);
         }
     } else {
         /* Check if our pan lease is still valid or if we need to renew */
-        if (inst->pan->status.valid && dw1000_pan_lease_remaining(inst)>MYNEWT_VAL(PAN_LEASE_EXP_MARGIN)) {
+        if (pan->status.valid && dw1000_pan_lease_remaining(pan) > MYNEWT_VAL(PAN_LEASE_EXP_MARGIN)) {
             uint16_t timeout;
-            if (inst->pan->config->role == PAN_ROLE_RELAY) {
-                timeout = 3*inst->ccp->period/tdma->nslots/4;
+            if (pan->config->role == PAN_ROLE_RELAY) {
+                timeout = 3*ccp->period/tdma->nslots/4;
             } else {
                 /* Only listen long enough to get any resets from master */
                 timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(sizeof(struct _pan_frame_t)))
                     + MYNEWT_VAL(XTALT_GUARD);
             }
             dw1000_set_rx_timeout(inst, timeout);
-            dw1000_set_delay_start(inst, tdma_rx_slot_start(inst, idx));
+            dw1000_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
             dw1000_set_on_error_continue(inst, true);
-            if (dw1000_pan_listen(inst, DWT_BLOCKING).start_rx_error) {
-                printf("{\"utime\": %lu,\"msg\": \"pan_listen_err\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
+            if (dw1000_pan_listen(pan, DWT_BLOCKING).start_rx_error) {
+                printf("{\"utime\": %lu,\"msg\": \"pan_listen_err\"}\n", os_cputime_ticks_to_usecs(os_cputime_get32()));
             }
         } else {
             /* Subslot 0 is for master reset, subslot 1 is for sending requests */
-            uint64_t dx_time = tdma_tx_slot_start(inst, idx + 1.0f/16);
+            uint64_t dx_time = tdma_tx_slot_start(tdma, idx + 1.0f/16);
             dw1000_pan_blink(
-                inst, (inst->role&DW1000_ROLE_ANCHOR) ? NTWR_ROLE_NODE : NTWR_ROLE_TAG,
+                pan, (inst->role&DW1000_ROLE_ANCHOR) ? NTWR_ROLE_NODE : NTWR_ROLE_TAG,
                 DWT_BLOCKING, dx_time);
         }
     }
@@ -158,9 +162,8 @@ static void nrng_complete_cb(struct os_event *ev) {
     assert(ev->ev_arg != NULL);
 
     hal_gpio_toggle(LED_BLINK_PIN);
-    dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *)ev->ev_arg;
-    dw1000_nrng_instance_t * nranges = inst->nrng;
-    nrng_frame_t * frame = nranges->frames[(nranges->idx)%nranges->nframes];
+    dw1000_nrng_instance_t * nrng = (dw1000_nrng_instance_t *)ev->ev_arg;
+    nrng_frame_t * frame = nrng->frames[(nrng->idx)%nrng->nframes];
 
 #ifdef VERBOSE
     if (inst->status.start_rx_error)
@@ -191,11 +194,13 @@ static void nrng_complete_cb(struct os_event *ev) {
  */
 /* The timer callout */
 static struct os_callout slot_callout;
-static bool complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
+static bool complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
+{
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
     }
-    os_callout_init(&slot_callout, os_eventq_dflt_get(), nrng_complete_cb, inst);
+    dw1000_nrng_instance_t* nrng = (dw1000_nrng_instance_t*)cbs->inst_ptr;
+    os_callout_init(&slot_callout, os_eventq_dflt_get(), nrng_complete_cb, nrng);
     os_eventq_put(os_eventq_dflt_get(), &slot_callout.c_ev);
     return true;
 }
@@ -220,32 +225,36 @@ slot_cb(struct os_event * ev){
 
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
     tdma_instance_t * tdma = slot->parent;
+    dw1000_ccp_instance_t *ccp = tdma->ccp;
     dw1000_dev_instance_t * inst = tdma->parent;
     uint16_t idx = slot->idx;
+    dw1000_nrng_instance_t *nrng = (dw1000_nrng_instance_t*)slot->arg;
 
     /* Avoid colliding with the ccp in case we've got out of sync */
-    if (os_sem_get_count(&inst->ccp->sem) == 0) {
+    if (os_sem_get_count(&ccp->sem) == 0) {
         return;
     }
-    if (inst->ccp->local_epoch==0 || inst->pan->status.valid == false) return;
+    if (ccp->local_epoch==0 || inst->slot_id == 0xffff) return;
 
     /* Process any newtmgr packages queued up */
     if (idx > 6 && idx < (tdma->nslots-6) && (idx%4)==0) {
-        if (uwb_nmgr_process_tx_queue(inst, tdma_tx_slot_start(inst, idx))) {
+        nmgr_uwb_instance_t *nmgruwb = (nmgr_uwb_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_NMGR_UWB);
+        assert(nmgruwb);
+        if (uwb_nmgr_process_tx_queue(nmgruwb, tdma_tx_slot_start(tdma, idx))) {
             return;
         }
     }
 
     if (inst->role&DW1000_ROLE_ANCHOR) {
         /* Listen for a ranging tag */
-        dw1000_set_delay_start(inst, tdma_rx_slot_start(inst, idx));
+        dw1000_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
         uint16_t timeout = dw1000_phy_frame_duration(
             &inst->attrib, sizeof(nrng_request_frame_t))
-            + inst->nrng->config.rx_timeout_delay;    
+            + nrng->config.rx_timeout_delay;    
 
         /* Padded timeout to allow us to receive any nmgr packets too */
         dw1000_set_rx_timeout(inst, timeout + 0x1000);
-        dw1000_nrng_listen(inst, DWT_BLOCKING);
+        dw1000_nrng_listen(nrng, DWT_BLOCKING);
     } else {
         /* Range with the anchors */
         if (idx%MYNEWT_VAL(NRNG_NTAGS) != inst->slot_id) {
@@ -253,7 +262,7 @@ slot_cb(struct os_event * ev){
         }
 
         /* Range with the anchors */
-        uint64_t dx_time = tdma_tx_slot_start(inst, idx) & 0xFFFFFFFFFE00UL;
+        uint64_t dx_time = tdma_tx_slot_start(tdma, idx) & 0xFFFFFFFFFE00UL;
         uint32_t slot_mask = 0;
         for (uint16_t i = MYNEWT_VAL(NODE_START_SLOT_ID);
              i <= MYNEWT_VAL(NODE_END_SLOT_ID); i++) {
@@ -261,7 +270,7 @@ slot_cb(struct os_event * ev){
         }
 
         if(dw1000_nrng_request_delay_start(
-               inst, BROADCAST_ADDRESS, dx_time,
+               nrng, BROADCAST_ADDRESS, dx_time,
                DWT_SS_TWR_NRNG, slot_mask, 0).start_tx_error) {
             uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
             printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\"}\n",
@@ -317,11 +326,15 @@ int main(int argc, char **argv){
 
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     inst->config.rxauto_enable = false;
-    inst->config.dblbuffon_enabled = true;
+    inst->config.dblbuffon_enabled = false;
     dw1000_set_dblrxbuff(inst, inst->config.dblbuffon_enabled);  
+
+    dw1000_nrng_instance_t* nrng = (dw1000_nrng_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_NRNG);
+    assert(nrng);
 
     dw1000_mac_interface_t cbs = (dw1000_mac_interface_t){
         .id =  DW1000_APP0,
+        .inst_ptr = nrng,
         .complete_cb = complete_cb
     };
 
@@ -329,12 +342,17 @@ int main(int argc, char **argv){
     inst->slot_id = 0xffff;
     inst->my_long_address = ((uint64_t) inst->lotID << 32) + inst->partID;
 
+    dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
+    assert(ccp);
+    dw1000_pan_instance_t *pan = (dw1000_pan_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_PAN);
+    assert(pan);
+    
     if (inst->role&DW1000_ROLE_CCP_MASTER) {
         /* Start as clock-master */
-        dw1000_ccp_start(inst, CCP_ROLE_MASTER);
+        dw1000_ccp_start(ccp, CCP_ROLE_MASTER);
     } else {
-        dw1000_ccp_start(inst, CCP_ROLE_SLAVE);
-        dw1000_ccp_set_tof_comp_cb(inst->ccp, tof_comp_cb);
+        dw1000_ccp_start(ccp, CCP_ROLE_SLAVE);
+        dw1000_ccp_set_tof_comp_cb(ccp, tof_comp_cb);
     }
 
     if (inst->role&DW1000_ROLE_PAN_MASTER) {
@@ -349,10 +367,10 @@ int main(int argc, char **argv){
         /* Set short address and slot id */
         inst->my_short_address = node->addr;
         inst->slot_id = node->slot_id;
-        dw1000_pan_start(inst, PAN_ROLE_MASTER);
+        dw1000_pan_start(pan, PAN_ROLE_MASTER);
     } else {
-        dw1000_pan_set_postprocess(inst, pan_complete_cb);
-        dw1000_pan_start(inst, PAN_ROLE_RELAY);
+        dw1000_pan_set_postprocess(pan, pan_complete_cb);
+        dw1000_pan_start(pan, PAN_ROLE_RELAY);
     }
     
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
@@ -368,17 +386,19 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst->rng->config.tx_holdoff_delay))); 
 
     /* Pan is slots 1&2 */
-    tdma_assign_slot(inst->tdma, pan_slot_timer_cb, 1, NULL);
-    tdma_assign_slot(inst->tdma, pan_slot_timer_cb, 2, NULL);
+    tdma_instance_t * tdma = (tdma_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_TDMA);
+    assert(tdma);
+    tdma_assign_slot(tdma, pan_slot_timer_cb, 1, (void*)pan);
+    tdma_assign_slot(tdma, pan_slot_timer_cb, 2, (void*)pan);
     
 #if MYNEWT_VAL(SURVEY_ENABLED)
-    tdma_assign_slot(inst->tdma, survey_slot_range_cb, MYNEWT_VAL(SURVEY_RANGE_SLOT), NULL);
-    tdma_assign_slot(inst->tdma, survey_slot_broadcast_cb, MYNEWT_VAL(SURVEY_BROADCAST_SLOT), NULL);
+    tdma_assign_slot(tdma, survey_slot_range_cb, MYNEWT_VAL(SURVEY_RANGE_SLOT), NULL);
+    tdma_assign_slot(tdma, survey_slot_broadcast_cb, MYNEWT_VAL(SURVEY_BROADCAST_SLOT), NULL);
     for (uint16_t i = 6; i < MYNEWT_VAL(TDMA_NSLOTS); i++)
 #else
     for (uint16_t i = 3; i < MYNEWT_VAL(TDMA_NSLOTS); i++)
 #endif
-        tdma_assign_slot(inst->tdma, slot_cb, i, NULL);
+        tdma_assign_slot(tdma, slot_cb, i, (void*)nrng);
 
     while (1) {
         os_eventq_run(os_eventq_dflt_get());
