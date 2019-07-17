@@ -258,7 +258,7 @@ low_battery_mode()
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     tdma_instance_t * tdma = (tdma_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_TDMA);
     tdma_stop(tdma);
-    dw1000_ccp_stop(inst);
+    dw1000_ccp_stop(tdma->ccp);
     hal_gpio_irq_disable(inst->irq_pin);
     inst->config.rxauto_enable = 0;
     dw1000_phy_forcetrxoff(inst);
@@ -334,8 +334,11 @@ main(int argc, char **argv)
     printf(",\"slot_id\"=\"%d\"",inst->slot_id);
     printf(",\"xtal_trim\"=\"%X\"}\n",inst->xtal_trim);
 
+    dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
+    assert(ccp);
+
     tdma_allocate_slots(inst);
-    dw1000_ccp_start(inst, CCP_ROLE_SLAVE);
+    dw1000_ccp_start(ccp, CCP_ROLE_SLAVE);
     rtdoa_backhaul_set_role(inst, RTDOABH_ROLE_BRIDGE);
 
     init_timer();

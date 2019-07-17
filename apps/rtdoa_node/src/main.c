@@ -116,6 +116,8 @@ pan_slot_timer_cb(struct os_event * ev)
     tdma_instance_t * tdma = slot->parent;
     dw1000_ccp_instance_t *ccp = tdma->ccp;
     dw1000_dev_instance_t * inst = tdma->parent;
+    dw1000_pan_instance_t *pan = (dw1000_pan_instance_t*)slot->arg;
+
     uint16_t idx = slot->idx;
     hal_gpio_write(LED_BLINK_PIN, idx%2);
     // printf("idx %02d pan slt:%d\n", idx, inst->slot_id);
@@ -132,19 +134,19 @@ pan_slot_timer_cb(struct os_event * ev)
 
         /* Broadcast a reset message to clear all leases */
         if (_pan_cycles++ < 8) {
-            dw1000_pan_reset(inst, tdma_tx_slot_start(tdma, idx));
+            dw1000_pan_reset(pan, tdma_tx_slot_start(tdma, idx));
         } else {
             uint64_t dx_time = tdma_rx_slot_start(tdma, idx);
             dw1000_set_rx_timeout(inst, 3*ccp->period/tdma->nslots/4);
             dw1000_set_delay_start(inst, dx_time);
             dw1000_set_on_error_continue(inst, true);
-            dw1000_pan_listen(inst, DWT_BLOCKING);
+            dw1000_pan_listen(pan, DWT_BLOCKING);
         }
     } else {
         /* Act as a slave Node in the network */
-        if (inst->pan->status.valid && dw1000_pan_lease_remaining(inst)>MYNEWT_VAL(PAN_LEASE_EXP_MARGIN)) {
+        if (pan->status.valid && dw1000_pan_lease_remaining(pan)>MYNEWT_VAL(PAN_LEASE_EXP_MARGIN)) {
             uint16_t timeout;
-            if (inst->pan->config->role == PAN_ROLE_RELAY) {
+            if (pan->config->role == PAN_ROLE_RELAY) {
                 timeout = 3*ccp->period/tdma->nslots/4;
             } else {
                 /* Only listen long enough to get any resets from master */
@@ -154,13 +156,13 @@ pan_slot_timer_cb(struct os_event * ev)
             dw1000_set_rx_timeout(inst, timeout);
             dw1000_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
             dw1000_set_on_error_continue(inst, true);
-            if (dw1000_pan_listen(inst, DWT_BLOCKING).start_rx_error) {
+            if (dw1000_pan_listen(pan, DWT_BLOCKING).start_rx_error) {
                 DIAGMSG("{\"utime\": %lu,\"msg\": \"pan_listen_err\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
             }
         } else {
             /* Subslot 0 is for master reset, subslot 1 is for sending requests */
             uint64_t dx_time = tdma_tx_slot_start(tdma, (float)idx+1.0f/16);
-            dw1000_pan_blink(inst, NTWR_ROLE_NODE, DWT_BLOCKING, dx_time);
+            dw1000_pan_blink(pan, NTWR_ROLE_NODE, DWT_BLOCKING, dx_time);
         }
     }
 }
@@ -310,8 +312,10 @@ tdma_allocate_slots(dw1000_dev_instance_t * inst)
     /* Pan is slot 1,2 */
     tdma_instance_t * tdma = (tdma_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_TDMA);
     assert(tdma);
-    tdma_assign_slot(tdma, pan_slot_timer_cb, 1, NULL);
-    tdma_assign_slot(tdma, pan_slot_timer_cb, 2, NULL);
+    dw1000_pan_instance_t *pan = (dw1000_pan_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_PAN);
+    assert(pan);
+    tdma_assign_slot(tdma, pan_slot_timer_cb, 1, (void*)pan);
+    tdma_assign_slot(tdma, pan_slot_timer_cb, 2, (void*)pan);
 
     /* anchor-to-anchor range slot is 31 */
     tdma_assign_slot(tdma, nrng_slot_timer_cb, 31, NULL);
@@ -366,9 +370,14 @@ main(int argc, char **argv)
 
     ble_init(inst->my_long_address);
 
+    dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
+    assert(ccp);
+    dw1000_pan_instance_t *pan = (dw1000_pan_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_PAN);
+    assert(pan);
+
     if (inst->role&DW1000_ROLE_CCP_MASTER) {
         printf("{\"role\"=\"ccp_master\"}\n");
-        dw1000_ccp_start(inst, CCP_ROLE_MASTER);
+        dw1000_ccp_start(ccp, CCP_ROLE_MASTER);
 
         struct image_version fw_ver;
         struct panmaster_node *node;
@@ -378,10 +387,10 @@ main(int argc, char **argv)
         panmaster_add_version(inst->my_long_address, &fw_ver);
         inst->my_short_address = node->addr;
         inst->slot_id = node->slot_id;
-        dw1000_pan_start(inst, PAN_ROLE_MASTER);
+        dw1000_pan_start(pan, PAN_ROLE_MASTER);
     } else {
-        dw1000_ccp_start(inst, CCP_ROLE_RELAY);
-        dw1000_pan_start(inst, PAN_ROLE_RELAY);
+        dw1000_ccp_start(ccp, CCP_ROLE_RELAY);
+        dw1000_pan_start(pan, PAN_ROLE_RELAY);
     }
     printf("{\"device_id\"=\"%lX\"",inst->device_id);
     printf(",\"PANID=\"%X\"",inst->PANID);
