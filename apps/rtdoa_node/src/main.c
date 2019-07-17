@@ -291,6 +291,8 @@ nmgr_slot_timer_cb(struct os_event * ev)
     tdma_instance_t * tdma = slot->parent;
     dw1000_ccp_instance_t * ccp = tdma->ccp;
     uint16_t idx = slot->idx;
+    nmgr_uwb_instance_t* nmgruwb = (nmgr_uwb_instance_t*)slot->arg;
+    assert(nmgruwb);
     // printf("idx %02d nmgr\n", idx);
 
     /* Avoid colliding with the ccp */
@@ -299,8 +301,8 @@ nmgr_slot_timer_cb(struct os_event * ev)
     }
 
     uint16_t timeout = 3*ccp->period/tdma->nslots/4;
-    if (uwb_nmgr_process_tx_queue(tdma->parent, tdma_tx_slot_start(tdma, idx)) == false) {
-        nmgr_uwb_listen(tdma->parent, DWT_BLOCKING, tdma_rx_slot_start(tdma, idx), timeout);
+    if (uwb_nmgr_process_tx_queue(nmgruwb, tdma_tx_slot_start(tdma, idx)) == false) {
+        nmgr_uwb_listen(nmgruwb, DWT_BLOCKING, tdma_rx_slot_start(tdma, idx), timeout);
     }
 }
 
@@ -318,7 +320,9 @@ tdma_allocate_slots(dw1000_dev_instance_t * inst)
     tdma_assign_slot(tdma, pan_slot_timer_cb, 2, (void*)pan);
 
     /* anchor-to-anchor range slot is 31 */
-    tdma_assign_slot(tdma, nrng_slot_timer_cb, 31, NULL);
+    nmgr_uwb_instance_t *nmgruwb = (nmgr_uwb_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_NMGR_UWB);
+    assert(nmgruwb);
+    tdma_assign_slot(tdma, nrng_slot_timer_cb, 31, (void*)nmgruwb);
 
     dw1000_rtdoa_instance_t* rtdoa = (dw1000_rtdoa_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_RTDOA);
     assert(rtdoa);
@@ -328,10 +332,10 @@ tdma_allocate_slots(dw1000_dev_instance_t * inst)
             continue;
         }
         if (i%12==0) {
-            tdma_assign_slot(tdma, nmgr_slot_timer_cb, i, rtdoa);
+            tdma_assign_slot(tdma, nmgr_slot_timer_cb, i, (void*)nmgruwb);
             /* TODO REMOVE BELOW */
         } else if (i%2==0){
-            tdma_assign_slot(tdma, rtdoa_slot_timer_cb, i, rtdoa);
+            tdma_assign_slot(tdma, rtdoa_slot_timer_cb, i, (void*)rtdoa);
         }
     }
 }

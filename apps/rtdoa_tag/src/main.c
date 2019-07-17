@@ -177,6 +177,7 @@ rtdoa_slot_timer_cb(struct os_event *ev)
     dw1000_ccp_instance_t *ccp = tdma->ccp;
     dw1000_dev_instance_t * inst = tdma->parent;
     uint16_t idx = slot->idx;
+    dw1000_rtdoa_instance_t * rtdoa = (dw1000_rtdoa_instance_t*)slot->arg;
 
     /* Avoid colliding with the ccp */
     if (os_sem_get_count(&ccp->sem) == 0) {
@@ -185,7 +186,6 @@ rtdoa_slot_timer_cb(struct os_event *ev)
 
     hal_gpio_write(LED_BLINK_PIN,1);
     uint64_t dx_time = tdma_rx_slot_start(tdma, idx);
-    dw1000_rtdoa_instance_t * rtdoa = (dw1000_rtdoa_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_RTDOA);
     if(dw1000_rtdoa_listen(rtdoa, DWT_BLOCKING, dx_time, 3*ccp->period/tdma->nslots/4).start_rx_error) {
         printf("#rse\n");
     }
@@ -209,6 +209,8 @@ nmgr_slot_timer_cb(struct os_event * ev)
     dw1000_ccp_instance_t *ccp = tdma->ccp;
     dw1000_dev_instance_t * inst = tdma->parent;
     uint16_t idx = slot->idx;
+    nmgr_uwb_instance_t* nmgruwb = (nmgr_uwb_instance_t*)slot->arg;
+    assert(nmgruwb);
     // printf("idx %02d nmgr\n", idx);
 
     if (dw1000_config_updated) {
@@ -222,8 +224,8 @@ nmgr_slot_timer_cb(struct os_event * ev)
         return;
     }
 
-    if (uwb_nmgr_process_tx_queue(inst, tdma_tx_slot_start(tdma, idx)) == false) {
-        nmgr_uwb_listen(inst, DWT_BLOCKING, tdma_rx_slot_start(tdma, idx),
+    if (uwb_nmgr_process_tx_queue(nmgruwb, tdma_tx_slot_start(tdma, idx)) == false) {
+        nmgr_uwb_listen(nmgruwb, DWT_BLOCKING, tdma_rx_slot_start(tdma, idx),
              3*ccp->period/tdma->nslots/4);
     }
 }
@@ -236,6 +238,11 @@ tdma_allocate_slots(dw1000_dev_instance_t * inst)
     /* Pan is slot 1,2 */
     tdma_instance_t * tdma = (tdma_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_TDMA);
     assert(tdma);
+    nmgr_uwb_instance_t *nmgruwb = (nmgr_uwb_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_NMGR_UWB);
+    assert(nmgruwb);
+    dw1000_rtdoa_instance_t * rtdoa = (dw1000_rtdoa_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_RTDOA);
+    assert(rtdoa);
+
     /* anchor-to-anchor range slot is 31 */
     // tdma_assign_slot(inst->tdma, nrng_slot_timer_cb, 31, NULL);
     for (i=3;i < MYNEWT_VAL(TDMA_NSLOTS);i++) {
@@ -243,10 +250,10 @@ tdma_allocate_slots(dw1000_dev_instance_t * inst)
             continue;
         }
         if (i%12==0) {
-            tdma_assign_slot(tdma, nmgr_slot_timer_cb, i, NULL);
+            tdma_assign_slot(tdma, nmgr_slot_timer_cb, i, nmgruwb);
             /* TODO: REMOVE below! */
         } else if (i%2==0){
-            tdma_assign_slot(tdma, rtdoa_slot_timer_cb, i, NULL);
+            tdma_assign_slot(tdma, rtdoa_slot_timer_cb, i, rtdoa);
         }
     }
 }
