@@ -94,37 +94,37 @@ main(int argc, char **argv){
 
 	dw1000_set_panid(inst,inst->PANID);
 
-	dw1000_lwip_init(inst, &lwip_config, MYNEWT_VAL(NUM_FRAMES), MYNEWT_VAL(BUFFER_SIZE));
-    dw1000_netif_config(inst, &inst->lwip->lwip_netif, &my_ip_addr, RX_STATUS);
+	dw1000_lwip_instance_t *lwip = dw1000_lwip_init(inst, &lwip_config, MYNEWT_VAL(NUM_FRAMES), MYNEWT_VAL(BUFFER_SIZE));
+    dw1000_netif_config(lwip, &lwip->lwip_netif, &my_ip_addr, RX_STATUS);
 	lwip_init();
-	assert(inst->lwip->lwip_netif.state);
+    lowpan6_if_init(&lwip->lwip_netif);
 
-	cntxt = (dw1000_lwip_context_t*)inst->lwip->lwip_netif.state;
-    inst->lwip->dst_addr = 0x1234;
+	cntxt = (dw1000_lwip_context_t*)lwip->lwip_netif.state;
+    lwip->dst_addr = 0x1234;
 
    	IP_ADDR6(ip6_tgt_addr, MYNEWT_VAL(TGT_IP6_ADDR_1), MYNEWT_VAL(TGT_IP6_ADDR_2), 
                             MYNEWT_VAL(TGT_IP6_ADDR_3), MYNEWT_VAL(TGT_IP6_ADDR_4));
 
-    dw1000_pcb_init(inst);
-    raw_recv(inst->lwip->pcb, ping_recv, inst);
+    dw1000_pcb_init(lwip);
+    raw_recv(lwip->pcb, ping_recv, lwip);
 
 	while (1) {
-		if (inst->lwip->status.start_rx_error)
+		if (lwip->status.start_rx_error)
 			printf("timer_ev_cb:[start_rx_error]\n");
-		if (inst->lwip->status.rx_error)
+		if (lwip->status.rx_error)
 			printf("timer_ev_cb:[rx_error]\n");
-		if (inst->lwip->status.request_timeout){
+		if (lwip->status.request_timeout){
 			printf("timer_ev_cb:[request_timeout]\n");
 		}
-		if (inst->lwip->status.rx_timeout_error){
+		if (lwip->status.rx_timeout_error){
 			printf("timer_ev_cb:[rx_timeout_error]\n");
 		}
 
-		if (inst->lwip->status.rx_error || inst->lwip->status.request_timeout ||  inst->lwip->status.rx_timeout_error){
-			inst->lwip->status.start_tx_error = inst->lwip->status.rx_error = inst->lwip->status.request_timeout = inst->lwip->status.rx_timeout_error = 0;
+		if (lwip->status.rx_error || lwip->status.request_timeout ||  lwip->status.rx_timeout_error){
+			lwip->status.start_tx_error = lwip->status.rx_error = lwip->status.request_timeout = lwip->status.rx_timeout_error = 0;
 		}
 
-		cntxt->rx_cb.recv(inst, 0xffff);
+		cntxt->rx_cb.recv(lwip, 0xffff);
 	}
 
 	assert(0);
@@ -139,8 +139,8 @@ ping_recv(void *arg, struct raw_pcb *pcb, struct pbuf *p, const ip_addr_t *addr)
 	LWIP_UNUSED_ARG(pcb);
 	LWIP_UNUSED_ARG(addr);
 	LWIP_ASSERT("p != NULL", p != NULL);
-	dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *)arg;
-	assert(inst->lwip->lwip_netif.state);
+	dw1000_lwip_instance_t *lwip = (dw1000_lwip_instance_t *)arg;
+	assert(lwip->lwip_netif.state);
 
 	if (pbuf_header(p, -PBUF_IP_HLEN)==0) {
 		struct ping_payload *ping_pl = (struct ping_payload *)p->payload;
