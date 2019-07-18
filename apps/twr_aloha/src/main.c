@@ -127,7 +127,7 @@ static void slot_complete_cb(struct os_event *ev)
 
     float skew = dw1000_calc_clock_offset_ratio(inst, frame->carrier_integrator);
     
-    if (frame->code == DWT_SS_TWR_FINAL) {
+    if (frame->code == DWT_SS_TWR_FINAL || frame->code == DWT_SS_TWR_EXT_FINAL) {
         float time_of_flight = (float) dw1000_rng_twr_to_tof(rng, g_idx_latest);
         float range = dw1000_rng_tof_to_meters(time_of_flight);
         printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": \"%lX\","
@@ -167,10 +167,17 @@ uwb_ev_cb(struct os_event *ev)
 {
     dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)ev->ev_arg;
     os_callout_reset(&tx_callout, OS_TICKS_PER_SEC/25);
-#if MYNEWT_VAL(TWR_DS_ENABLED)    
+#if MYNEWT_VAL(TWR_DS_ENABLED)
     dw1000_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_DS_TWR);
-#else
+#endif
+#if MYNEWT_VAL(TWR_DS_EXT_ENABLED)
+    dw1000_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_DS_TWR_EXT);
+#endif
+#if MYNEWT_VAL(TWR_SS_ENABLED)
     dw1000_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_SS_TWR);
+#endif
+#if MYNEWT_VAL(TWR_SS_EXT_ENABLED)
+    dw1000_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_SS_TWR_EXT);
 #endif
 }
 

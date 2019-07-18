@@ -33,9 +33,12 @@ pkg.deps:
     - "@apache-mynewt-core/sys/stats/full"
     - "@apache-mynewt-core/encoding/json"
     - "@mynewt-dw1000-core/hw/drivers/dw1000"
-    - "@mynewt-dw1000-core/lib/twr_ss"    # Use only one of the twr pkgs
+# Use only one of the twr pkgs
+    - "@mynewt-dw1000-core/lib/twr_ss"
+#    - "@mynewt-dw1000-core/lib/twr_ss_ext"
 #    - "@mynewt-dw1000-core/lib/twr_ds"
-    - "@mynewt-dw1000-core/sys/uwbcfg"   
+#    - "@mynewt-dw1000-core/lib/twr_ds_ext"
+    - "@mynewt-dw1000-core/sys/uwbcfg"
     - "@apache-mynewt-core/boot/split"
     - "@apache-mynewt-core/boot/bootutil"
     - "@apache-mynewt-core/kernel/os"

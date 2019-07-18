@@ -34,7 +34,7 @@ J-Link>exit
 $ 
 ```
 
-2. On 1st dwm1001-dev board build the TDMA node applications for the DWM1001 module. 
+2. On 1st dwm1001-dev board build the node application for the DWM1001 module. 
 
 ```no-highlight
 
@@ -47,7 +47,7 @@ newt run twr_node 0
 
 ```
 
-3. On 2nd dwm1001-dev board build the TDMA tag (twr_tag_tdma) applications for the DWM1001 module. 
+3. On 2nd dwm1001-dev board build the tag application for the DWM1001 module. 
 
 ```no-highlight
 
@@ -94,3 +94,23 @@ You can use:
 
 See the ./matlab/stats.m script for an example of parsing json strings.
 
+7. Trying different ranging algorithms
+
+The method for ranging used is selected by including the corresponding package in the pkg.yml file.
+Note that only one of the twr_xx packages should be included at any one point in time. For instance,
+to use the double sided two way ranging change the pkg.yml as below:
+
+```
+<excerpt from pkg.yml>
+...
+    - "@apache-mynewt-core/encoding/json"
+    - "@mynewt-dw1000-core/hw/drivers/dw1000"
+# Use only one of the twr pkgs below
+#    - "@mynewt-dw1000-core/lib/twr_ss"
+#    - "@mynewt-dw1000-core/lib/twr_ss_ext"
+     - "@mynewt-dw1000-core/lib/twr_ds"
+#    - "@mynewt-dw1000-core/lib/twr_ds_ext"
+    - "@mynewt-dw1000-core/sys/uwbcfg"
+    - "@apache-mynewt-core/boot/split"
+
+```

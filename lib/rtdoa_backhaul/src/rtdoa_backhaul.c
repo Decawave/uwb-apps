@@ -121,9 +121,12 @@ static struct os_mbuf_pool g_mbuf_pool;
 static struct os_mempool g_mbuf_mempool;
 static os_membuf_t g_mbuf_buffer[MBUF_MEMPOOL_SIZE];
 static struct os_mqueue rxpkt_q;
+static struct os_sem g_sem;
+
 static uint32_t g_msg_id = 0;
 static rtdoa_backhaul_role_t g_role = RTDOABH_ROLE_INVALID;
 static uint64_t g_to_dx_time = 0; /* When the current listen for backhaul expires */
+
 static struct rtdoabh_tag_results_pkg g_result_pkg = {
     .head = {
         .fctrl = FCNTL_IEEE_RTDOABH,
@@ -144,7 +147,7 @@ static bool rx_complete_cb(struct _dw1000_dev_instance_t * inst,
                            dw1000_mac_interface_t * cbs);
 
 static dw1000_mac_interface_t g_cbs = {
-    .id = 72,
+    .id = DW1000_RTDOA_BH,
     .rx_complete_cb = rx_complete_cb,
     .tx_complete_cb = tx_complete_cb,
     .reset_cb = 0
@@ -323,7 +326,7 @@ process_rx_data_queue(struct os_event *ev)
 dw1000_dev_status_t 
 rtdoa_backhaul_listen(dw1000_dev_instance_t * inst, uint64_t dx_time, uint16_t timeout_uus)
 {
-    os_error_t err = os_sem_pend(&inst->rng->sem,  OS_TIMEOUT_NEVER);
+    os_error_t err = os_sem_pend(&g_sem,  OS_TIMEOUT_NEVER);
     assert(err == OS_OK);
 
     g_to_dx_time = dx_time + (((uint64_t)timeout_uus)<<16);
@@ -331,14 +334,14 @@ rtdoa_backhaul_listen(dw1000_dev_instance_t * inst, uint64_t dx_time, uint16_t t
     dw1000_set_rx_timeout(inst, timeout_uus);
 
     if(dw1000_start_rx(inst).start_rx_error){
-        err = os_sem_release(&inst->rng->sem);
+        err = os_sem_release(&g_sem);
         assert(err == OS_OK);
         RTDOABH_STATS_INC(rx_error);
     }
 
-    err = os_sem_pend(&inst->rng->sem, OS_TIMEOUT_NEVER);
+    err = os_sem_pend(&g_sem, OS_TIMEOUT_NEVER);
     assert(err == OS_OK);
-    err = os_sem_release(&inst->rng->sem);
+    err = os_sem_release(&g_sem);
     assert(err == OS_OK);
     /* Prevent rx_complete from modifying rx_timeout */
     g_to_dx_time = 0;
@@ -355,8 +358,8 @@ tx_complete_cb(struct _dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cb
         /* Should only get here if we are repeating messages */
         return false;
     }
-    if(os_sem_get_count(&inst->rng->sem) == 0) {
-        os_error_t err = os_sem_release(&inst->rng->sem);
+    if(os_sem_get_count(&g_sem) == 0) {
+        os_error_t err = os_sem_release(&g_sem);
         assert(err == OS_OK);
     }
     return true;
@@ -388,8 +391,8 @@ rx_complete_cb(struct _dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cb
         frame->dst_address != BROADCAST_ADDRESS) ||
         g_role == RTDOABH_ROLE_INVALID || g_role == RTDOABH_ROLE_PRODUCER) { 
 
-        if(os_sem_get_count(&inst->rng->sem) == 0) {
-            os_error_t err = os_sem_release(&inst->rng->sem);
+        if(os_sem_get_count(&g_sem) == 0) {
+            os_error_t err = os_sem_release(&g_sem);
             assert(err == OS_OK);
         }
         return true;
@@ -426,8 +429,8 @@ rx_complete_cb(struct _dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cb
         }
     }
 
-    if(os_sem_get_count(&inst->rng->sem) == 0) {
-        os_error_t err = os_sem_release(&inst->rng->sem);
+    if(os_sem_get_count(&g_sem) == 0) {
+        os_error_t err = os_sem_release(&g_sem);
         assert(err == OS_OK);
     }
 
@@ -644,6 +647,8 @@ rtdoa_backhaul_pkg_init(void)
 {
     rtdoa_backhaul_init(hal_dw1000_inst(0));
 
+    os_error_t err = os_sem_init(&g_sem, 0x1);
+    assert(err == OS_OK);
 #if MYNEWT_VAL(RTDOABH_STATS)
     int rc = stats_init_and_reg(
         STATS_HDR(g_tag_stats), STATS_SIZE_INIT_PARMS(g_tag_stats,
