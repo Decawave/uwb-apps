@@ -76,14 +76,15 @@ static struct os_callout tx_callout;
 static uint16_t g_idx_latest;
 
 static bool
-complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
+complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
+{
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
     }
-    dw1000_rng_instance_t * rng = inst->rng; 
+    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t*)cbs->inst_ptr;
 
     g_idx_latest = (rng->idx)%rng->nframes; // Store valid frame pointer
-    os_callout_init(&slot_callout, os_eventq_dflt_get(), slot_complete_cb, inst);
+    os_callout_init(&slot_callout, os_eventq_dflt_get(), slot_complete_cb, rng);
     os_eventq_put(os_eventq_dflt_get(), &slot_callout.c_ev);
     return true;
 }
@@ -91,9 +92,10 @@ complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
 static bool
 rx_timeout_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
 {
+    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t*)cbs->inst_ptr;
     if (inst->role&DW1000_ROLE_ANCHOR) {
         dw1000_set_rx_timeout(inst, 0xFFFF);
-        dw1000_rng_listen(inst, DWT_NONBLOCKING);
+        dw1000_rng_listen(rng, DWT_NONBLOCKING);
     } else {
         /* Do nothing */
     }
@@ -119,8 +121,8 @@ static void slot_complete_cb(struct os_event *ev)
     assert(ev->ev_arg != NULL);
   
     hal_gpio_toggle(LED_BLINK_PIN);
-    dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *)ev->ev_arg;
-    dw1000_rng_instance_t * rng = inst->rng; 
+    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)ev->ev_arg;
+    dw1000_dev_instance_t * inst = rng->dev_inst;
     twr_frame_t * frame = rng->frames[(g_idx_latest)%rng->nframes];
 
     float skew = dw1000_calc_clock_offset_ratio(inst, frame->carrier_integrator);
@@ -154,14 +156,22 @@ static void slot_complete_cb(struct os_event *ev)
         );
         frame->code = DWT_DS_TWR_END;
     }
+
+    if (inst->role&DW1000_ROLE_ANCHOR) {
+        dw1000_rng_listen(rng, DWT_NONBLOCKING);
+    }
 }
 
 static void
 uwb_ev_cb(struct os_event *ev)
 {
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)ev->ev_arg;
     os_callout_reset(&tx_callout, OS_TICKS_PER_SEC/25);
-    dw1000_rng_request(inst, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_SS_TWR);
+#if MYNEWT_VAL(TWR_DS_ENABLED)    
+    dw1000_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_DS_TWR);
+#else
+    dw1000_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_SS_TWR);
+#endif
 }
 
 
@@ -198,8 +208,11 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_3, 1);
 
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+    dw1000_rng_instance_t* rng = (dw1000_rng_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_RNG);
+    assert(rng);
     dw1000_mac_interface_t cbs = (dw1000_mac_interface_t){
         .id =  DW1000_APP0,
+        .inst_ptr = rng,
         .complete_cb = complete_cb,
         .rx_timeout_cb = rx_timeout_cb
     };
@@ -215,13 +228,13 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"xtal_trim = 0x%X\"}\n",utime,inst->xtal_trim);  
     printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime,dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t))); 
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,dw1000_phy_SHR_duration(&inst->attrib)); 
-    printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst->rng->config.tx_holdoff_delay))); 
+    printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay))); 
 
     dw1000_set_rx_timeout(inst, 0xFFFF);
-    dw1000_rng_listen(inst, DWT_NONBLOCKING);
+    dw1000_rng_listen(rng, DWT_NONBLOCKING);
 
     if ((inst->role&DW1000_ROLE_ANCHOR) == 0x0000) {
-        os_callout_init(&tx_callout, os_eventq_dflt_get(), uwb_ev_cb, NULL);
+        os_callout_init(&tx_callout, os_eventq_dflt_get(), uwb_ev_cb, rng);
         os_callout_reset(&tx_callout, OS_TICKS_PER_SEC/25);
     } else {
         inst->my_short_address = MYNEWT_VAL(ANCHOR_ADDRESS);
