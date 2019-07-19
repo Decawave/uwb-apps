@@ -103,7 +103,7 @@ pan_slot_timer_cb(struct os_event * ev)
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
     tdma_instance_t * tdma = slot->parent;
     dw1000_ccp_instance_t *ccp = tdma->ccp;
-    dw1000_dev_instance_t * inst = tdma->parent;
+    dw1000_dev_instance_t *inst = tdma->dev_inst;
     dw1000_pan_instance_t *pan = (dw1000_pan_instance_t*)slot->arg;
 
     uint16_t idx = slot->idx;
@@ -226,7 +226,7 @@ slot_cb(struct os_event * ev){
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
     tdma_instance_t * tdma = slot->parent;
     dw1000_ccp_instance_t *ccp = tdma->ccp;
-    dw1000_dev_instance_t * inst = tdma->parent;
+    dw1000_dev_instance_t * inst = tdma->dev_inst;
     uint16_t idx = slot->idx;
     dw1000_nrng_instance_t *nrng = (dw1000_nrng_instance_t*)slot->arg;
 
@@ -394,8 +394,10 @@ int main(int argc, char **argv){
     tdma_assign_slot(tdma, pan_slot_timer_cb, 2, (void*)pan);
     
 #if MYNEWT_VAL(SURVEY_ENABLED)
-    tdma_assign_slot(tdma, survey_slot_range_cb, MYNEWT_VAL(SURVEY_RANGE_SLOT), NULL);
-    tdma_assign_slot(tdma, survey_slot_broadcast_cb, MYNEWT_VAL(SURVEY_BROADCAST_SLOT), NULL);
+    survey_instance_t *survey = (survey_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_SURVEY);
+    
+    tdma_assign_slot(tdma, survey_slot_range_cb, MYNEWT_VAL(SURVEY_RANGE_SLOT), (void*)survey);
+    tdma_assign_slot(tdma, survey_slot_broadcast_cb, MYNEWT_VAL(SURVEY_BROADCAST_SLOT), (void*)survey);
     for (uint16_t i = 6; i < MYNEWT_VAL(TDMA_NSLOTS); i++)
 #else
     for (uint16_t i = 3; i < MYNEWT_VAL(TDMA_NSLOTS); i++)
