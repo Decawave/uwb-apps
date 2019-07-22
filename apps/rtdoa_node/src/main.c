@@ -85,10 +85,10 @@ uwb_config_updated()
      * wrong radio settings */
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
-    if (os_sem_get_count(&ccp->sem) == 0 || !ccp->status.valid) {
+    if (dpl_sem_get_count(&ccp->sem) == 0 || !ccp->status.valid) {
         dw1000_mac_config(inst, NULL);
         dw1000_phy_config_txrf(inst, &inst->config.txrf);
-        if (os_sem_get_count(&ccp->sem) == 0) {
+        if (dpl_sem_get_count(&ccp->sem) == 0) {
             dw1000_start_rx(inst);
         }
         return 0;
@@ -103,25 +103,25 @@ struct uwbcfg_cbs uwb_cb = {
 
 
 /**
- * @fn nrng_slot_timer_cb(struct os_event * ev)
+ * @fn nrng_slot_timer_cb(struct dpl_event * ev)
  *
  * @brief Node to Node ranging for tof timing compensation
  *
  */
 static void 
-nrng_slot_timer_cb(struct os_event *ev)
+nrng_slot_timer_cb(struct dpl_event *ev)
 {
     assert(ev);
-    tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
+    tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);;
     tdma_instance_t * tdma = slot->parent;
-    dw1000_nrng_instance_t * nrng = (dw1000_nrng_instance_t *)slot->arg;
     dw1000_dev_instance_t * inst = tdma->dev_inst;
     dw1000_ccp_instance_t * ccp = tdma->ccp;
-
+    dw1000_nrng_instance_t * nrng = (dw1000_nrng_instance_t *) dw1000_mac_find_cb_inst_ptr(inst, DW1000_NRNG);
+    
     uint16_t idx = slot->idx;
 
     /* Avoid colliding with the ccp */
-    if (os_sem_get_count(&ccp->sem) == 0 || idx == 0xffff) {
+    if (dpl_sem_get_count(&ccp->sem) == 0 || idx == 0xffff) {
         return;
     }
 
@@ -148,11 +148,12 @@ nrng_slot_timer_cb(struct os_event *ev)
 }
 
 static void
-nrng_complete_cb(struct os_event *ev) {
+nrng_complete_cb(struct dpl_event *ev) {
     assert(ev != NULL);
-    assert(ev->ev_arg != NULL);
+    assert(dpl_event_get_arg(ev));
 
-    dw1000_nrng_instance_t * nrng = (dw1000_nrng_instance_t *)ev->ev_arg;
+    dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *) dpl_event_get_arg(ev);
+    dw1000_nrng_instance_t * nrng = (dw1000_nrng_instance_t *) dw1000_mac_find_cb_inst_ptr(inst, DW1000_NRNG);
     nrng_frame_t * frame = nrng->frames[(nrng->idx)%nrng->nframes];
 
     for (int i=0;i<nrng->nframes;i++) {
@@ -179,16 +180,16 @@ static bool complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * c
 }
 
 /**
- * @fn rtdoa_slot_timer_cb(struct os_event * ev)
+ * @fn rtdoa_slot_timer_cb(struct dpl_event * ev)
  *
  * @brief RTDoA Emission slot
  *
  */
 static void 
-rtdoa_slot_timer_cb(struct os_event *ev)
+rtdoa_slot_timer_cb(struct dpl_event *ev)
 {
     assert(ev);
-    tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
+    tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
     uint16_t idx = slot->idx;
     // printf("rtdoa %02d\n", idx);
     tdma_instance_t * tdma = slot->parent;
@@ -201,7 +202,7 @@ rtdoa_slot_timer_cb(struct os_event *ev)
     assert(rtdoa);
 
     /* Avoid colliding with the ccp */
-    if (os_sem_get_count(&ccp->sem) == 0) {
+    if (dpl_sem_get_count(&ccp->sem) == 0) {
         return;
     }
 
@@ -228,19 +229,19 @@ rtdoa_slot_timer_cb(struct os_event *ev)
 }
 
 static void 
-nmgr_slot_timer_cb(struct os_event * ev)
+nmgr_slot_timer_cb(struct dpl_event * ev)
 {
     assert(ev);
-    tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
+    tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
     tdma_instance_t * tdma = slot->parent;
     dw1000_ccp_instance_t * ccp = tdma->ccp;
     uint16_t idx = slot->idx;
-    nmgr_uwb_instance_t* nmgruwb = (nmgr_uwb_instance_t*)slot->arg;
+    nmgr_uwb_instance_t * nmgruwb = (nmgr_uwb_instance_t *) slot->arg;
     assert(nmgruwb);
     // printf("idx %02d nmgr\n", idx);
 
     /* Avoid colliding with the ccp */
-    if (os_sem_get_count(&ccp->sem) == 0) {
+    if (dpl_sem_get_count(&ccp->sem) == 0) {
         return;
     }
 
@@ -302,10 +303,9 @@ main(int argc, char **argv)
     
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     dw1000_mac_append_interface(inst, &cbs);
-    slot_event.ev_cb  = nrng_complete_cb;
     dw1000_nrng_instance_t * nrng = (dw1000_nrng_instance_t *)dw1000_mac_find_cb_inst_ptr(inst, DW1000_NRNG);
     assert(nrng);
-    slot_event.ev_arg = (void*)nrng;
+    dpl_event_init(&slot_event, nrng_complete_cb, nrng);
 
     inst->config.rxauto_enable = 0;
     inst->config.trxoff_enable = 1;
@@ -321,9 +321,9 @@ main(int argc, char **argv)
 
     ble_init(inst->my_long_address);
 
-    dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
+    dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t *) dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
     assert(ccp);
-    dw1000_pan_instance_t *pan = (dw1000_pan_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_PAN);
+    dw1000_pan_instance_t *pan = (dw1000_pan_instance_t *) dw1000_mac_find_cb_inst_ptr(inst, DW1000_PAN);
     assert(pan);
 
     if (inst->role&DW1000_ROLE_CCP_MASTER) {
@@ -360,7 +360,7 @@ main(int argc, char **argv)
 #endif
 
     while (1) {
-        os_eventq_run(os_eventq_dflt_get());
+        dpl_eventq_run(dpl_eventq_dflt_get());
     }
     assert(0);
     return rc;

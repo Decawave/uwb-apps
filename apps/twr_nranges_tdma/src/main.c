@@ -73,7 +73,7 @@ uwb_config_updated()
      * wrong radio settings */
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
-    if (os_sem_get_count(&ccp->sem) == 0) {
+    if (dpl_sem_get_count(&ccp->sem) == 0) {
         dw1000_phy_forcetrxoff(inst);
         dw1000_mac_config(inst, NULL);
         dw1000_phy_config_txrf(inst, &inst->config.txrf);
@@ -91,10 +91,10 @@ struct uwbcfg_cbs uwb_cb = {
 
 static void nrng_complete_cb(struct os_event *ev) {
     assert(ev != NULL);
-    assert(ev->ev_arg != NULL);
+    assert(dpl_event_get_arg(ev) != NULL);
 
     hal_gpio_toggle(LED_BLINK_PIN);
-    dw1000_nrng_instance_t * nrng = (dw1000_nrng_instance_t *)ev->ev_arg;
+    dw1000_nrng_instance_t * nrng = (dw1000_nrng_instance_t *) dpl_event_get_arg(ev);
     nrng_frame_t * frame = nrng->frames[(nrng->idx)%nrng->nframes];
 
 #ifdef VERBOSE
@@ -125,15 +125,15 @@ static void nrng_complete_cb(struct os_event *ev) {
  * returns none 
  */
 /* The timer callout */
-static struct os_callout slot_callout;
+static struct dpl_callout slot_callout;
 static bool complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
 {
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
     }
     dw1000_nrng_instance_t* nrng = (dw1000_nrng_instance_t*)cbs->inst_ptr;
-    os_callout_init(&slot_callout, os_eventq_dflt_get(), nrng_complete_cb, nrng);
-    os_eventq_put(os_eventq_dflt_get(), &slot_callout.c_ev);
+    dpl_callout_init(&slot_callout, dpl_eventq_dflt_get(), nrng_complete_cb, nrng);
+    dpl_eventq_put(dpl_eventq_dflt_get(), (struct dpl_event *) &slot_callout.co.c_ev);
     return true;
 }
 
@@ -152,25 +152,25 @@ static bool complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * c
 
     
 static void 
-slot_cb(struct os_event * ev){
+slot_cb(struct dpl_event * ev){
     assert(ev);
 
-    tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
+    tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
     tdma_instance_t * tdma = slot->parent;
     dw1000_ccp_instance_t *ccp = tdma->ccp;
     dw1000_dev_instance_t * inst = tdma->dev_inst;
     uint16_t idx = slot->idx;
-    dw1000_nrng_instance_t *nrng = (dw1000_nrng_instance_t*)slot->arg;
+    dw1000_nrng_instance_t *nrng = (dw1000_nrng_instance_t *)slot->arg;
 
     /* Avoid colliding with the ccp in case we've got out of sync */
-    if (os_sem_get_count(&ccp->sem) == 0) {
+    if (dpl_sem_get_count(&ccp->sem) == 0) {
         return;
     }
     if (ccp->local_epoch==0 || inst->slot_id == 0xffff) return;
 
     /* Process any newtmgr packages queued up */
     if (idx > 6 && idx < (tdma->nslots-6) && (idx%4)==0) {
-        nmgr_uwb_instance_t *nmgruwb = (nmgr_uwb_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_NMGR_UWB);
+        nmgr_uwb_instance_t *nmgruwb = (nmgr_uwb_instance_t *)dw1000_mac_find_cb_inst_ptr(inst, DW1000_NMGR_UWB);
         assert(nmgruwb);
         if (uwb_nmgr_process_tx_queue(nmgruwb, tdma_tx_slot_start(tdma, idx))) {
             return;
@@ -212,7 +212,7 @@ slot_cb(struct os_event * ev){
 }
 
 static void
-pan_complete_cb(struct os_event * ev)
+pan_complete_cb(struct dpl_event * ev)
 {
     assert(ev != NULL);
     assert(ev->ev_arg != NULL);
