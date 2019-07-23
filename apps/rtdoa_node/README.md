@@ -31,7 +31,8 @@ Tags:
 ```no-highlight
 newt target create rtdoa_tag
 newt target set rtdoa_tag app=apps/rtdoa_tag
-newt target set rtdoa_tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+#newt target set rtdoa_tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set rtdoa_tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1003
 #newt target amend rtdoa_tag syscfg="MASTER_NODE=0"
 newt run rtdoa_tag 0.1.0
 ```

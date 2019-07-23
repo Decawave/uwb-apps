@@ -89,14 +89,12 @@ sensor_timer_ev_cb(struct os_event *ev) {
                                     SENSOR_TYPE_NONE};
     assert(ev != NULL);
     int i=0;
-    while (sensor_types[i] != SENSOR_TYPE_NONE)
-    {
+    while (sensor_types[i] != SENSOR_TYPE_NONE) {
         s = sensor_mgr_find_next_bytype(sensor_types[i], NULL);
-        if (s)
-        {
+        if (s) {
             rc = sensor_read(s, sensor_types[i], &rtdoa_backhaul_sensor_data_cb, 0,
                              OS_TICKS_PER_SEC/100);
-            if (rc) printf("Error: failed to read sensor\n");
+            if (rc) continue;
         }
 
         i++;
@@ -116,9 +114,11 @@ sensor_timer_ev_cb(struct os_event *ev) {
         }
         rtdoa_backhaul_battery_cb(g_battery_voltage);
     }
-
-    //int16_t usb_mv = hal_bsp_read_usb_voltage();
-    int16_t usb_mv = 0;
+#if defined(USB_V_PIN)
+    int16_t usb_mv = hal_bsp_read_usb_voltage();
+#else
+    int16_t usb_mv = -1;
+#endif
     if (usb_mv > -1) {
         rtdoa_backhaul_usb_cb(usb_mv*mv2V);
     }
@@ -175,7 +175,7 @@ rtdoa_slot_timer_cb(struct os_event *ev)
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
     tdma_instance_t * tdma = slot->parent;
     dw1000_ccp_instance_t *ccp = tdma->ccp;
-    dw1000_dev_instance_t * inst = tdma->parent;
+    dw1000_dev_instance_t * inst = tdma->dev_inst;
     uint16_t idx = slot->idx;
     dw1000_rtdoa_instance_t * rtdoa = (dw1000_rtdoa_instance_t*)slot->arg;
 
@@ -207,7 +207,7 @@ nmgr_slot_timer_cb(struct os_event * ev)
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
     tdma_instance_t * tdma = slot->parent;
     dw1000_ccp_instance_t *ccp = tdma->ccp;
-    dw1000_dev_instance_t * inst = tdma->parent;
+    dw1000_dev_instance_t * inst = tdma->dev_inst;
     uint16_t idx = slot->idx;
     nmgr_uwb_instance_t* nmgruwb = (nmgr_uwb_instance_t*)slot->arg;
     assert(nmgruwb);
@@ -279,7 +279,11 @@ low_battery_mode()
     dw1000_dev_configure_sleep(inst);
     dw1000_dev_enter_sleep(inst);
 
-    int16_t batt_mv = 0;//hal_bsp_read_battery_voltage();
+#if defined(BATT_V_PIN)
+    int16_t batt_mv = hal_bsp_read_battery_voltage();
+#else
+    int16_t batt_mv = -1;
+#endif
     int16_t usb_mv = 0;//hal_bsp_read_usb_voltage();
     while (batt_mv < 3000 && usb_mv < 3000) {
         printf("{\"battery_low\"=%d,\"usb\"=%d}\n", batt_mv, usb_mv);
@@ -298,7 +302,11 @@ low_battery_mode()
             }
             os_time_delay(OS_TICKS_PER_SEC/10);
         }
-        batt_mv = 0;//hal_bsp_read_battery_voltage(); 
+#if defined(BATT_V_PIN)
+        int16_t batt_mv = hal_bsp_read_battery_voltage();
+#else
+        int16_t batt_mv = -1;
+#endif
         usb_mv = 0;//hal_bsp_read_usb_voltage();
     }
     printf("{\"rebooting at mv\"=%d}\n", batt_mv);
