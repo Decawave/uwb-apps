@@ -10,3 +10,5 @@ syscfg.defs:
         value: 1
     RTDOABH_MAXNUM_RANGES:
         value: 16
+    RTDOABH_COMPACT_MEAS:
+        value: 1

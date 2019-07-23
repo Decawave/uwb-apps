@@ -66,6 +66,9 @@
 #include "sensor/mag.h"
 #include "sensor/pressure.h"
 static struct os_callout sensor_callout;
+#if MYNEWT_VAL(IMU_RATE)
+static int imu_reset_ticks = OS_TICKS_PER_SEC/MYNEWT_VAL(IMU_RATE);
+#endif
 static float g_battery_voltage = 5.1;
 static void low_battery_mode();
 
@@ -78,7 +81,11 @@ static void low_battery_mode();
  * @fn Event callback function for sensor events
 */
 static void
-sensor_timer_ev_cb(struct os_event *ev) {
+sensor_timer_ev_cb(struct os_event *ev)
+{
+    assert(ev != NULL);
+    static uint32_t last_batt_update = 0;
+    static uint32_t last_mp_update = 0;
     const float mv2V = 0.001f;
     int rc;
     struct sensor *s;
@@ -87,7 +94,15 @@ sensor_timer_ev_cb(struct os_event *ev) {
                                     SENSOR_TYPE_MAGNETIC_FIELD,
                                     SENSOR_TYPE_PRESSURE,
                                     SENSOR_TYPE_NONE};
-    assert(ev != NULL);
+    uint64_t local_ts = dw1000_read_systime(hal_dw1000_inst(0));
+
+    /* Only include pressure and compass at max 20hz */
+    if (os_cputime_get32() - last_mp_update > os_cputime_usecs_to_ticks(50000)) {
+        last_mp_update = os_cputime_get32();
+    } else {
+        sensor_types[2] = SENSOR_TYPE_NONE;
+    }
+
     int i=0;
     while (sensor_types[i] != SENSOR_TYPE_NONE) {
         s = sensor_mgr_find_next_bytype(sensor_types[i], NULL);
@@ -99,50 +114,75 @@ sensor_timer_ev_cb(struct os_event *ev) {
 
         i++;
     }
-    
+
+    /* Only include battery information once a second */
+    if (os_cputime_get32() - last_batt_update > os_cputime_usecs_to_ticks(1000000)) {
+        last_batt_update = os_cputime_get32();
+
 #if defined(BATT_V_PIN)
-    int16_t batt_mv = hal_bsp_read_battery_voltage();
+        int16_t batt_mv = hal_bsp_read_battery_voltage();
 #else
-    int16_t batt_mv = -1;
+        int16_t batt_mv = -1;
 #endif
-    if (batt_mv > -1) {
-        float bvf = 0.10;
-        if (g_battery_voltage > 5.0) {
-            g_battery_voltage = batt_mv*mv2V;
-        } else {
-            g_battery_voltage = g_battery_voltage*(1.0-bvf) + bvf*batt_mv*mv2V;
+        if (batt_mv > -1) {
+            float bvf = 0.10;
+            if (g_battery_voltage > 5.0) {
+                g_battery_voltage = batt_mv*mv2V;
+            } else {
+                g_battery_voltage = g_battery_voltage*(1.0-bvf) + bvf*batt_mv*mv2V;
+            }
+            rtdoa_backhaul_battery_cb(g_battery_voltage);
         }
-        rtdoa_backhaul_battery_cb(g_battery_voltage);
-    }
 #if defined(USB_V_PIN)
-    int16_t usb_mv = hal_bsp_read_usb_voltage();
+        int16_t usb_mv = hal_bsp_read_usb_voltage();
 #else
-    int16_t usb_mv = -1;
+        int16_t usb_mv = -1;
 #endif
-    if (usb_mv > -1) {
-        rtdoa_backhaul_usb_cb(usb_mv*mv2V);
+        if (usb_mv > -1) {
+            rtdoa_backhaul_usb_cb(usb_mv*mv2V);
+        }
+
+        if (g_battery_voltage < 2.900) {
+            if (usb_mv < 3000) {
+                low_battery_mode();
+            }
+        }
     }
 
-    if (g_battery_voltage < 2.900) {
-        if (usb_mv < 3000) {
-            low_battery_mode();
-        }
+    if (rtdoa_backhaul_queue_size()>2) {
+        goto early_exit;
     }
+
+    // Translate our timestamp into the UWB network-master's timeframe
+    dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)dw1000_mac_find_cb_inst_ptr(hal_dw1000_inst(0), DW1000_CCP);
+    if (ccp->status.valid) {
+        uint64_t ts = wcs_local_to_master64(ccp->wcs, local_ts);
+        rtdoa_backhaul_send_imu_only(ts>>16);
+    } else {
+        rtdoa_backhaul_send_imu_only(0);
+    }
+early_exit:
+#if MYNEWT_VAL(IMU_RATE)
+    os_callout_reset(&sensor_callout, imu_reset_ticks);
+#endif
+    return;
 }
 
 static void
 init_timer(void)
 {
     os_callout_init(&sensor_callout, os_eventq_dflt_get(), sensor_timer_ev_cb, NULL);
+#if MYNEWT_VAL(IMU_RATE)
     /* Kickoff a new imu reading directly */
     os_callout_reset(&sensor_callout, 0);
+#endif
 }
 
 static bool dw1000_config_updated = false;
 int
 uwb_config_updated()
 {
-    /* Workaround in case we're stuck waiting for ccp with the 
+    /* Workaround in case we're stuck waiting for ccp with the
      * wrong radio settings */
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
@@ -197,7 +237,6 @@ rtdoa_slot_timer_cb(struct os_event *ev)
     uint64_t measurement_ts = wcs_local_to_master64(ccp->wcs, dx_time);
     rtdoa_backhaul_set_ts(measurement_ts>>16);
     rtdoa_backhaul_send(inst, rtdoa, 0); //tdma_tx_slot_start(inst, idx+2)
-    os_callout_reset(&sensor_callout, 0);
 }
 
 static void 
@@ -251,9 +290,10 @@ tdma_allocate_slots(dw1000_dev_instance_t * inst)
         }
         if (i%12==0) {
             tdma_assign_slot(tdma, nmgr_slot_timer_cb, i, nmgruwb);
-            /* TODO: REMOVE below! */
         } else if (i%2==0){
             tdma_assign_slot(tdma, rtdoa_slot_timer_cb, i, rtdoa);
+        } else {
+            //tdma_assign_slot(tdma, imu_only_slot_timer_cb, i, rtdoa);
         }
     }
 }
@@ -303,9 +343,9 @@ low_battery_mode()
             os_time_delay(OS_TICKS_PER_SEC/10);
         }
 #if defined(BATT_V_PIN)
-        int16_t batt_mv = hal_bsp_read_battery_voltage();
+        batt_mv = hal_bsp_read_battery_voltage();
 #else
-        int16_t batt_mv = -1;
+        batt_mv = -1;
 #endif
         usb_mv = 0;//hal_bsp_read_usb_voltage();
     }

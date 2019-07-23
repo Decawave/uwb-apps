@@ -63,11 +63,12 @@ syscfg.vals:
     CONFIG_NEWTMGR: 1
     CONFIG_FCB_FLASH_AREA: FLASH_AREA_NFFS
 
+    # IMU
     I2C_1: 1
     ADC_0: 1
     LSM6DSL_ONB: 1
     LIS2MDL_ONB: 1
-    LPS22HB_ONB: 1
+    LPS22HB_ONB: 1    
     
     NCBWIFI_ESP_PASSTHROUGH: 0
     ESP12F_ENABLED: 0
@@ -77,3 +78,8 @@ syscfg.vals:
     BLE_ROLE_CENTRAL: 0
     BLE_ROLE_OBSERVER: 0
     BLE_ROLE_PERIPHERAL: 1
+
+syscfg.defs:
+    IMU_RATE:
+      description: 'Rate at which to print IMU data to UART. Set to 0 to disable'
+      value: 50

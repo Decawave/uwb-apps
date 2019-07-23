@@ -141,6 +141,20 @@ static struct rtdoabh_tag_results_pkg g_result_pkg = {
     .ranges = {{0}}
 };
 
+static struct rtdoabh_tag_results_pkg g_result_pkg_imu = {
+    .head = {
+        .fctrl = FCNTL_IEEE_RTDOABH,
+        .seq_num = 0,
+        .PANID = 0xDECA,
+        .dst_address = 0xffff,
+        .src_address = 0x0000,
+        .code = DWT_RTDOABH_CODE,
+    },
+    .sensors = {0,0},
+    .num_ranges = 0,
+    .ranges = {{0}}
+};
+
 static bool tx_complete_cb(struct _dw1000_dev_instance_t * inst,
                            dw1000_mac_interface_t * cbs);
 static bool rx_complete_cb(struct _dw1000_dev_instance_t * inst,
@@ -209,14 +223,16 @@ rtdoa_backhaul_print(struct rtdoabh_tag_results_pkg *p, bool tight)
     struct rtdoabh_sensor_data *d = &p->sensors;
     printf("{\"id\":\"0x%04x\"", p->head.src_address);
 
-    double ts = dw1000_dwt_usecs_to_usecs(d->ts);
-    uint64_t ts_s  = (uint64_t)(ts/1000000);
-    uint32_t ts_tms = (ts-ts_s*1000000)/100.0;
     if(d->is_anchor_data) {
         printf(",\"mode\":\"anchor\"");
     }
-    printf(",\"ts\":\"%llu.%04lu\"", ts_s, ts_tms);
-    printf(",\"msgid\":%ld", g_msg_id++); /**< OBSERVE: This is from the local node */
+    if (d->ts) {
+        double ts = dw1000_dwt_usecs_to_usecs(d->ts);
+        uint64_t ts_s  = (uint64_t)(ts/1000000);
+        uint32_t ts_tms = (ts-ts_s*1000000)/100.0;
+        printf(",\"ts\":\"%llu.%04lu\"", ts_s, ts_tms);
+    }
+    printf(",\"mid\":%ld", g_msg_id++); /**< OBSERVE: This is from the local node */
     if (d->sensors_valid&GPS_LAT_LONG_ENABLED) {
         printf(",\"gps\":[\"%d.%d\"", (int)d->gps_lat,
            abs((int)((d->gps_lat -(int)d->gps_lat)*1000000)));
@@ -229,11 +245,11 @@ rtdoa_backhaul_print(struct rtdoabh_tag_results_pkg *p, bool tight)
         printf(",\"vbat\":\"%d.%02d\"",
                (int)f, abs((int)(100*(f-(int)f)))
             );
+        printf(",\"usb\":%d", d->has_usb_power);
     }
-    printf(",\"usb\":%d", d->has_usb_power);
 
     if (d->sensors_valid&ACCELEROMETER_ENABLED) {
-        printf(",\"acc\":\"[");
+        printf(",\"a\":\"[");
         for (int i=0;i<3;i++) {
             float f = (float)d->acceleration[i]/1000;
             printf("%s%d.%d",(i==0)?"":",",
@@ -242,7 +258,7 @@ rtdoa_backhaul_print(struct rtdoabh_tag_results_pkg *p, bool tight)
         printf("]\"");
     }
     if (d->sensors_valid&GYRO_ENABLED) {
-        printf(",\"gyro\":\"[");
+        printf(",\"g\":\"[");
         for (int i=0;i<3;i++) {
             float f = (float)d->gyro[i]/10;
             printf("%s%d.%d",(i==0)?"":",",
@@ -251,39 +267,75 @@ rtdoa_backhaul_print(struct rtdoabh_tag_results_pkg *p, bool tight)
         printf("]\"");
     }
     if (d->sensors_valid&COMPASS_ENABLED) {
-        printf(",\"mag\":[%d,%d,%d]", d->compass[0], d->compass[1], d->compass[2]);
+        printf(",\"m\":[%d,%d,%d]", d->compass[0], d->compass[1], d->compass[2]);
     }
     if (d->sensors_valid&PRESSURE_ENABLED) {
-        printf(",\"pres\":%ld", ((int32_t)d->pressure)+101300);
+        printf(",\"p\":%ld", ((int32_t)d->pressure)+101300);
     }
 
-    if (p->num_ranges) {
-        printf(",\"ref_anchor\":\"%x\"", p->ref_anchor_addr);
+#if MYNEWT_VAL(RTDOABH_COMPACT_MEAS)
+    if (!p->num_ranges) {
+        goto early_close;
+    }
+    printf(",\"meas\":{");
+    printf("\"ref\":\"%x\",", p->ref_anchor_addr);
+    const char* key[4]={"a","dd","rs","qf"};
 
-        printf(",\"meas\":[%s", (tight || p->num_ranges==0)?"":"\n ");
-
-        /* Check for correct number of ranges in packet */
-        if (p->num_ranges > MYNEWT_VAL(RTDOABH_MAXNUM_RANGES)) {
-            p->num_ranges = MYNEWT_VAL(RTDOABH_MAXNUM_RANGES);
-        }
-
+    for (int j=0;j<4;j++) {
+        printf("\"%s\":[",key[j]);
         for (int i=0;i<p->num_ranges;i++) {
             struct rtdoabh_range_data *r = &p->ranges[i];
-            float rssif = (float)r->rssi/10;
-            int dist_m  = r->diff_dist_mm/1000;
-            int dist_mm = abs(r->diff_dist_mm - dist_m*1000);
-            dist_m = abs(dist_m);
-            printf("{\"addr\":\"%x\",\"ddist\":\"%s%d.%03d\",\"tqf\":%d,\"rssi\":\"%d.%d\"}%s%s",
-                   r->anchor_addr,
-                   (r->diff_dist_mm < 0)?"-":"", dist_m, dist_mm,
-                   r->quality,
-                   (int)rssif, abs((int)(10*(rssif-(int)rssif))),
-                   (i+1<p->num_ranges)?",":"]",
-                   (tight)?"":"\n  "
-                );
+            int is_last = (i+1<p->num_ranges);
+            switch (j){
+            case (0): {
+                printf("\"%x\"%s", r->anchor_addr, (is_last)?",":"");
+                break;
+            }
+            case 1: {
+                int ddist_m  = abs(r->diff_dist_mm/1000);
+                int ddist_mm = abs(r->diff_dist_mm - ddist_m*1000);
+                printf("%d.%03d%s", ddist_m, ddist_mm, (is_last)?",":"");
+                break;
+            }
+            case 2: {
+                float rssif = (float)r->rssi/10;
+                int rssi_frac = abs((int)(10*(rssif-(int)rssif)));
+                printf("%d.%d%s", (int)rssif, rssi_frac, (is_last)?",":"");
+                break;
+            }
+            case 3: {
+                printf("%x%s", r->quality, (is_last)?",":"");
+                break;
+            }
+            } /* End switch(j) */
         }
+        printf("]%s", (j==3)?"}":",");
     }
+early_close:
     printf("}\n");
+#else
+    printf(",\"ref_anchor\":\"%x\"", p->ref_anchor_addr);
+    printf(",\"meas\":[%s", (tight || p->num_ranges==0)?"":"\n ");
+
+    for (int i=0;i<p->num_ranges;i++) {
+        struct rtdoabh_range_data *r = &p->ranges[i];
+        float rssif = (float)r->rssi/10;
+        int dist_m  = r->diff_dist_mm/1000;
+        int dist_mm = abs(r->diff_dist_mm - dist_m*1000);
+        dist_m = abs(dist_m);
+        printf("{\"addr\":\"%x\",\"ddist\":\"%s%d.%03d\",\"tqf\":%d,\"rssi\":\"%d.%d\"}%s%s",
+               r->anchor_addr,
+               (r->diff_dist_mm < 0)?"-":"", dist_m, dist_mm,
+               r->quality,
+               (int)rssif, abs((int)(10*(rssif-(int)rssif))),
+               (i+1<p->num_ranges)?",":"]",
+               (tight)?"":"\n  "
+            );
+    }
+    printf("]}\n");
+#endif
+
+
 }
 
 
@@ -294,7 +346,7 @@ process_rx_data_queue(struct os_event *ev)
     struct os_mbuf *om;
     struct rtdoabh_msg_hdr *hdr;
     int payload_len;
-    struct rtdoabh_tag_results_pkg pkg = {0};
+    struct rtdoabh_tag_results_pkg pkg;
 
     while ((om = os_mqueue_get(&rxpkt_q)) != NULL) { 
         hdr = (struct rtdoabh_msg_hdr*)(OS_MBUF_USRHDR(om));
@@ -302,6 +354,7 @@ process_rx_data_queue(struct os_event *ev)
 
         payload_len = OS_MBUF_PKTLEN(om);
         payload_len = (payload_len > sizeof(pkg)) ? sizeof(pkg) : payload_len;
+        memset(&pkg, 0, sizeof(pkg));
 
         if (g_role == RTDOABH_ROLE_BRIDGE) {
             rc = os_mbuf_copydata(om, 0, payload_len, &pkg);
@@ -465,10 +518,10 @@ rtdoa_backhaul_sensor_data_cb(struct sensor* sensor, void *arg, void *data, sens
         conv = 1000;
         sad = (struct sensor_accel_data *) data;
         if (sad->sad_x_is_valid && sad->sad_y_is_valid && sad->sad_z_is_valid) {
-            g_result_pkg.sensors.acceleration[2] = (int16_t)roundf(conv*sad->sad_x);
-            g_result_pkg.sensors.acceleration[0] = (int16_t)roundf(conv*sad->sad_y);
-            g_result_pkg.sensors.acceleration[1] = (int16_t)roundf(conv*sad->sad_z);
-            g_result_pkg.sensors.sensors_valid |= ACCELEROMETER_ENABLED;
+            g_result_pkg_imu.sensors.acceleration[2] = (int16_t)roundf(conv*sad->sad_x);
+            g_result_pkg_imu.sensors.acceleration[0] = (int16_t)roundf(conv*sad->sad_y);
+            g_result_pkg_imu.sensors.acceleration[1] = (int16_t)roundf(conv*sad->sad_z);
+            g_result_pkg_imu.sensors.sensors_valid |= ACCELEROMETER_ENABLED;
         }
     }
 
@@ -476,10 +529,10 @@ rtdoa_backhaul_sensor_data_cb(struct sensor* sensor, void *arg, void *data, sens
         smd = (struct sensor_mag_data *) data;
         if (smd->smd_x_is_valid && smd->smd_y_is_valid && smd->smd_z_is_valid) {
             /* uT */
-            g_result_pkg.sensors.compass[2] = (int16_t)(smd->smd_x);
-            g_result_pkg.sensors.compass[1] = (int16_t)(smd->smd_y);
-            g_result_pkg.sensors.compass[0] = (int16_t)(smd->smd_z);
-            g_result_pkg.sensors.sensors_valid |= COMPASS_ENABLED;
+            g_result_pkg_imu.sensors.compass[2] = (int16_t)(smd->smd_x);
+            g_result_pkg_imu.sensors.compass[1] = (int16_t)(smd->smd_y);
+            g_result_pkg_imu.sensors.compass[0] = (int16_t)(smd->smd_z);
+            g_result_pkg_imu.sensors.sensors_valid |= COMPASS_ENABLED;
         }
     }
 
@@ -488,18 +541,18 @@ rtdoa_backhaul_sensor_data_cb(struct sensor* sensor, void *arg, void *data, sens
 
         conv = 10.0;            /* For [-2000,2000] dps sensor range */
         if (sgd->sgd_x_is_valid && sgd->sgd_y_is_valid && sgd->sgd_z_is_valid) {
-            g_result_pkg.sensors.gyro[2] = (int16_t)roundf(conv*sgd->sgd_x);
-            g_result_pkg.sensors.gyro[0] = (int16_t)roundf(conv*sgd->sgd_y);
-            g_result_pkg.sensors.gyro[1] = (int16_t)roundf(conv*sgd->sgd_z);
-            g_result_pkg.sensors.sensors_valid |= GYRO_ENABLED;
+            g_result_pkg_imu.sensors.gyro[2] = (int16_t)roundf(conv*sgd->sgd_x);
+            g_result_pkg_imu.sensors.gyro[0] = (int16_t)roundf(conv*sgd->sgd_y);
+            g_result_pkg_imu.sensors.gyro[1] = (int16_t)roundf(conv*sgd->sgd_z);
+            g_result_pkg_imu.sensors.sensors_valid |= GYRO_ENABLED;
         }
     }
 
     if (type == SENSOR_TYPE_PRESSURE) {
         spd = (struct sensor_press_data *) data;
         if (spd->spd_press_is_valid) {
-            g_result_pkg.sensors.pressure = (int16_t)(spd->spd_press-101300);
-            g_result_pkg.sensors.sensors_valid |= PRESSURE_ENABLED;
+            g_result_pkg_imu.sensors.pressure = (int16_t)(spd->spd_press-101300);
+            g_result_pkg_imu.sensors.sensors_valid |= PRESSURE_ENABLED;
         }
     }
 
@@ -509,14 +562,14 @@ rtdoa_backhaul_sensor_data_cb(struct sensor* sensor, void *arg, void *data, sens
 void
 rtdoa_backhaul_battery_cb(float battery_volt)
 {
-    g_result_pkg.sensors.battery_voltage = (int8_t)(battery_volt*128/5.0);
-    g_result_pkg.sensors.sensors_valid |= BATTERY_LEVELS_ENABLED;
+    g_result_pkg_imu.sensors.battery_voltage = (int8_t)(battery_volt*128/5.0);
+    g_result_pkg_imu.sensors.sensors_valid |= BATTERY_LEVELS_ENABLED;
 }
 
 void
 rtdoa_backhaul_usb_cb(float usb_volt)
 {
-    g_result_pkg.sensors.has_usb_power = usb_volt > 3.0;
+    g_result_pkg_imu.sensors.has_usb_power = usb_volt > 3.0;
 }
 
 void
@@ -526,7 +579,7 @@ rtdoa_backhaul_set_ts(uint64_t sensor_time)
 }
 
 static int
-rtdoa_local_send(int dlen)
+rtdoa_local_send(uint8_t *buf, int dlen)
 {
     int rc;
     struct os_mbuf *om;
@@ -538,7 +591,7 @@ rtdoa_local_send(int dlen)
 
     struct rtdoabh_msg_hdr *hdr = (struct rtdoabh_msg_hdr*)OS_MBUF_USRHDR(om);
     hdr->dlen = dlen;
-    rc = os_mbuf_copyinto(om, 0, (uint8_t*)&g_result_pkg, hdr->dlen);
+    rc = os_mbuf_copyinto(om, 0, buf, hdr->dlen);
     if (rc != 0) {
         goto exit_err;
     }
@@ -553,11 +606,26 @@ exit_err:
     return rc;
 }
 
+int
+rtdoa_backhaul_queue_size()
+{
+    int queued = g_mbuf_mempool.mp_num_blocks - g_mbuf_mempool.mp_num_free;
+    return queued;
+}
+
+void
+rtdoa_backhaul_send_imu_only(uint64_t ts)
+{
+    g_result_pkg_imu.head.seq_num++;
+    g_result_pkg_imu.sensors.ts = ts;
+    rtdoa_local_send((uint8_t*)&g_result_pkg_imu, sizeof(struct _ieee_rng_request_frame_t) + sizeof(struct rtdoabh_sensor_data));
+    memset(&g_result_pkg_imu.sensors, 0, sizeof(struct rtdoabh_sensor_data));
+}
+
 dw1000_dev_status_t
 rtdoa_backhaul_send(dw1000_dev_instance_t * inst, dw1000_rtdoa_instance_t *rtdoa,
                     uint64_t dx_time)
 {
-    g_result_pkg.head.src_address = inst->my_short_address;
     g_result_pkg.head.seq_num++;
     g_result_pkg.num_ranges = 0;
 
@@ -618,7 +686,7 @@ rtdoa_backhaul_send(dw1000_dev_instance_t * inst, dw1000_rtdoa_instance_t *rtdoa
     }
     /* If we're a local bridge */
     if (g_role == RTDOABH_ROLE_BRIDGE) {
-        int rc = rtdoa_local_send(dlen);
+        int rc = rtdoa_local_send((uint8_t*)&g_result_pkg, dlen);
         if (rc != 0) {
             goto exit_err;
         }
@@ -638,6 +706,9 @@ rtdoa_backhaul_init(dw1000_dev_instance_t * inst)
 
     create_mbuf_pool();
     os_mqueue_init(&rxpkt_q, process_rx_data_queue, NULL);
+
+    g_result_pkg.head.src_address = inst->my_short_address;
+    g_result_pkg_imu.head.src_address = inst->my_short_address;
 
     dw1000_mac_append_interface(inst, &g_cbs);
 }

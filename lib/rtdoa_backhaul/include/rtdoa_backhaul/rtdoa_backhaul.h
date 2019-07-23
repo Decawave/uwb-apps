@@ -74,6 +74,8 @@ void rtdoa_backhaul_usb_cb(float usb_volt);
 void rtdoa_backhaul_set_ts(uint64_t sensor_time);
 
 dw1000_dev_status_t rtdoa_backhaul_send(dw1000_dev_instance_t * inst, dw1000_rtdoa_instance_t *rtdoa, uint64_t dxtime);
+int rtdoa_backhaul_queue_size();
+void rtdoa_backhaul_send_imu_only(uint64_t ts);
 dw1000_dev_status_t rtdoa_backhaul_local(dw1000_dev_instance_t * inst, dw1000_rtdoa_instance_t *rtdoa);
 dw1000_dev_status_t rtdoa_backhaul_listen(dw1000_dev_instance_t * inst, uint64_t dx_time, uint16_t timeout_uus);
 #ifdef __cplusplus
