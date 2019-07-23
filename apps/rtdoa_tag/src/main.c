@@ -65,7 +65,7 @@
 #include "sensor/gyro.h"
 #include "sensor/mag.h"
 #include "sensor/pressure.h"
-static struct os_callout sensor_callout;
+static struct dpl_callout sensor_callout;
 #if MYNEWT_VAL(IMU_RATE)
 static int imu_reset_ticks = DPL_TICKS_PER_SEC/MYNEWT_VAL(IMU_RATE);
 #endif
@@ -163,7 +163,7 @@ sensor_timer_ev_cb(struct dpl_event *ev)
     }
 early_exit:
 #if MYNEWT_VAL(IMU_RATE)
-    os_callout_reset(&sensor_callout, imu_reset_ticks);
+    dpl_callout_reset(&sensor_callout, imu_reset_ticks);
 #endif
     return;
 }

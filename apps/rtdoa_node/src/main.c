@@ -152,8 +152,7 @@ nrng_complete_cb(struct dpl_event *ev) {
     assert(ev != NULL);
     assert(dpl_event_get_arg(ev));
 
-    dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *) dpl_event_get_arg(ev);
-    dw1000_nrng_instance_t * nrng = (dw1000_nrng_instance_t *) dw1000_mac_find_cb_inst_ptr(inst, DW1000_NRNG);
+    dw1000_nrng_instance_t * nrng = (dw1000_nrng_instance_t *) dpl_event_get_arg(ev);
     nrng_frame_t * frame = nrng->frames[(nrng->idx)%nrng->nframes];
 
     for (int i=0;i<nrng->nframes;i++) {
@@ -169,13 +168,13 @@ nrng_complete_cb(struct dpl_event *ev) {
     }
 }
 
-static struct os_event slot_event;
+static struct dpl_event slot_event;
 static bool complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
 {
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
     }
-    os_eventq_put(os_eventq_dflt_get(), &slot_event);
+    dpl_eventq_put(dpl_eventq_dflt_get(), &slot_event);
     return true;
 }
 
