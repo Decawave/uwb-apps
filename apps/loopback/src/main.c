@@ -58,14 +58,9 @@
 #endif
 
 static void master_slot_ev_cb(struct os_event * ev);
-static bool master_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs);
-static void master_complete_ev_cb(struct os_event *ev);
-
 static void slave_slot_ev_cb(struct os_event * ev);
-static bool slave_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs);
-static void slave_complete_ev_cb(struct os_event *ev);
 
-static uint16_t g_slot[MYNEWT_VAL(TDMA_NSLOTS)] = {0};
+//static uint16_t g_slot[MYNEWT_VAL(TDMA_NSLOTS)] = {0};
 #define NINST 2
 
 
@@ -95,61 +90,20 @@ master_slot_ev_cb(struct os_event * ev){
 
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
     tdma_instance_t * tdma = slot->parent;
-    dw1000_dev_instance_t * inst = tdma->parent;
+    dw1000_dev_instance_t * inst = tdma->dev_inst;
+    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *) dw1000_mac_find_cb_inst_ptr(inst, DW1000_RNG);
     uint16_t idx = slot->idx;
 
-    dw1000_set_delay_start(inst, tdma_rx_slot_start(inst, idx));
+    dw1000_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
     uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(ieee_rng_response_frame_t))                 
-                            + inst->rng->config.tx_holdoff_delay;         // Remote side turn arroud time. 
+                            + rng->config.tx_holdoff_delay;         // Remote side turn arroud time. 
                             
     dw1000_set_rx_timeout(inst, timeout);
-    dw1000_rng_listen(inst, DWT_BLOCKING);
+    dw1000_rng_listen(rng, DWT_BLOCKING);
 }
 
 
-static bool
-master_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
-    if(inst->fctrl != FCNTL_IEEE_RANGE_16){
-        return false;
-    }
-    static struct os_callout callout;
-    os_callout_init(&callout, os_eventq_dflt_get(), master_complete_ev_cb, inst);
-    os_eventq_put(os_eventq_dflt_get(), &callout.c_ev);
-    return true;
-}
 
-
-static void
-master_complete_ev_cb(struct os_event *ev) {
-    assert(ev != NULL);
-    assert(ev->ev_arg != NULL);
-    
-    hal_gpio_toggle(LED_BLINK_PIN);
-    dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *) ev->ev_arg;
-    dw1000_rng_instance_t * rng = inst->rng;
-    uint16_t idx = (rng->idx)%rng->nframes;
-    twr_frame_t * frame = rng->frames[idx];
-
-    if (frame->code == DWT_SS_TWR_FINAL) {
-
-        float time_of_flight = dw1000_rng_twr_to_tof(rng, idx);
-        float range = dw1000_rng_tof_to_meters(time_of_flight);
-        float skew = dw1000_calc_clock_offset_ratio(inst, frame->carrier_integrator);
-        
-        uint32_t utime =os_cputime_ticks_to_usecs(os_cputime_get32()); 
- 
-        printf("{\"utime\": %lu,\"tof_m\": %lu,\"range\": %lu,\"res_req\": \"%lX\","
-                    "\"tra_rec\": \"%lX\", \"skew\": %lu}\n",
-                utime,
-                *(uint32_t *)(&time_of_flight), 
-                *(uint32_t *)(&range),
-                (frame->response_timestamp - frame->request_timestamp),
-                (frame->transmission_timestamp - frame->reception_timestamp),
-                *(uint32_t *)(&skew)
-        );
-        frame->code = DWT_SS_TWR_END;
-    }
-}
 
 
 static void 
@@ -158,16 +112,18 @@ slave_slot_ev_cb(struct os_event *ev){
 
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
     tdma_instance_t * tdma = slot->parent;
-    dw1000_dev_instance_t * inst = tdma->parent;
+    dw1000_dev_instance_t * inst = tdma->dev_inst;
+    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *) dw1000_mac_find_cb_inst_ptr(inst, DW1000_RNG);
+
     uint16_t idx = slot->idx;
     
-    uint64_t dx_time = tdma_tx_slot_start(inst, idx);
+    uint64_t dx_time = tdma_tx_slot_start(tdma, idx);
     dx_time = dx_time & 0xFFFFFFFFFE00UL;
   
 #ifdef TICTOC
     uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
 #endif
-    if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_SS_TWR).start_tx_error){
+    if(dw1000_rng_request_delay_start(rng, 0x4321, dx_time, DWT_SS_TWR).start_tx_error){
     }else{
 #ifdef TICTOC
         os_error_t err = os_sem_pend(&inst->rng->sem, OS_TIMEOUT_NEVER); // Wait for completion of transactions 
@@ -180,44 +136,6 @@ slave_slot_ev_cb(struct os_event *ev){
     }
 }
 
-static bool
-slave_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
-    if(inst->fctrl != FCNTL_IEEE_RANGE_16){
-        return false;
-    }
-    static struct os_callout callout;
-    os_callout_init(&callout, os_eventq_dflt_get(), slave_complete_ev_cb, inst);
-    os_eventq_put(os_eventq_dflt_get(), &callout.c_ev);
-    return true;
-}
-
-static void
-slave_complete_ev_cb(struct os_event *ev) {
-    assert(ev != NULL);
-    assert(ev->ev_arg != NULL);
-    
-    dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *) ev->ev_arg;
-    dw1000_rng_instance_t * rng = inst->rng;
-    uint16_t idx = (rng->idx)%rng->nframes;
-    twr_frame_t * frame = rng->frames[idx];
-    
-    float time_of_flight = dw1000_rng_twr_to_tof(rng, idx);
-    float range = dw1000_rng_tof_to_meters(time_of_flight);
-    float skew = dw1000_calc_clock_offset_ratio(inst, frame->carrier_integrator);
-    
-    if (frame->code == DWT_SS_TWR_FINAL) {
-        printf("{\"utime\": %lu,\"tof_s\": %lu,\"range\": %lu,\"res_req\": \"%lX\","
-                "\"tra_rec\": \"%lX\", \"skew\": %lu}\n",
-                os_cputime_ticks_to_usecs(os_cputime_get32()),
-                *(uint32_t *)(&time_of_flight), 
-                *(uint32_t *)(&range),
-                (frame->response_timestamp - frame->request_timestamp),
-                (frame->transmission_timestamp - frame->reception_timestamp),
-                *(uint32_t *)(&skew)
-        );
-        frame->code = DWT_SS_TWR_END;
-    }
-}
 
 
 
@@ -246,29 +164,23 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"request_duration = %d usec\"}\n", utime, dw1000_phy_frame_duration(&inst[0]->attrib, sizeof(ieee_rng_request_frame_t) )); 
     printf("{\"utime\": %lu,\"msg\": \"response_duration = %d usec\"}\n",utime, dw1000_phy_frame_duration(&inst[0]->attrib, sizeof(ieee_rng_response_frame_t) )); 
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime, dw1000_phy_SHR_duration(&inst[0]->attrib)); 
-    printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime, (uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst[0]->rng->config.tx_holdoff_delay) ));
+    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *) dw1000_mac_find_cb_inst_ptr(inst[0], DW1000_RNG);
+    printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime, (uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay) ));
     
-    dw1000_mac_interface_t cbs[] = {
-        [0] ={
-            .id =  DW1000_APP0,
-            .complete_cb = master_complete_cb
-        },
-        [1] ={
-            .id =  DW1000_APP0,
-            .complete_cb = slave_complete_cb
-        }
-    };
-    dw1000_mac_append_interface(inst[0], &cbs[0]);
-    dw1000_mac_append_interface(inst[1], &cbs[1]);
-    dw1000_ccp_start(inst[0], CCP_ROLE_MASTER);
-    dw1000_ccp_start(inst[1], CCP_ROLE_SLAVE);
+    dw1000_ccp_start(dw1000_mac_find_cb_inst_ptr(inst[0], DW1000_CCP), CCP_ROLE_MASTER);
+    dw1000_ccp_start(dw1000_mac_find_cb_inst_ptr(inst[1], DW1000_CCP), CCP_ROLE_SLAVE);
 
-    for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
-        g_slot[i] = i;
-    for (uint16_t i = 1; i < sizeof(g_slot)/sizeof(uint16_t); i++){
-        tdma_assign_slot(inst[0]->tdma, master_slot_ev_cb, g_slot[i], &g_slot[i]);
-        tdma_assign_slot(inst[1]->tdma, slave_slot_ev_cb, g_slot[i], &g_slot[i]);        
-    }
+//    for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
+//        g_slot[i] = i;
+//    for (uint16_t i = 1; i < sizeof(g_slot)/sizeof(uint16_t); i++){
+//        tdma_assign_slot(dw1000_mac_find_cb_inst_ptr(inst[0], DW1000_TDMA), master_slot_ev_cb, g_slot[i], &g_slot[i]);
+//        tdma_assign_slot(dw1000_mac_find_cb_inst_ptr(inst[1], DW1000_TDMA), slave_slot_ev_cb, g_slot[i], &g_slot[i]);        
+//    }
+
+      for (uint16_t i = 3; i < MYNEWT_VAL(TDMA_NSLOTS) - 8; i+=8){
+        tdma_assign_slot(dw1000_mac_find_cb_inst_ptr(inst[0], DW1000_TDMA), master_slot_ev_cb, i, NULL);
+        tdma_assign_slot(dw1000_mac_find_cb_inst_ptr(inst[1], DW1000_TDMA), slave_slot_ev_cb, i, NULL);
+      }
     
     clk_sync(inst, 2);
     while (1) {
