@@ -129,6 +129,7 @@ struct uwb_msg_hdr {
     uint16_t acc_offset[N_DW_INSTANCES];
     float    pd;
     struct _dw1000_dev_rxdiag_t diag[N_DW_INSTANCES];
+    int32_t  carrier_integrator;
     float    cir_rcphase[N_DW_INSTANCES];
     float    cir_angle[N_DW_INSTANCES];
 };
@@ -190,11 +191,7 @@ process_rx_data_queue(struct os_event *ev)
         
         for(int j=0;j<N_DW_INSTANCES;j++) {
             /* Print individual data for each instance */
-#if N_DW_INSTANCES == 1
-            printf(",\"ts\":%llu", hdr->ts[j]);
-#else
             printf(",\"ts%d\":%llu", j, hdr->ts[j]);
-#endif
             float rssi = dw1000_calc_rssi(hal_dw1000_inst(j), &hdr->diag[j]);
             if (rssi > -200 && rssi < 100) {
 #if N_DW_INSTANCES == 1
@@ -203,6 +200,14 @@ process_rx_data_queue(struct os_event *ev)
                 printf(",\"rssi%d\":%d.%01d", j, (int)rssi, abs((int)(10*(rssi-(int)rssi))));
 #endif
             }
+        }
+        if (hdr->carrier_integrator) {
+            float ccor = dw1000_calc_clock_offset_ratio(hal_dw1000_inst(0), hdr->carrier_integrator);
+            int ppm = (int)(ccor*1000000.0f);
+            printf(",\"ccor\":%d.%03de-6",
+                   ppm,
+                   (int)roundf(fabsf(ccor-ppm/1000000.0f)*1000000000.0f)
+                );
         }
 #if MYNEWT_VAL(CIR_ENABLED)
         if (fabsf(hdr->pd) > 0.0) {
@@ -284,6 +289,7 @@ rx_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
         hdr->dlen = inst->frame_len;
         
         hdr->utime = os_cputime_ticks_to_usecs(os_cputime_get32());
+        hdr->carrier_integrator = inst->carrier_integrator;
 
         for(int i=0;i<N_DW_INSTANCES;i++) {
             memcpy(&hdr->diag[i], &hal_dw1000_inst(i)->rxdiag, sizeof(struct _dw1000_dev_rxdiag_t));
