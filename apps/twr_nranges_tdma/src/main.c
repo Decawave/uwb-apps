@@ -53,11 +53,12 @@
 #if MYNEWT_VAL(SURVEY_ENABLED)
 #include <survey/survey.h>
 #endif
-
 #if MYNEWT_VAL(NMGR_UWB_ENABLED)
 #include <nmgr_uwb/nmgr_uwb.h> 
 #endif
-
+#if MYNEWT_VAL(BLEPRPH_ENABLED)
+#include "bleprph/bleprph.h"
+#endif
 #if MYNEWT_VAL(PAN_ENABLED)
 #include <pan/pan.h>
 #include <panmaster/panmaster.h>
@@ -341,7 +342,9 @@ int main(int argc, char **argv){
     dw1000_mac_append_interface(inst, &cbs);
     inst->slot_id = 0xffff;
     inst->my_long_address = ((uint64_t) inst->lotID << 32) + inst->partID;
-
+#if MYNEWT_VAL(BLEPRPH_ENABLED)
+    ble_init(inst->my_long_address);
+#endif
     dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
     assert(ccp);
     dw1000_pan_instance_t *pan = (dw1000_pan_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_PAN);

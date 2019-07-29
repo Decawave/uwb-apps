@@ -1,7 +1,8 @@
 syscfg.vals:
     # Route console to RTT
-    CONSOLE_UART: 0
-    CONSOLE_RTT: 1
+    CONSOLE_UART: 1
+    CONSOLE_RTT: 0
+    CONSOLE_BLE_MONITOR: 0
     CONSOLE_UART_BAUD: 115200
     CONSOLE_UART_TX_BUF_SIZE: 1024
     CONSOLE_HISTORY_SIZE: 8
@@ -16,6 +17,7 @@ syscfg.vals:
     TDMA_NSLOTS: 160
     NRNG_DEVICE_TYPE: 1
     HARDFLOAT: 1
+    FLOAT_USER: 1
     STATS_NAMES: 1
     STATS_CLI: 1
     CONFIG_CLI: 1
@@ -53,7 +55,15 @@ syscfg.vals:
     # By default we're a tag
     UWBCFG_DEF_ROLE: '"0x0"'
     UWBCFG_APPLY_AT_INIT: 1
-    
+
+    # Disable central and observer roles.
+    BLEPRPH_LOG_ENABLE: 0
+    BLE_LL_PRIO: 30
+    BLE_ROLE_BROADCASTER: 1
+    BLE_ROLE_CENTRAL: 0
+    BLE_ROLE_OBSERVER: 0
+    BLE_ROLE_PERIPHERAL: 1
+
 syscfg.defs:
     PANMASTER_ISSUER:
         description: 'Act as panmaster in the network'
@@ -86,3 +96,6 @@ syscfg.vals.PANMASTER_ISSUER:
 syscfg.vals.NRANGES_ANCHOR:
     UWBCFG_DEF_ROLE: '"0x4"'
     NRNG_DEVICE_TYPE: 1
+
+
+
