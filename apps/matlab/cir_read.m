@@ -69,7 +69,11 @@ for j=1:ntime
     if (n == m)   
         ax(end+1) = subplot(311); plot(n,[real(cir_a(end,:));imag(cir_a(end,:))],'-o',m,[real(cir_b(end,:));imag(cir_b(end,:))]','-+');
         ax(end+1) = subplot(312); plot([angle(cir_a(end,:));angle(cir_b(end,:))]','-+');
-        ax(end+1) = subplot(313); plot([abs(cir_a(end,:));abs(cir_b(end,:))]','-+');
+        if ( length(cir_a(:,1)) < 16)
+            ax(end+1) = subplot(313); plot([abs(cir_a((end):end,:));abs(cir_b((end):end,:))]','-+');
+        else
+            ax(end+1) = subplot(313); waterfall([abs(cir_a((end-16):end,:));abs(cir_b((end-16):end,:))]); 
+        end
     else
         ax(end+1) = subplot(311); plot(n,[real(cir(end,:));imag(cir(end,:))],'-o');
         ax(end+1) = subplot(312); plot([angle(cir(end,:))]','-+');
