@@ -23,6 +23,7 @@ syscfg.vals:
     STATS_NEWTMGR: 1
     LOG_NEWTMGR: 1
     CONFIG_NEWTMGR: 1
+    CONFIG_FCB: 1
 
     ## Pan
     PAN_ENABLED: 1
