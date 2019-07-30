@@ -31,7 +31,7 @@ newt target create tag
 newt target set tag app=apps/twr_nranges_tdma
 newt target set tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target set tag build_profile=debug
-newt target amend tag syscfg=NRNG_NTAGS=4:NRNG_NNODES=8:NRNG_NFRAMES=8:NODE_START_SLOT_ID=0:NODE_END_SLOT_ID=7
+newt target amend tag syscfg=NRNG_NTAGS=4:NRNG_NNODES=8:NRNG_NFRAMES=16:NODE_START_SLOT_ID=0:NODE_END_SLOT_ID=7
 
 newt run tag 0.1.0
 ```
@@ -39,7 +39,7 @@ newt run tag 0.1.0
 If you'd prefer to be able to read the ranges in mm rather than getting the float cast to uint32_t as the output replace the tag target amend line above with the one below:
 
 ```
-newt target amend tag syscfg=NRNG_NNODES=4:NRNG_NFRAMES=8:NODE_START_SLOT_ID=0:NODE_END_SLOT_ID=7:FLOAT_USER=1
+newt target amend tag syscfg=NRNG_NNODES=8:NRNG_NFRAMES=16:NODE_START_SLOT_ID=0:NODE_END_SLOT_ID=7:FLOAT_USER=1
 ```
 
 **NOTE:** The value of NRNG_FRAMES must be atleast NRNG_NODES*2.

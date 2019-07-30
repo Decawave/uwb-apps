@@ -57,7 +57,8 @@ syscfg.vals:
     UWBCFG_APPLY_AT_INIT: 1
 
     # Disable central and observer roles.
-    BLEPRPH_LOG_ENABLE: 0
+#    STAT_NEWTMGR: 1
+#    BLEPRPH_LOG_ENABLE: 0
     BLE_LL_PRIO: 30
     BLE_ROLE_BROADCASTER: 1
     BLE_ROLE_CENTRAL: 0
