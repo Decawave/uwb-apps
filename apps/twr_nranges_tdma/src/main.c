@@ -121,8 +121,9 @@ pan_slot_timer_cb(struct os_event * ev)
         /* Send pan-reset packages at startup to release all leases */
         static uint8_t _pan_cycles = 0;
 
-        if (_pan_cycles++ < 8) {
+        if (_pan_cycles < 8) {
             dw1000_pan_reset(pan, tdma_tx_slot_start(tdma, idx));
+            _pan_cycles++;
         } else {
             uint64_t dx_time = tdma_rx_slot_start(tdma, idx);
             dw1000_set_rx_timeout(inst, 3*ccp->period/tdma->nslots/4);
@@ -284,12 +285,12 @@ pan_complete_cb(struct os_event * ev)
 {
     assert(ev != NULL);
     assert(ev->ev_arg != NULL);
-    dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *)ev->ev_arg;
+    dw1000_pan_instance_t *pan = (dw1000_pan_instance_t *)ev->ev_arg;
     
-    if (inst->slot_id != 0xffff) {
+    if (pan->dev_inst->slot_id != 0xffff) {
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
-        printf("{\"utime\": %lu,\"msg\": \"slot_id = %d\"}\n", utime, inst->slot_id);
-        printf("{\"utime\": %lu,\"msg\": \"euid16 = 0x%X\"}\n", utime, inst->my_short_address);
+        printf("{\"utime\": %lu,\"msg\": \"slot_id = %d\"}\n", utime, pan->dev_inst->slot_id);
+        printf("{\"utime\": %lu,\"msg\": \"euid16 = 0x%X\"}\n", utime, pan->dev_inst->my_short_address);
     }
 }
 
