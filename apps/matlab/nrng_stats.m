@@ -39,25 +39,16 @@ for j=1:ntimes
             if (isstruct(line)) 
                 if (isfield(line,'utime') && isfield(line,'nrng'))
                     nrng = line.nrng;
-                    if(isfield(nrng,'tdoa') && isfield(nrng,'mask') && isfield(nrng,'rng'))
+                    if(isfield(nrng,'mask') && isfield(nrng,'rng'))
                         utime(end+1) = line.utime/1e6;
                         mask(end+1) = nrng.mask;
-                        tdoa_ = NaN(1,16);
-                        for k = 1:16
-                            idx_ = SlotIndex_mex(uint32(nrng.mask),uint32(bitshift(1,k-1)));
-                            if ~isnan(idx_)
-                                 tdoa_(k) = tof_to_meter(nrng.tdoa(idx_)); 
-                            else
-                                 tdoa_(k) = NaN;
-                            end
-                        end
-
-                        tdoa(end+1,:) = tdoa_;
+                        
                         rng_ = NaN(1,16);
                         for k = 1:16
                             idx_ = SlotIndex_mex(uint32(nrng.mask),uint32(bitshift(1,k-1)));
                             if ~isnan(idx_)
-                                 rng_(k) = typecast(uint32(nrng.rng(idx_)),'single'); 
+                                 rng_(k) = str2num(cell2mat(nrng.rng(idx_))); 
+                              %   rng_(k) = typecast(uint32(nrng.rng(idx_)),'single'); 
                             else
                                  rng_(k) = NaN;
                             end
@@ -86,15 +77,13 @@ for j=1:ntimes
         refreshdata;
      end
      if (mod(j,1) == 0)
-            ax = subplot(211);
-            plot(utime,tdoa);
-            title(sprintf("tdoa (tdu), sigma %f",median(std(tdoa,'omitnan' ),'omitnan')))
-
-            ax = subplot(212);
+%            ax = subplot(211);
             plot(utime,rng);
             [mu,sigma,~,~] = normfit(rng);
-            title(sprintf("rng (m), sigma %f",median(std(rng,'omitnan' ),'omitnan')))
-
+            mu = mu(~isnan(mu));
+            sigma = sigma(~isnan(sigma));
+            title(sprintf(" sigma %f",sigma'))
+            
           %  [mu,sigma,~,~] = normfit(rng);
           %  title(sprintf("rng (m)"))
      end
