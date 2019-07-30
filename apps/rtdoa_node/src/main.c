@@ -75,13 +75,6 @@
 
 #include "panmaster/panmaster.h"
 
-//! Network Roles
-typedef enum {
-    NTWR_ROLE_INVALID = 0x0,   /*!< Invalid role */
-    NTWR_ROLE_NODE,            /*!< NTWR Node */
-    NTWR_ROLE_TAG              /*!< NTWR Tag */
-} ntwr_role_t;
-
 #endif
 
 static bool dw1000_config_updated = false;
@@ -107,66 +100,6 @@ uwb_config_updated()
 struct uwbcfg_cbs uwb_cb = {
     .uc_update = uwb_config_updated
 };
-
-static void 
-pan_slot_timer_cb(struct os_event * ev)
-{
-    assert(ev);
-    tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
-    tdma_instance_t * tdma = slot->parent;
-    dw1000_ccp_instance_t *ccp = tdma->ccp;
-    dw1000_dev_instance_t * inst = tdma->dev_inst;
-    dw1000_pan_instance_t *pan = (dw1000_pan_instance_t*)slot->arg;
-
-    uint16_t idx = slot->idx;
-    hal_gpio_write(LED_BLINK_PIN, idx%2);
-    // printf("idx %02d pan slt:%d\n", idx, inst->slot_id);
-
-    if (dw1000_config_updated) {
-        dw1000_mac_config(inst, NULL);
-        dw1000_phy_config_txrf(inst, &inst->config.txrf);
-        dw1000_config_updated = false;
-    }
-    
-    if (inst->role&DW1000_ROLE_PAN_MASTER) {
-        /* Act as a Master Node in the network */
-        static int _pan_cycles = 0;
-
-        /* Broadcast a reset message to clear all leases */
-        if (_pan_cycles++ < 8) {
-            dw1000_pan_reset(pan, tdma_tx_slot_start(tdma, idx));
-        } else {
-            uint64_t dx_time = tdma_rx_slot_start(tdma, idx);
-            dw1000_set_rx_timeout(inst, 3*ccp->period/tdma->nslots/4);
-            dw1000_set_delay_start(inst, dx_time);
-            dw1000_set_on_error_continue(inst, true);
-            dw1000_pan_listen(pan, DWT_BLOCKING);
-        }
-    } else {
-        /* Act as a slave Node in the network */
-        if (pan->status.valid && dw1000_pan_lease_remaining(pan)>MYNEWT_VAL(PAN_LEASE_EXP_MARGIN)) {
-            uint16_t timeout;
-            if (pan->config->role == PAN_ROLE_RELAY) {
-                timeout = 3*ccp->period/tdma->nslots/4;
-            } else {
-                /* Only listen long enough to get any resets from master */
-                timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(sizeof(struct _pan_frame_t)))
-                    + MYNEWT_VAL(XTALT_GUARD);
-            }
-            dw1000_set_rx_timeout(inst, timeout);
-            dw1000_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
-            dw1000_set_on_error_continue(inst, true);
-            if (dw1000_pan_listen(pan, DWT_BLOCKING).start_rx_error) {
-                DIAGMSG("{\"utime\": %lu,\"msg\": \"pan_listen_err\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
-            }
-        } else {
-            /* Subslot 0 is for master reset, subslot 1 is for sending requests */
-            uint64_t dx_time = tdma_tx_slot_start(tdma, (float)idx+1.0f/16);
-            dw1000_pan_blink(pan, NTWR_ROLE_NODE, DWT_BLOCKING, dx_time);
-        }
-    }
-}
-    
 
 
 /**
@@ -312,13 +245,12 @@ static void
 tdma_allocate_slots(dw1000_dev_instance_t * inst)
 {
     uint16_t i;
-    /* Pan is slot 1,2 */
+    /* Pan is slot 1 */
     tdma_instance_t * tdma = (tdma_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_TDMA);
     assert(tdma);
     dw1000_pan_instance_t *pan = (dw1000_pan_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_PAN);
     assert(pan);
-    tdma_assign_slot(tdma, pan_slot_timer_cb, 1, (void*)pan);
-    tdma_assign_slot(tdma, pan_slot_timer_cb, 2, (void*)pan);
+    tdma_assign_slot(tdma, dw1000_pan_slot_timer_cb, 1, (void*)pan);
 
     /* anchor-to-anchor range slot is 31 */
     dw1000_nrng_instance_t * nrng = (dw1000_nrng_instance_t *)dw1000_mac_find_cb_inst_ptr(inst, DW1000_NRNG);
@@ -330,7 +262,7 @@ tdma_allocate_slots(dw1000_dev_instance_t * inst)
     dw1000_rtdoa_instance_t* rtdoa = (dw1000_rtdoa_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_RTDOA);
     assert(rtdoa);
     
-    for (i=3;i < MYNEWT_VAL(TDMA_NSLOTS);i++) {
+    for (i=2;i < MYNEWT_VAL(TDMA_NSLOTS);i++) {
         if (i==31) {
             continue;
         }
@@ -391,16 +323,16 @@ main(int argc, char **argv)
 
         struct image_version fw_ver;
         struct panmaster_node *node;
-        panmaster_find_node(inst->my_long_address, NTWR_ROLE_NODE, &node);
+        panmaster_find_node(inst->my_long_address, NETWORK_ROLE_ANCHOR, &node);
         assert(node);
         imgr_my_version(&fw_ver);
         panmaster_add_version(inst->my_long_address, &fw_ver);
         inst->my_short_address = node->addr;
         inst->slot_id = node->slot_id;
-        dw1000_pan_start(pan, PAN_ROLE_MASTER);
+        dw1000_pan_start(pan, PAN_ROLE_MASTER, NETWORK_ROLE_ANCHOR);
     } else {
         dw1000_ccp_start(ccp, CCP_ROLE_RELAY);
-        dw1000_pan_start(pan, PAN_ROLE_RELAY);
+        dw1000_pan_start(pan, PAN_ROLE_RELAY, NETWORK_ROLE_ANCHOR);
     }
     printf("{\"device_id\"=\"%lX\"",inst->device_id);
     printf(",\"PANID=\"%X\"",inst->PANID);
