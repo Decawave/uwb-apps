@@ -59,10 +59,16 @@ static int uwb_config_updated();
  * Default Config 
  */
 #define LSTNR_DEFAULT_CONFIG {        \
-        .acc_samples = MYNEWT_VAL(CIR_NUM_SAMPLES)  \
+        .acc_samples = MYNEWT_VAL(CIR_NUM_SAMPLES), \
+        .verbose = "0x0" \
     }
 
-static uint16_t acc_samples_to_load = 0;
+static struct lstnr_config {
+    uint16_t acc_samples_to_load;
+    uint16_t verbose;
+} local_conf = {0};
+
+#define VERBOSE_CARRIER_INTEGRATOR (0x1)
 
 static char *lstnr_get(int argc, char **argv, char *val, int val_len_max);
 static int lstnr_set(int argc, char **argv, char *val);
@@ -72,6 +78,7 @@ static int lstnr_export(void (*export_func)(char *name, char *val),
 
 static struct lstnr_config_s {
     char acc_samples[6];
+    char verbose[6];
 } lstnr_config = LSTNR_DEFAULT_CONFIG;
 
 static struct conf_handler lstnr_handler = {
@@ -87,6 +94,7 @@ lstnr_get(int argc, char **argv, char *val, int val_len_max)
 {
     if (argc == 1) {
         if (!strcmp(argv[0], "acc_samples"))  return lstnr_config.acc_samples;
+        if (!strcmp(argv[0], "verbose"))  return lstnr_config.verbose;
     }
     return NULL;
 }
@@ -98,6 +106,9 @@ lstnr_set(int argc, char **argv, char *val)
         if (!strcmp(argv[0], "acc_samples")) {
             return CONF_VALUE_SET(val, CONF_STRING, lstnr_config.acc_samples);
         } 
+        if (!strcmp(argv[0], "verbose")) {
+            return CONF_VALUE_SET(val, CONF_STRING, lstnr_config.verbose);
+        } 
     }
     return OS_ENOENT;
 }
@@ -106,7 +117,9 @@ static int
 lstnr_commit(void)
 {
     conf_value_from_str(lstnr_config.acc_samples, CONF_INT16,
-                        (void*)&(acc_samples_to_load), 0);
+                        (void*)&(local_conf.acc_samples_to_load), 0);
+    conf_value_from_str(lstnr_config.verbose, CONF_INT16,
+                        (void*)&(local_conf.verbose), 0);
     uwb_config_updated();
     return 0;
 }
@@ -116,6 +129,7 @@ lstnr_export(void (*export_func)(char *name, char *val),
              enum conf_export_tgt tgt)
 {
     export_func("lstnr/acc_samples", lstnr_config.acc_samples);
+    export_func("lstnr/verbose", lstnr_config.verbose);
     return 0;
 }
 
@@ -130,8 +144,10 @@ struct uwb_msg_hdr {
     float    pd;
     struct _dw1000_dev_rxdiag_t diag[N_DW_INSTANCES];
     int32_t  carrier_integrator;
+    float    cir_fp_idx[N_DW_INSTANCES];
     float    cir_rcphase[N_DW_INSTANCES];
     float    cir_angle[N_DW_INSTANCES];
+    uint64_t cir_rawts[N_DW_INSTANCES];
 };
 
 #define MBUF_PKTHDR_OVERHEAD    sizeof(struct os_mbuf_pkthdr) + sizeof(struct uwb_msg_hdr)
@@ -201,7 +217,7 @@ process_rx_data_queue(struct os_event *ev)
 #endif
             }
         }
-        if (hdr->carrier_integrator) {
+        if (hdr->carrier_integrator && (local_conf.verbose&VERBOSE_CARRIER_INTEGRATOR)) {
             float ccor = dw1000_calc_clock_offset_ratio(hal_dw1000_inst(0), hdr->carrier_integrator);
             int ppm = (int)(ccor*1000000.0f);
             printf(",\"ccor\":%d.%03de-6",
@@ -212,7 +228,7 @@ process_rx_data_queue(struct os_event *ev)
 #if MYNEWT_VAL(CIR_ENABLED)
         if (fabsf(hdr->pd) > 0.0) {
             printf(",\"pd\":");
-            printf((hdr->pd < 0)?"-%d.%03d":"%d.%03d\"", abs((int)hdr->pd), abs((int)(1000*(hdr->pd-(int)hdr->pd))));
+            printf((hdr->pd < 0)?"-%d.%03d":"%d.%03d", abs((int)hdr->pd), abs((int)(1000*(hdr->pd-(int)hdr->pd))));
         }
 #endif
         printf(",\"dlen\":%d", hdr->dlen);
@@ -227,13 +243,15 @@ process_rx_data_queue(struct os_event *ev)
         for(int j=0;j<N_DW_INSTANCES;j++) {
             if (hdr->acc_offset[j] > 0) {
                 cirp = (cir_complex_t *) (print_buffer + hdr->acc_offset[j]);
-                float idx = ((float) hdr->diag[j].fp_idx)/64.0f;
+                //float idx = ((float) hdr->diag[j].fp_idx)/64.0f;
+                float idx = hdr->cir_fp_idx[j];
                 float ph = hdr->cir_rcphase[j];
                 float an = hdr->cir_angle[j];
-                printf(",\"cir%d\":{\"o\":%d,\"fp_idx\":%d.%03d,\"rcphase\":%d.%03d,\"angle\":%d.%03d,\"real\":",
+                printf(",\"cir%d\":{\"o\":%d,\"fp_idx\":%d.%03d,\"rcphase\":%d.%03d,\"angle\":%d.%03d,\"rts\":%lld,\"real\":",
                        j, MYNEWT_VAL(CIR_OFFSET), (int)idx, (int)(1000*(idx-(int)idx)),
                        (int)ph, (int)fabsf((1000*(ph-(int)ph))),
-                       (int)an, (int)fabsf((1000*(an-(int)an)))
+                       (int)an, (int)fabsf((1000*(an-(int)an))),
+                       hdr->cir_rawts[j]
                     );
                 for (int i=0;i<hdr->acc_len[j];i++) {
                     printf("%c%d", (i==0)? '[':',', cirp[i].real);
@@ -272,7 +290,7 @@ rx_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
 
 #if N_DW_INSTANCES == 2
     /* Only use incoming data from the first instance */
-    if (inst != hal_dw1000_inst(0)) {
+    if (inst != hal_dw1000_inst(1)) {
         return true;
     }
     /* Skip packet if other dw instance doesn't have the same data in it's buffer */
@@ -280,7 +298,7 @@ rx_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
         return false;
     }
 #endif
-    
+
     om = os_mbuf_get_pkthdr(&g_mbuf_pool,
                             sizeof(struct uwb_msg_hdr));
     if (om) {
@@ -305,19 +323,21 @@ rx_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
 #if MYNEWT_VAL(CIR_ENABLED)
         if (N_DW_INSTANCES == 2) {
             if (cir[0]->status.valid && cir[1]->status.valid) {
-                hdr->pd = fmodf((cir[0]->angle - cir[0]->rcphase) - (cir[1]->angle - cir[1]->rcphase) + 3*M_PI, 2*M_PI) - M_PI;
+                hdr->pd = cir_get_pdoa(cir[0], cir[1]);
             }
         }
 
         /* Do we need to load accumulator data */
-        if (acc_samples_to_load) {
-            int acc_len = (acc_samples_to_load < MYNEWT_VAL(CIR_SIZE)) ?
-                acc_samples_to_load : MYNEWT_VAL(CIR_SIZE);
+        if (local_conf.acc_samples_to_load) {
+            int acc_len = (local_conf.acc_samples_to_load < MYNEWT_VAL(CIR_SIZE)) ?
+                local_conf.acc_samples_to_load : MYNEWT_VAL(CIR_SIZE);
 
             for(int i=0;i<N_DW_INSTANCES;i++) {
                 if (hal_dw1000_inst(i)->cir->status.valid) {
+                    hdr->cir_fp_idx[i] = cir[i]->fp_idx;
                     hdr->cir_rcphase[i] = cir[i]->rcphase;
                     hdr->cir_angle[i] = cir[i]->angle;
+                    hdr->cir_rawts[i] = cir[i]->raw_ts;
                     hdr->acc_offset[i] = OS_MBUF_PKTLEN(om);
                     rc = os_mbuf_copyinto(om, hdr->acc_offset[i],
                                           (uint8_t*)hal_dw1000_inst(i)->cir->cir.array,
@@ -409,13 +429,16 @@ int main(int argc, char **argv){
         inst[i]->config.LDO_enable = 0;
         inst[i]->config.sleep_enable = 0;
         inst[i]->config.wakeup_rx_enable = 1;
-        inst[i]->config.rxauto_enable = 1;
+        inst[i]->config.trxoff_enable = 1;
+
 #if MYNEWT_VAL(USE_DBLBUFFER)
         dw1000_set_dblrxbuff(inst[i], true);
         inst[i]->config.dblbuffon_enabled = 1;
+        inst[i]->config.rxauto_enable = 0;
 #else
         dw1000_set_dblrxbuff(inst[i], false);
         inst[i]->config.dblbuffon_enabled = 0;
+        inst[i]->config.rxauto_enable = 1;
 #endif
 #if MYNEWT_VAL(CIR_ENABLED)
         inst[i]->config.cir_enable = (N_DW_INSTANCES>1) ? true : false;
