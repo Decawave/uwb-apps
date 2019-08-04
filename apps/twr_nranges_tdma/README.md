@@ -1,4 +1,4 @@
-# Ranging with n nodes using 2n+2 messages along with TDMA slotting.
+# Ranging with n nodes using n+2 messages along with TDMA slotting.
 
 ## Overview
 This example demonstrates the nrng use case--n ranges measurements with 2*n+2 frames. Here we use the CCP/TDMA to create a synchronous network with a superframe period of 1s and 160 TDMA slots. A tag[s] performs a range request[s] at the beginning of each TDMA slot. The nodes listen for a range request at the beginning [first 200us] of each TDMA slot. A tag can range to 1 to 16 nodes within a single TDMA slot. Each node responses sequential to the request based on their allocated node-slot--Note there are two slot mechanisms at work here; TDMA-slots and a node-slots. The node-slots are spaced approximately 270us apart within the TDMA slot with 16 nodes occupying about 4500us of the available 6300us windows. Practically a tag will range to a subset of available nodes or practically only a subset of the available nodes will be within range of the tag.
@@ -12,7 +12,7 @@ Master node (only one allowed per network):
 newt target create master_node
 newt target set master_node app=apps/twr_nranges_tdma
 newt target set master_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target amend master_node syscfg=PANMASTER_ISSUER=1
+newt target amend master_node syscfg=PANMASTER_ISSUER:WCS_VERBOSE=0
 newt run master_node 0.1.0
 ```
 
@@ -31,15 +31,14 @@ newt target create tag
 newt target set tag app=apps/twr_nranges_tdma
 newt target set tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target set tag build_profile=debug
-newt target amend tag syscfg=NRNG_NTAGS=4:NRNG_NNODES=8:NRNG_NFRAMES=16:NODE_START_SLOT_ID=0:NODE_END_SLOT_ID=7
-
+newt target amend tag syscfg=NRNG_NTAGS=4:NRNG_NNODES=16:NRNG_NFRAMES=32:NODE_START_SLOT_ID=0:NODE_END_SLOT_ID=15
 newt run tag 0.1.0
 ```
 
 If you'd prefer to be able to read the ranges in mm rather than getting the float cast to uint32_t as the output replace the tag target amend line above with the one below:
 
 ```
-newt target amend tag syscfg=NRNG_NNODES=8:NRNG_NFRAMES=16:NODE_START_SLOT_ID=0:NODE_END_SLOT_ID=7:FLOAT_USER=1
+newt target amend tag syscfg=NRNG_NNODES=16:NRNG_NFRAMES=32:NODE_START_SLOT_ID=0:NODE_END_SLOT_ID=15:FLOAT_USER=1
 ```
 
 **NOTE:** The value of NRNG_FRAMES must be atleast NRNG_NODES*2.
@@ -49,7 +48,7 @@ newt target amend tag syscfg=NRNG_NNODES=8:NRNG_NFRAMES=16:NODE_START_SLOT_ID=0:
 
 | profile       | Description  | Benchmark  |
 | ------------- |:-------------:| -----:|
-| nrng_ss | n TWR_SS ranges with 2*n+2 messages. | 1860us for n=4, 2133us for n=6|
+| nrng_ss | n TWR_SS ranges with n+2 messages. | 1860us for n=4, 2133us for n=6|
 
 FOM = frame duration + TX_HOLDOFF + n * (frame duration + TX_GUARD_DELAY)
 

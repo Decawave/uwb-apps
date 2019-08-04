@@ -61,10 +61,17 @@ newt run twr_tag 0
 
 5. On the console you should see the following expected result. 
 
+Use telnet or nc if you are using CONSOLE_RTT: 1 in syscfg.yml
+Or screen or socat if you are using CONSOLE_UART: 1 in syscfg.yml
+
+For Human readable JSON you can use add FLOAT_USER
+```no-highlight
+newt target amend twr_node syscfg=FLOAT_USER=1
+```
+
 ```no-highlight
 
 telnet localhost 19021 
-
 ....
 {"utime": 23859733,"tof": 1101004815,"range": 1036004551,"azimuth": 0,"res_req":"6003EB0", "rec_tra": "6003E60"}
 {"utime": 23873159,"tof": 1099956214,"range": 1034745086,"azimuth": 0,"res_req":"6004092", "rec_tra": "600403A"}
