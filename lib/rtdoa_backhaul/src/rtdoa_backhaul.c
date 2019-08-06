@@ -292,9 +292,10 @@ rtdoa_backhaul_print(struct rtdoabh_tag_results_pkg *p, bool tight)
                 break;
             }
             case 1: {
-                int ddist_m  = abs(r->diff_dist_mm/1000);
+                int sign = (r->diff_dist_mm > 0);
+                int ddist_m  = r->diff_dist_mm/1000;
                 int ddist_mm = abs(r->diff_dist_mm - ddist_m*1000);
-                printf("%d.%03d%s", ddist_m, ddist_mm, (is_last)?",":"");
+                printf("%s%d.%03d%s", (sign)?"":"-", abs(ddist_m), ddist_mm, (is_last)?",":"");
                 break;
             }
             case 2: {
