@@ -1,9 +1,9 @@
 syscfg.vals:
     # Route console to RTT
-    CONSOLE_UART: 1
-    CONSOLE_RTT: 0
+    CONSOLE_UART: 0
+    CONSOLE_RTT: 1
     CONSOLE_BLE_MONITOR: 0
-    CONSOLE_UART_BAUD: 115200
+    CONSOLE_UART_BAUD: 1000000
     CONSOLE_UART_TX_BUF_SIZE: 1024
     CONSOLE_HISTORY_SIZE: 8
 
@@ -75,11 +75,11 @@ syscfg.defs:
     NODE_START_SLOT_ID:
         description: >
             Slot ID from which the nodes should respond
-        value: 1
+        value: 0
     NODE_END_SLOT_ID:
         description: >
             Slot ID till which the nodes should respond
-        value: 4
+        value: 7
 
     CCP_TOF_COMP_LOCATION_X:
         description: 'x-location of this node in relation to the ccp master'
