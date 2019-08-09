@@ -69,6 +69,7 @@ static struct lstnr_config {
 } local_conf = {0};
 
 #define VERBOSE_CARRIER_INTEGRATOR (0x1)
+#define VERBOSE_RX_DIAG            (0x2)
 
 static char *lstnr_get(int argc, char **argv, char *val, int val_len_max);
 static int lstnr_set(int argc, char **argv, char *val);
@@ -362,13 +363,26 @@ rx_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
 bool
 error_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
 {
-    printf("err_cb\n");
+    printf("# err_cb s %lx\n", inst->sys_status);
+    return true;
+}
+
+bool
+timeout_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
+{
     dw1000_set_rx_timeout(inst, 0);
     inst->control.on_error_continue_enabled = 1;
     dw1000_start_rx(inst);
     return true;
 }
-    
+
+bool
+reset_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
+{
+    printf("# rst_cb s %lx\n", inst->sys_status);
+    return true;
+}
+
 void
 uwb_config_update(struct os_event * ev)
 {
@@ -380,6 +394,7 @@ uwb_config_update(struct os_event * ev)
 #endif
         dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst);
+        inst->config.rxdiag_enable = (local_conf.verbose&VERBOSE_RX_DIAG) != 0;
     }
 }
 
@@ -402,10 +417,11 @@ static struct uwbcfg_cbs uwb_cb = {
 static dw1000_mac_interface_t g_cbs = {
     .id = 72,
     .rx_complete_cb = rx_complete_cb,
+    .rx_timeout_cb = timeout_cb,
     .rx_error_cb = error_cb,
-    .tx_error_cb = error_cb,
+    .tx_error_cb = 0,
     .tx_complete_cb = 0,
-    .reset_cb = error_cb
+    .reset_cb = reset_cb
 };
 
 
@@ -416,13 +432,9 @@ int main(int argc, char **argv){
     sysinit();
     hal_gpio_init_out(LED_BLINK_PIN, 1);
 
-    uwbcfg_register(&uwb_cb);
-    conf_register(&lstnr_handler);
-    conf_load();
-    
     for(int i=0;i<N_DW_INSTANCES;i++) {
         inst[i] = hal_dw1000_inst(i);
-        inst[i]->config.rxdiag_enable = 1;
+        inst[i]->config.rxdiag_enable = (local_conf.verbose&VERBOSE_RX_DIAG) != 0;
         inst[i]->config.framefilter_enabled = 0;
         inst[i]->config.bias_correction_enable = 0;
         inst[i]->config.LDE_enable = 1;
@@ -432,13 +444,14 @@ int main(int argc, char **argv){
         inst[i]->config.trxoff_enable = 1;
 
 #if MYNEWT_VAL(USE_DBLBUFFER)
-        dw1000_set_dblrxbuff(inst[i], true);
+        /* Make sure to enable double buffring */
         inst[i]->config.dblbuffon_enabled = 1;
         inst[i]->config.rxauto_enable = 0;
+        dw1000_set_dblrxbuff(inst[i], true);
 #else
-        dw1000_set_dblrxbuff(inst[i], false);
         inst[i]->config.dblbuffon_enabled = 0;
         inst[i]->config.rxauto_enable = 1;
+        dw1000_set_dblrxbuff(inst[i], false);
 #endif
 #if MYNEWT_VAL(CIR_ENABLED)
         inst[i]->config.cir_enable = (N_DW_INSTANCES>1) ? true : false;
@@ -446,7 +459,6 @@ int main(int argc, char **argv){
 #endif
         inst[i]->my_short_address = inst[i]->partID&0xffff;
         inst[i]->my_long_address = ((uint64_t) inst[i]->lotID << 33) + inst[i]->partID;
-        /* Make sure to enable double buffring */
         printf("{\"device_id\"=\"%lX\"",inst[i]->device_id);
         printf(",\"PANID=\"%X\"",inst[i]->PANID);
         printf(",\"addr\"=\"%X\"",inst[i]->my_short_address);
@@ -455,6 +467,11 @@ int main(int argc, char **argv){
         printf(",\"xtal_trim\"=\"%X\"}\n",inst[i]->xtal_trim);
         dw1000_mac_append_interface(inst[i], &g_cbs);
     }
+
+    /* Load any saved uwb settings */
+    uwbcfg_register(&uwb_cb);
+    conf_register(&lstnr_handler);
+    conf_load();
 
 #ifdef MYNEWT_VAL_DW1000_PDOA_SYNC
     hal_bsp_dw_clk_sync(inst, N_DW_INSTANCES);
