@@ -68,7 +68,7 @@
 #define XTAL_ACCURACY       40 // The crystal used on nRF52840PDK has ±20ppm accuracy.
 // clang-format on
 void RTC_IRQ_HANDLER(void);
-static struct os_callout task_callout;
+static struct os_event al_task_event;
 static ot_instance_t* global_ot_inst = NULL;
 
 typedef enum { kMsTimer, kUsTimer, k802154Timer, k802154Sync, kNumTimers } AlarmIndex;
@@ -383,7 +383,7 @@ static void AlarmStartAt(uint32_t aT0, uint32_t aDt, AlarmIndex aIndex)
     if (AlarmShallStrike(now_rtc_protected, aIndex))
     {
         HandleCompareMatch(aIndex, true);
-        os_eventq_put(&global_ot_inst->eventq, &task_callout.c_ev);
+        os_eventq_put(&global_ot_inst->eventq, &al_task_event);
         /**
          * Normally ISR sets event flag automatically.
          * Here we are calling HandleCompareMatch explicitly and no ISR will be fired.
@@ -414,13 +414,14 @@ static void AlarmStop(AlarmIndex aIndex)
     sTimerData[aIndex].mFireAlarm = false;
 }
 
-static void tasklet_sched(struct os_event* ev){
+static void tasklet_sched(struct os_event* ev)
+{
     ot_instance_t* ot = (ot_instance_t*)ev->ev_arg;
     nrf5AlarmProcess((otInstance*)ot->sInstance);
 //    otTaskletsSignalPending((otInstance*)ot->sInstance);
 }
 
-void nrf5AlarmInit(dw1000_dev_instance_t * inst)
+void nrf5AlarmInit(ot_instance_t * ot)
 {
     memset(sTimerData, 0, sizeof(sTimerData));
     sOverflowCounter = 0;
@@ -453,9 +454,9 @@ void nrf5AlarmInit(dw1000_dev_instance_t * inst)
     }
 
     nrf_rtc_task_trigger(RTC_INSTANCE, NRF_RTC_TASK_START);
-    os_callout_init(&task_callout, &(inst->ot->eventq), tasklet_sched, (void*)inst->ot);
-    global_ot_inst = inst->ot;
-
+    al_task_event.ev_cb = tasklet_sched;
+    al_task_event.ev_arg = (void*)ot;
+    global_ot_inst = ot;
 }
 
 void nrf5AlarmDeinit(void)
@@ -664,7 +665,7 @@ void RTC_IRQ_HANDLER(void)
             HandleCompareMatch((AlarmIndex)i, false);
         }
     }
-    os_eventq_put(&global_ot_inst->eventq, &task_callout.c_ev);
+    os_eventq_put(&global_ot_inst->eventq, &al_task_event);
 }
 
 #if OPENTHREAD_CONFIG_ENABLE_TIME_SYNC

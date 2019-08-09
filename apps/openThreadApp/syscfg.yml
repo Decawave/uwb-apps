@@ -2,15 +2,23 @@ syscfg.vals:
     # Route console to RTT
     CONSOLE_UART: 1
     CONSOLE_RTT: 0
+    CONSOLE_UART_BAUD: 115200
+    CONSOLE_UART_TX_BUF_SIZE: 256
+    CONSOLE_UART_RX_BUF_SIZE: 256
+    CONSOLE_HISTORY_SIZE: 8
+
+    SPI_0_MASTER: 1
     DW1000_DEVICE_0: 1
+    UART_0: 1
     HARDFLOAT: 1
     PANID: 0x2345
     SHELL_TASK: 1
+
     OPEN_THREAD_ENABLED: 1
-    CONSOLE_UART_TX_BUF_SIZE: 1024
-    CONSOLE_UART_RX_BUF_SIZE: 512
     OT_FLASH_AREA: FLASH_AREA_NFFS # Flash Section used for OT platform settings
-    OT_DEBUG: 1
+    OT_DEBUG: 0
+    
+
 syscfg.defs:
     COMMAND:
         value: 1

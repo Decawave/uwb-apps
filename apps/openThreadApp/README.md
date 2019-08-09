@@ -44,7 +44,7 @@ git clone https://github.com/openthread/openthread.git
 cd openthread
 git checkout thread-reference-20180926
 ./bootstrap
-make -f examples/Makefile.nrf52840
+make -f examples/Makefile-nrf52840
 (OR )
 make -f ./examples/Makefile-nrf52840 FULL_LOGS=1    #( Build With Debug Logs enabled)
 
@@ -115,7 +115,6 @@ newt target set dwm1001_boot app=@apache-mynewt-core/apps/boot
 newt target set dwm1001_boot bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target set dwm1001_boot build_profile=optimized
 newt build dwm1001_boot
-newt create-image dwm1001_boot 1.0.0
 newt load dwm1001_boot
 
 ```

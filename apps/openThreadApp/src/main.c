@@ -33,11 +33,8 @@
 #include "mcu/mcu_sim.h"
 #endif
 
-#include <dw1000/dw1000_dev.h>
-#include <dw1000/dw1000_hal.h>
-#include <dw1000/dw1000_phy.h>
-#include <dw1000/dw1000_mac.h>
-#include <dw1000/dw1000_ftypes.h>
+#include <uwb/uwb.h>
+#include <uwb/uwb_ftypes.h>
 
 #include <openthread/ot_common.h>
 
@@ -58,35 +55,37 @@ static struct shell_cmd shell_cmd_ot_struct = {
     .sc_cmd_func = shell_cmd_ot
 };
 
-extern void nrf5AlarmInit(dw1000_dev_instance_t* inst);
+extern void nrf5AlarmInit(ot_instance_t * ot);
 
-int main(int argc, char **argv){
+int main(int argc, char **argv)
+{
+    ot_instance_t *ot
     otInstance *sInstance;
-	dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+	struct uwb_dev * inst = uwb_dev_idx_lookup(0);
 
     PlatformInit(inst);
     shell_cmd_register(&shell_cmd_ot_struct);
 
     hal_gpio_init_out(LED_BLINK_PIN, 1);
 
-	inst->PANID = MYNEWT_VAL(PANID);
-	inst->my_short_address = 0xDECA;
+	inst->pan_id = MYNEWT_VAL(PANID);
 
-    nrf5AlarmInit(inst);
-
-    printf("device_id = 0x%lX\n",inst->device_id);
-    printf("PANID = 0x%X\n",inst->PANID);
-    printf("DeviceID = 0x%X\n",inst->my_short_address);
-    printf("partID = 0x%lX\n",inst->partID);
-    printf("lotID = 0x%lX\n",inst->lotID);
-    printf("xtal_trim = 0x%X\n",inst->xtal_trim);
-    printf("Long add = 0x%llX\n",inst->my_long_address);
+    printf("{\"device_id\"=\"%lX\"", inst->device_id);
+    printf(",\"panid=\"%X\"",inst->pan_id);
+    printf(",\"addr\"=\"%X\"",inst->uid);
+    printf(",\"euid\"=\"%llX\"",inst->euid);
+    printf(",\"part_id\"=\"%lX\"",(uint32_t)(inst->euid&0xffffffff));
+    printf(",\"lot_id\"=\"%lX\"}\n",(uint32_t)(inst->euid>>32));
 #if OPENTHREAD_ENABLE_MULTIPLE_INSTANCES
     sInstance = otInstanceInit();
 #else 
     sInstance = otInstanceInitSingle();
 #endif    
-//    printf("sInstance %d\n",((Instance *)sInstance)->mIsInitialized);
+
+    ot = (ot_instance_t*)uwb_mac_find_cb_inst_ptr(inst, UWBEXT_OT);
+    assert(ot);
+    nrf5AlarmInit(ot);
+
 	ot_post_init(inst, sInstance);
 
     otCliUartInit(sInstance);
@@ -133,5 +132,3 @@ shell_cmd_ot(int argc, char **argv)
     return 0;
 
 }
-
-
