@@ -5,40 +5,40 @@ This example demonstrates the nrng use case--n ranges measurements with 2*n+2 fr
 
 The example also illustrates the WCS (Wireless Clock Synchronization) capability, here the TOA (Time Of Arrival) timestamps are reported in master clock (node0) reference frame.
 
-### Building target for 4 nodes
+### Building target for (up to) 8 nodes
 
 Master node (only one allowed per network):
 ```no-highlight
-newt target create master_node
-newt target set master_node app=apps/twr_nranges_tdma
-newt target set master_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target amend master_node syscfg=PANMASTER_ISSUER:WCS_VERBOSE=0
-newt run master_node 0.1.0
+newt target create nrng_master_node
+newt target set nrng_master_node app=apps/twr_nranges_tdma
+newt target set nrng_master_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target amend nrng_master_node syscfg=PANMASTER_ISSUER=1
+newt run nrng_master_node 0.1.0
 ```
 
 Slave nodes
 ```no-highlight
-newt target create slave_node
-newt target set slave_node app=apps/twr_nranges_tdma
-newt target set slave_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target amend slave_node syscfg=NRANGES_ANCHOR=1
-newt run slave_node 0.1.0
+newt target create nrng_slave_node
+newt target set nrng_slave_node app=apps/twr_nranges_tdma
+newt target set nrng_slave_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target amend nrng_slave_node syscfg=NRANGES_ANCHOR=1
+newt run nrng_slave_node 0.1.0
 ```
 
 ### Building target for tags
 ```
-newt target create tag
-newt target set tag app=apps/twr_nranges_tdma
-newt target set tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target set tag build_profile=debug
-newt target amend tag syscfg=NRNG_NTAGS=4:NRNG_NNODES=16:NRNG_NFRAMES=32:NODE_START_SLOT_ID=0:NODE_END_SLOT_ID=15
-newt run tag 0.1.0
+newt target create nrng_tag
+newt target set nrng_tag app=apps/twr_nranges_tdma
+newt target set nrng_tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set nrng_tag build_profile=debug
+newt target amend nrng_tag syscfg=NRNG_NTAGS=4:NRNG_NNODES=8:NRNG_NFRAMES=16:NODE_START_SLOT_ID=0:NODE_END_SLOT_ID=7
+newt run nrng_tag 0.1.0
 ```
 
 If you'd prefer to be able to read the ranges in mm rather than getting the float cast to uint32_t as the output replace the tag target amend line above with the one below:
 
 ```
-newt target amend tag syscfg=NRNG_NNODES=16:NRNG_NFRAMES=32:NODE_START_SLOT_ID=0:NODE_END_SLOT_ID=15:FLOAT_USER=1
+newt target amend nrng_tag syscfg=FLOAT_USER=1
 ```
 
 **NOTE:** The value of NRNG_FRAMES must be atleast NRNG_NODES*2.
@@ -55,12 +55,12 @@ FOM = frame duration + TX_HOLDOFF + n * (frame duration + TX_GUARD_DELAY)
 The number of nodes to range with can be configured by setting the **NRNG_NNODES** on tag app during build time,
    (ex: for 3 nodes, use this command while building tag app **newt target amend tag syscfg=NRNG_NNODES=3** )
 
-**NOTE:** To monitor the logs from the multiple tags in same PC, Do the following changes in the apps/twr_tag_tdma_nranges/syscfg.yml
-```
-    CONSOLE_RTT: 0
-    CONSOLE_UART: 1
+To monitor the logs from the multiple tags in same PC, issue the following command to modify the nrng_tag target:
 
 ```
+newt target amend nrng_tag syscfg=CONSOLE_RTT=0:CONSOLE_UART=1
+```
+
 Rebuild the app and run again.
 Use Any serial Console app with 1000000 baudrate on PC to monitor the Logs.
 

@@ -125,6 +125,8 @@ nrng_slot_timer_cb(struct os_event *ev)
         return;
     }
 
+    hal_gpio_write(LED_BLINK_PIN, 1);
+
     uint16_t anchor_rng_initiator = ccp->seq_num % 8;
     if (anchor_rng_initiator == inst->slot_id) {
         uint64_t dx_time = tdma_tx_slot_start(tdma, idx) & 0xFFFFFFFFFE00UL;
@@ -142,6 +144,7 @@ nrng_slot_timer_cb(struct os_event *ev)
         dw1000_set_rx_timeout(inst, timeout + 0x100);
         dw1000_nrng_listen(nrng, DWT_BLOCKING);
     }
+    hal_gpio_write(LED_BLINK_PIN, 0);
 }
 
 static void
@@ -202,6 +205,13 @@ rtdoa_slot_timer_cb(struct os_event *ev)
         return;
     }
 
+    /* See if there's anything to send, if so finish early */
+    nmgr_uwb_instance_t *nmgruwb = (nmgr_uwb_instance_t*)dw1000_mac_find_cb_inst_ptr(tdma->dev_inst, DW1000_NMGR_UWB);
+    assert(nmgruwb);
+    if (uwb_nmgr_process_tx_queue(nmgruwb, tdma_tx_slot_start(tdma, idx)) == true) {
+        return;
+    }
+
     if (inst->role&DW1000_ROLE_CCP_MASTER) {
         uint64_t dx_time = tdma_tx_slot_start(tdma, idx) & 0xFFFFFFFFFE00UL;
 
@@ -242,12 +252,12 @@ nmgr_slot_timer_cb(struct os_event * ev)
 
 
 static void
-tdma_allocate_slots(dw1000_dev_instance_t * inst)
+tdma_allocate_slots(tdma_instance_t * tdma)
 {
     uint16_t i;
+    dw1000_dev_instance_t * inst = tdma->dev_inst;
+
     /* Pan is slot 1 */
-    tdma_instance_t * tdma = (tdma_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_TDMA);
-    assert(tdma);
     dw1000_pan_instance_t *pan = (dw1000_pan_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_PAN);
     assert(pan);
     tdma_assign_slot(tdma, dw1000_pan_slot_timer_cb, 1, (void*)pan);
@@ -268,8 +278,7 @@ tdma_allocate_slots(dw1000_dev_instance_t * inst)
         }
         if (i%12==0) {
             tdma_assign_slot(tdma, nmgr_slot_timer_cb, i, (void*)nmgruwb);
-            /* TODO REMOVE BELOW */
-        } else if (i%2==0){
+        } else {
             tdma_assign_slot(tdma, rtdoa_slot_timer_cb, i, (void*)rtdoa);
         }
     }
@@ -342,7 +351,9 @@ main(int argc, char **argv)
     printf(",\"slot_id\"=\"%d\"",inst->slot_id);
     printf(",\"xtal_trim\"=\"%X\"}\n",inst->xtal_trim);
 
-    tdma_allocate_slots(inst);
+    tdma_instance_t * tdma = (tdma_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_TDMA);
+    assert(tdma);
+    tdma_allocate_slots(tdma);
 
 #if MYNEWT_VAL(NCBWIFI_ESP_PASSTHROUGH)
     hal_bsp_esp_bypass(true);

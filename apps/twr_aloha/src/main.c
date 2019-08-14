@@ -94,6 +94,7 @@ rx_timeout_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
 {
     dw1000_rng_instance_t * rng = (dw1000_rng_instance_t*)cbs->inst_ptr;
     if (inst->role&DW1000_ROLE_ANCHOR) {
+        dw1000_phy_forcetrxoff(inst);
         dw1000_set_rx_timeout(inst, 0xFFFF);
         dw1000_rng_listen(rng, DWT_NONBLOCKING);
     } else {
@@ -166,19 +167,28 @@ static void
 uwb_ev_cb(struct os_event *ev)
 {
     dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)ev->ev_arg;
+    dw1000_dev_instance_t * inst = rng->dev_inst;
     os_callout_reset(&tx_callout, OS_TICKS_PER_SEC/25);
+    
+    if (inst->role&DW1000_ROLE_ANCHOR) {
+        if(os_sem_get_count(&rng->sem) == 1){
+            dw1000_set_rx_timeout(inst, 0xFFFF);
+            dw1000_rng_listen(rng, DWT_NONBLOCKING);
+        }
+    } else {
 #if MYNEWT_VAL(TWR_DS_ENABLED)
-    dw1000_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_DS_TWR);
+        dw1000_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_DS_TWR);
 #endif
 #if MYNEWT_VAL(TWR_DS_EXT_ENABLED)
-    dw1000_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_DS_TWR_EXT);
+        dw1000_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_DS_TWR_EXT);
 #endif
 #if MYNEWT_VAL(TWR_SS_ENABLED)
-    dw1000_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_SS_TWR);
+        dw1000_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_SS_TWR);
 #endif
 #if MYNEWT_VAL(TWR_SS_EXT_ENABLED)
-    dw1000_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_SS_TWR_EXT);
+        dw1000_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_SS_TWR_EXT);
 #endif
+    }
 }
 
 
@@ -240,10 +250,10 @@ int main(int argc, char **argv){
     dw1000_set_rx_timeout(inst, 0xFFFF);
     dw1000_rng_listen(rng, DWT_NONBLOCKING);
 
-    if ((inst->role&DW1000_ROLE_ANCHOR) == 0x0000) {
-        os_callout_init(&tx_callout, os_eventq_dflt_get(), uwb_ev_cb, rng);
-        os_callout_reset(&tx_callout, OS_TICKS_PER_SEC/25);
-    } else {
+    os_callout_init(&tx_callout, os_eventq_dflt_get(), uwb_ev_cb, rng);
+    os_callout_reset(&tx_callout, OS_TICKS_PER_SEC/25);
+
+    if ((inst->role&DW1000_ROLE_ANCHOR)) {
         inst->my_short_address = MYNEWT_VAL(ANCHOR_ADDRESS);
     }
     

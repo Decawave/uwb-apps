@@ -18,6 +18,8 @@ syscfg.defs:
           - '!CIR_ENABLED'
         
 syscfg.vals:
+    LOG_LEVEL: 2
+
     # Route console to UART
     CONSOLE_RTT: 0
     CONSOLE_UART: 1
@@ -46,8 +48,8 @@ syscfg.vals:
     UWBCFG_APPLY_AT_INIT: 1
     CIR_ENABLED: 0
     CIR_VERBOSE: 0
-    CIR_OFFSET: 6
-    CIR_SIZE: 16
+    CIR_OFFSET:  4
+    CIR_SIZE:    8
 
     ## Where to store config 
     CONFIG_FCB: 1

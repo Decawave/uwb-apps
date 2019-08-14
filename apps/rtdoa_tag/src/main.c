@@ -218,12 +218,12 @@ rtdoa_slot_timer_cb(struct os_event *ev)
     dw1000_dev_instance_t * inst = tdma->dev_inst;
     uint16_t idx = slot->idx;
     dw1000_rtdoa_instance_t * rtdoa = (dw1000_rtdoa_instance_t*)slot->arg;
-
+    //printf("idx%d\n", idx);
+    
     /* Avoid colliding with the ccp */
     if (os_sem_get_count(&ccp->sem) == 0) {
         return;
     }
-
     hal_gpio_write(LED_BLINK_PIN,1);
     uint64_t dx_time = tdma_rx_slot_start(tdma, idx);
     if(dw1000_rtdoa_listen(rtdoa, DWT_BLOCKING, dx_time, 3*ccp->period/tdma->nslots/4).start_rx_error) {
@@ -237,6 +237,7 @@ rtdoa_slot_timer_cb(struct os_event *ev)
     uint64_t measurement_ts = wcs_local_to_master64(ccp->wcs, dx_time);
     rtdoa_backhaul_set_ts(measurement_ts>>16);
     rtdoa_backhaul_send(inst, rtdoa, 0); //tdma_tx_slot_start(inst, idx+2)
+    //printf("idx%de\n", idx);
 }
 
 static void 
@@ -271,29 +272,25 @@ nmgr_slot_timer_cb(struct os_event * ev)
 
 
 static void
-tdma_allocate_slots(dw1000_dev_instance_t * inst)
+tdma_allocate_slots(tdma_instance_t * tdma)
 {
     uint16_t i;
-    /* Pan is slot 1,2 */
-    tdma_instance_t * tdma = (tdma_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_TDMA);
-    assert(tdma);
+    /* Pan for anchors is in slot 1 */
+    dw1000_dev_instance_t * inst = tdma->dev_inst;
     nmgr_uwb_instance_t *nmgruwb = (nmgr_uwb_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_NMGR_UWB);
     assert(nmgruwb);
     dw1000_rtdoa_instance_t * rtdoa = (dw1000_rtdoa_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_RTDOA);
     assert(rtdoa);
 
     /* anchor-to-anchor range slot is 31 */
-    // tdma_assign_slot(inst->tdma, nrng_slot_timer_cb, 31, NULL);
-    for (i=3;i < MYNEWT_VAL(TDMA_NSLOTS);i++) {
+    for (i=2;i < MYNEWT_VAL(TDMA_NSLOTS);i++) {
         if (i==31) {
             continue;
         }
         if (i%12==0) {
             tdma_assign_slot(tdma, nmgr_slot_timer_cb, i, nmgruwb);
-        } else if (i%2==0){
-            tdma_assign_slot(tdma, rtdoa_slot_timer_cb, i, rtdoa);
         } else {
-            //tdma_assign_slot(tdma, imu_only_slot_timer_cb, i, rtdoa);
+            tdma_assign_slot(tdma, rtdoa_slot_timer_cb, i, rtdoa);
         }
     }
 }
@@ -367,7 +364,7 @@ main(int argc, char **argv)
 
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
 
-    inst->config.rxauto_enable = 0;
+    inst->config.rxauto_enable = 1;
     inst->config.trxoff_enable = 1;
     inst->config.rxdiag_enable = 1;
     inst->config.sleep_enable = 1;
@@ -391,8 +388,10 @@ main(int argc, char **argv)
 
     dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
     assert(ccp);
+    tdma_instance_t * tdma = (tdma_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_TDMA);
+    assert(tdma);
 
-    tdma_allocate_slots(inst);
+    tdma_allocate_slots(tdma);
     dw1000_ccp_start(ccp, CCP_ROLE_SLAVE);
     rtdoa_backhaul_set_role(inst, RTDOABH_ROLE_BRIDGE);
 

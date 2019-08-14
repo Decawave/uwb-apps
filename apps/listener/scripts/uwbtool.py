@@ -132,6 +132,89 @@ def pdoa_filter(data, m=2):
     a=a[abs(a - np.mean(a)) < m * np.std(a)]
     return a
 
+def cir_fpidx_shift(d):
+    try:
+        cir0 = d['cir0']
+        cir1 = d['cir1']
+    except:
+        print("no data")
+        return None
+
+    rawts_idx_diff = (cir1['rts'] - cir0['rts'])/64.0;
+    diff = np.round(cir1['fp_idx'] - cir1['o']) - np.round(cir0['fp_idx'] - cir0['o']) + rawts_idx_diff;
+    if (diff > 0.1):
+        print("cir1 shift {:.0f} steps rtsd:{:.1f}".format(diff, rawts_idx_diff))
+        if diff < len(cir0['real']):
+            for i in range(0, int(diff)):
+                cir0['real'].pop(0);
+                cir0['real'] += [4000.0];
+                cir0['imag'].pop(0);
+                cir0['imag'] += [4000.0];
+
+    diff = np.round(cir0['fp_idx'] - cir0['o']) - np.round(cir1['fp_idx'] - cir1['o']) - rawts_idx_diff;
+    if (diff > 0.1):
+        print("cir0 shift {:.0f} steps rtsd:{:.1f}".format(diff, rawts_idx_diff))
+        if diff < len(cir1['real']):
+            for i in range(0, int(diff)):
+                cir1['real'].pop(0);
+                cir1['real'] += [4000.0];
+                cir1['imag'].pop(0);
+                cir1['imag'] += [4000.0];
+
+    return d;
+
+def cir_fpidx_shift3(d):
+    try:
+        cir0 = d['cir0']
+        cir1 = d['cir1']
+    except:
+        return None
+
+    rawts_idx_diff = (cir1['rts'] - cir0['rts'])/64.0;
+    diff = np.round(cir1['fp_idx'] - cir1['o']) - np.round(cir0['fp_idx'] - cir0['o']) + rawts_idx_diff;
+    if (diff > 0.1 and diff < (cir0['o'])):
+        print("cir1 shift {:.0f} steps rtsd:{:.1f}".format(diff, rawts_idx_diff))
+        if diff < len(cir0['real']):
+            for i in range(0, int(diff)):
+                cir1['real'].pop(-1);
+                cir1['real'].insert(0,4000.0);
+                cir1['imag'].pop(-1);
+                cir1['imag'].insert(0,4000.0);
+
+    diff = np.round(cir0['fp_idx'] - cir0['o']) - np.round(cir1['fp_idx'] - cir1['o']) - rawts_idx_diff;
+    if (diff > 0.1 and diff < (cir0['o'])):
+        print("cir0 shift {:.0f} steps rtsd:{:.1f}".format(diff, rawts_idx_diff))
+        if diff < len(cir1['real']):
+            for i in range(0, int(diff)):
+                cir0['real'].pop(-1);
+                cir0['real'].insert(0,4000.0);
+                cir0['imag'].pop(-1);
+                cir0['imag'].insert(0,4000.0);
+
+    return d;
+
+
+def calculate_pdoa(d):
+    #d = cir_fpidx_shift(d);
+        
+    try:
+        cir0 = d['cir0']
+        cir1 = d['cir1']
+
+        pd = []
+        for i in range(0, len(cir0['real'])):
+            m0 = cir0['real'][i]*cir0['real'][i] + cir0['imag'][i]*cir0['imag'][i];
+            m1 = cir1['real'][i]*cir1['real'][i] + cir1['imag'][i]*cir1['imag'][i];
+            
+            a0 = np.arctan2(cir0['imag'][i], cir0['real'][i]) - cir0['rcphase'];
+            a1 = np.arctan2(cir1['imag'][i], cir1['real'][i]) - cir1['rcphase'];
+            pd += [((a0 - a1 + 3*np.pi) % (2*np.pi)) - np.pi];
+    except:
+        return None
+    
+    return pd[cir0['o']]
+
+
 def plotHistogram(data, args, label=None):
     fig = plt.figure(num=1,figsize=(10,10))
     ax = fig.add_subplot(111) #, aspect='equal'
@@ -150,15 +233,21 @@ def plotHistogram(data, args, label=None):
 
     pdata = []
     for x in data:
-        try:
-            pdata.append(float(x[field])*180.0/np.pi)
-        except:
-            pass
+        if (field == "calc_pdoa_from_cir"):
+            pd = calculate_pdoa(x)
+            if (pd == None): continue;
+            pdata.append(pd*180.0/np.pi)
+        else:
+            try:
+                pdata.append(float(x[field])*180.0/np.pi)
+            except:
+                pass
     if (filter_m):
         pdata = pdoa_filter(pdata, m=filter_m)
 
     stats = "Histogram: records: {:d} average: {:.3f} stddev:  {:.3f}".format(len(pdata), np.mean(pdata), np.std(pdata))    
     print(stats)
+    plt.xlim(-180, 180)
     plt.hist(pdata, bins=n_bins, normed=0)
     if (label):
         plt.title(label + " " + stats)

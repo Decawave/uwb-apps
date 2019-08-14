@@ -82,4 +82,4 @@ syscfg.vals:
 syscfg.defs:
     IMU_RATE:
       description: 'Rate at which to print IMU data to UART. Set to 0 to disable'
-      value: 50
+      value: 80

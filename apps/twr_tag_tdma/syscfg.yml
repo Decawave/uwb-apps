@@ -1,9 +1,9 @@
 syscfg.vals:
     # Route console to RTT
-    CONSOLE_UART: 1
-    CONSOLE_UART_BAUD: '1000000' 
+    CONSOLE_UART: 0
+    CONSOLE_UART_BAUD: '115200'
     CONSOLE_UART_TX_BUF_SIZE: '1024'
-    CONSOLE_RTT: 0
+    CONSOLE_RTT: 1
     CONSOLE_HISTORY_SIZE: 8
 
     DW1000_DEVICE_0: 1
@@ -21,15 +21,5 @@ syscfg.vals:
     STATS_NEWTMGR: 1
     LOG_NEWTMGR: 1
     CONFIG_NEWTMGR: 1
-
-    ## Pan
-    PAN_ENABLED: 1
-    PAN_RX_TIMEOUT: ((uint16_t){4000})
-    PAN_LEASE_TIME: 600
-    PAN_LEASE_EXP_MARGIN: 30500
-
-syscfg.defs:
-    UUID_CCP_MASTER:
-        description: Clock Master UUID
-        value: ((uint64_t){0x8000}) 
+    CONFIG_FCB: 1
     

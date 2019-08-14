@@ -38,6 +38,8 @@
 #include <dw1000/dw1000_mac.h>
 #include <dw1000/dw1000_ftypes.h>
 #include <rng/rng.h>
+#include <config/config.h>
+#include "uwbcfg/uwbcfg.h"
 
 #include <tdma/tdma.h>
 #include <ccp/ccp.h>
@@ -251,11 +253,35 @@ error_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
     return true;
 }
 
+/**
+ * @fn uwb_config_update
+ * 
+ * Called from the main event queue as a result of the uwbcfg packet
+ * having received a commit/load of new uwb configuration.
+ */
+int
+uwb_config_updated()
+{
+    uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
+    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+    dw1000_mac_config(inst, NULL);
+    dw1000_phy_config_txrf(inst, &inst->config.txrf);
+    printf("{\"utime\": %lu,\"msg\": \"new config applied\"}\n",utime);
+    return 0;
+}
+
 
 int main(int argc, char **argv){
     int rc;
 
     sysinit();
+    /* Register callback for UWB configuration changes */
+    struct uwbcfg_cbs uwb_cb = {
+        .uc_update = uwb_config_updated
+    };
+    uwbcfg_register(&uwb_cb);
+    /* Load config from flash */
+    conf_load();
 
     hal_gpio_init_out(LED_BLINK_PIN, 1);
     hal_gpio_init_out(LED_1, 1);
