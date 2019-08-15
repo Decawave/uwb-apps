@@ -81,7 +81,6 @@ complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
         return false;
     }
     dw1000_rng_instance_t * rng = (dw1000_rng_instance_t*)cbs->inst_ptr;
-
     g_idx_latest = (rng->idx)%rng->nframes; // Store valid frame pointer
     os_callout_init(&slot_callout, os_eventq_dflt_get(), slot_complete_cb, rng);
     os_eventq_put(os_eventq_dflt_get(), &slot_callout.c_ev);
@@ -223,7 +222,9 @@ int main(int argc, char **argv){
     if ((inst->role&DW1000_ROLE_ANCHOR)) {
         inst->my_short_address = MYNEWT_VAL(ANCHOR_ADDRESS);
     }
-
+#if MYNEWT_VAL(RNG_VERBOSE) > 1
+    inst->config.rxdiag_enable = 1;
+#endif
     while (1) {
         os_eventq_run(os_eventq_dflt_get());
     }
