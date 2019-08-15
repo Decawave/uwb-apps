@@ -42,8 +42,7 @@
 #include <rng/rng.h>
 #include <config/config.h>
 #include "uwbcfg/uwbcfg.h"
-
-
+#include <rng/rng_encode.h>
 //#define DIAGMSG(s,u) printf(s,u)
 #ifndef DIAGMSG
 #define DIAGMSG(s,u)
@@ -122,41 +121,9 @@ static void slot_complete_cb(struct os_event *ev)
     assert(ev->ev_arg != NULL);
   
     hal_gpio_toggle(LED_BLINK_PIN);
+    
     dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)ev->ev_arg;
     dw1000_dev_instance_t * inst = rng->dev_inst;
-    twr_frame_t * frame = rng->frames[(g_idx_latest)%rng->nframes];
-
-    float skew = dw1000_calc_clock_offset_ratio(inst, frame->carrier_integrator);
-    
-    if (frame->code == DWT_SS_TWR_FINAL || frame->code == DWT_SS_TWR_EXT_FINAL) {
-        float time_of_flight = (float) dw1000_rng_twr_to_tof(rng, g_idx_latest);
-        float range = dw1000_rng_tof_to_meters(time_of_flight);
-        printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": \"%lX\","
-                " \"rec_tra\": \"%lX\", \"skew\": %lu}\n",
-                os_cputime_ticks_to_usecs(os_cputime_get32()),
-                *(uint32_t *)(&time_of_flight), 
-                *(uint32_t *)(&range),
-                (frame->response_timestamp - frame->request_timestamp),
-                (frame->transmission_timestamp - frame->reception_timestamp),
-                *(uint32_t *)(&skew)
-        );
-        frame->code = DWT_SS_TWR_END;
-    } else if (frame->code == DWT_DS_TWR_FINAL || frame->code == DWT_DS_TWR_EXT_FINAL) {
-        float time_of_flight = dw1000_rng_twr_to_tof(rng, g_idx_latest);
-        uint32_t utime =os_cputime_ticks_to_usecs(os_cputime_get32()); 
-        float rssi = dw1000_get_rssi(inst);
-        printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"azimuth\": %lu,\"res_tra\":\"%lX\","
-                    " \"rec_tra\":\"%lX\", \"rssi\":%lu}\n",
-                utime,
-                *(uint32_t *)(&time_of_flight), 
-                *(uint32_t *)(&frame->spherical.range),
-                *(uint32_t *)(&frame->spherical.azimuth),
-                (frame->response_timestamp - frame->request_timestamp),
-                (frame->transmission_timestamp - frame->reception_timestamp),
-                *(uint32_t *)(&rssi)
-        );
-        frame->code = DWT_DS_TWR_END;
-    }
 
     if (inst->role&DW1000_ROLE_ANCHOR) {
         dw1000_rng_listen(rng, DWT_NONBLOCKING);
@@ -225,7 +192,7 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_3, 1);
 
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    dw1000_rng_instance_t* rng = (dw1000_rng_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_RNG);
+    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_RNG);
     assert(rng);
     dw1000_mac_interface_t cbs = (dw1000_mac_interface_t){
         .id =  DW1000_APP0,
@@ -256,7 +223,7 @@ int main(int argc, char **argv){
     if ((inst->role&DW1000_ROLE_ANCHOR)) {
         inst->my_short_address = MYNEWT_VAL(ANCHOR_ADDRESS);
     }
-    
+
     while (1) {
         os_eventq_run(os_eventq_dflt_get());
     }
