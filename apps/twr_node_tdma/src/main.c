@@ -59,6 +59,7 @@
 #include <cir/cir.h>
 #endif
 
+#define dpl_event_get_arg(ev) ev->ev_arg
 
 //#define DIAGMSG(s,u) printf(s,u)
 #ifndef DIAGMSG
@@ -88,9 +89,7 @@ static void slot_complete_cb(struct os_event *ev);
  */
 /* The timer callout */
 
-static struct os_callout slot_callout;
-static uint16_t g_idx_latest;
-
+static struct os_event slot_event;
 static bool
 complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
@@ -98,9 +97,9 @@ complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
     }
     dw1000_rng_instance_t* rng = (dw1000_rng_instance_t*)cbs->inst_ptr;
 
-    g_idx_latest = (rng->idx)%rng->nframes; // Store valid frame pointer
-    os_callout_init(&slot_callout, os_eventq_dflt_get(), slot_complete_cb, rng);
-    os_eventq_put(os_eventq_dflt_get(), &slot_callout.c_ev);
+    slot_event.ev_cb  = slot_complete_cb;
+    slot_event.ev_arg = (void*) rng;
+    os_eventq_put(os_eventq_dflt_get(), &slot_event);
     return true;
 }
 
@@ -125,43 +124,6 @@ slot_complete_cb(struct os_event *ev)
     assert(ev->ev_arg != NULL);
   
     hal_gpio_toggle(LED_BLINK_PIN);
-    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)ev->ev_arg;
-    dw1000_dev_instance_t * inst = rng->dev_inst;
-    twr_frame_t * frame = rng->frames[(g_idx_latest)%rng->nframes];
-
-    if (frame->code == DWT_DS_TWR_FINAL || frame->code == DWT_DS_TWR_EXT_FINAL) {
-        float time_of_flight = dw1000_rng_twr_to_tof(rng, g_idx_latest);
-        uint32_t utime =os_cputime_ticks_to_usecs(os_cputime_get32()); 
-        float rssi = dw1000_get_rssi(inst);
-        printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"azimuth\": %lu,\"res_tra\":\"%lX\","
-                    " \"rec_tra\":\"%lX\", \"rssi\":%lu}\n",
-                utime,
-                *(uint32_t *)(&time_of_flight), 
-                *(uint32_t *)(&frame->spherical.range),
-                *(uint32_t *)(&frame->spherical.azimuth),
-                (frame->response_timestamp - frame->request_timestamp),
-                (frame->transmission_timestamp - frame->reception_timestamp),
-                *(uint32_t *)(&rssi)
-        );
-        frame->code = DWT_DS_TWR_END;
-    }    
-    else if (frame->code == DWT_SS_TWR_FINAL) {
-        float time_of_flight = dw1000_rng_twr_to_tof(rng,g_idx_latest);
-        float range = dw1000_rng_tof_to_meters(time_of_flight);
-        uint32_t utime =os_cputime_ticks_to_usecs(os_cputime_get32()); 
-        float rssi = dw1000_get_rssi(inst);
- 
-        printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_tra\":\"%lX\","
-                    " \"rec_tra\":\"%lX\", \"rssi\":%lu}\n",
-                utime,
-                *(uint32_t *)(&time_of_flight), 
-                *(uint32_t *)(&range),
-                (frame->response_timestamp - frame->request_timestamp),
-                (frame->transmission_timestamp - frame->reception_timestamp),
-                *(uint32_t *)(&rssi)
-        );
-        frame->code = DWT_SS_TWR_END;
-    }
 }
 
 
@@ -275,6 +237,10 @@ int main(int argc, char **argv){
     /* Slot 0:ccp, 1+ twr */
     for (uint16_t i = 1; i < MYNEWT_VAL(TDMA_NSLOTS); i++)
         tdma_assign_slot(tdma, slot_cb,  i, (void*)rng);
+
+#if MYNEWT_VAL(RNG_VERBOSE) > 1
+    inst->config.rxdiag_enable = 1;
+#endif
 
     while (1) {
         os_eventq_run(os_eventq_dflt_get());

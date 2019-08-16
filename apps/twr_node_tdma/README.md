@@ -50,6 +50,7 @@ newt target create twr_node_tdma
 newt target set twr_node_tdma app=apps/twr_node_tdma
 newt target set twr_node_tdma bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target set twr_node_tdma build_profile=debug
+newt target amend twr_node_tdma syscfg=LOG_LEVEL=1:UWBCFG_DEF_ROLE='"0x1"'
 newt run twr_node_tdma 0
 
 ```
@@ -70,34 +71,12 @@ newt run twr_tag_tdma 0
 
 ```no-highlight
 
-telnet localhost 19021 
+{"utime": 9484006864249, "wcs": [9483617024080,687524001872,8752525324842,687524001872], "skew": 13752215634709839872}
+{"utime": 9484254696807, "twr": {"rng": "1.071","uid": "d22d"},"uid": "55a6", "diag": {"rssi": "-79.562","los": "1.000"}}
+{"utime": 9484684610480, "twr": {"rng": "1.061","uid": "d22d"},"uid": "55a6", "diag": {"rssi": "-79.493","los": "1.000"}}
+{"utime": 9485113714163, "twr": {"rng": "1.064","uid": "d22d"},"uid": "55a6", "diag": {"rssi": "-79.416","los": "1.000"}}
+{"utime": 9485543643708, "twr": {"rng": "1.079","uid": "d22d"},"uid": "55a6", "diag": {"rssi": "-79.593","los": "1.000"}}
+{"utime": 9485972719232, "twr": {"rng": "1.082","uid": "d22d"},"uid": "55a6", "diag": {"rssi": "-79.653","los": "1.000"}}
 
-....
-{"utime": 23859733,"tof": 1101004815,"range": 1036004551,"azimuth": 0,"res_req":"6003EB0", "rec_tra": "6003E60"}
-{"utime": 23873159,"tof": 1099956214,"range": 1034745086,"azimuth": 0,"res_req":"6004092", "rec_tra": "600403A"}
-{"utime": 23879880,"tof": 1102053369,"range": 1037263961,"azimuth": 0,"res_req":"6003F78", "rec_tra": "6003F1E"}
-....
-{"utime": 23920210,"tof": 1104150538,"range": 1039782852,"azimuth": 0,"res_req":"6003EFB", "rec_tra": "6003E97"}
-{"utime": 23926932,"tof": 1098383319,"range": 1033170778,"azimuth": 0,"res_req":"6003FE2", "rec_tra": "6003F92"}
-{"utime": 23933653,"tof": 1099825167,"range": 1034587686,"azimuth": 0,"res_req":"6003ECB", "rec_tra": "6003E76"}
 
 ```
-
-
-6. Making sense of the results. 
-
-The sentense above are JSON strings. The underlying library does not support floating point printf so instead we choose to case the IEEE 754 floating-point type to a UINT32 and encapulate this within the JSON string. The decoder reverses the cast and retores the floating point representation without loss of precision.
-
-In matlab for example:
-You can use: 
-```no-highlight
-
->> tcp = tcpclient('127.0.0.1', 19021); % to open the socket.
->> line = read(tcp); % to read the json lines
->> line = jsondecode(line); % to parse the json string
->> range = typecast(uint32(line.range,'single'); % to restore range quantity to floating point. Note all units are SI units for so the range quantity is in meters.
-
-```
-
-See the ./matlab/stats.m script for an example of parsing json strings.
-
