@@ -13,6 +13,7 @@ syscfg.vals:
     FLOAT_USER: 1
     TDMA_NSLOTS: 160
     RNG_VERBOSE: 2
+    CIR_VERBOSE: 0
     CCP_VERBOSE: 0
     STATS_NAMES: 1
     STATS_CLI: 1

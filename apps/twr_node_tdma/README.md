@@ -80,3 +80,23 @@ newt run twr_tag_tdma 0
 
 
 ```
+
+3. For PDOA on DWM1002 module. 
+
+```no-highlight
+
+newt target create twr_node_tdma
+newt target set twr_node_tdma app=apps/twr_node_tdma
+newt target set twr_node_tdma bsp=@mynewt-dw1000-core/hw/bsp/dwm1002
+newt target set twr_node_tdma build_profile=debug
+newt target amend twr_node_tdma syscfg=DW1000_DEVICE_0=1:DW1000_DEVICE_1=1:USE_DBLBUFFER=0:CIR_ENABLED=1:LOG_LEVEL=1:UWBCFG_DEF_ROLE='"0x1"'
+newt run twr_node_tdma 0
+
+newt target create twr_tag_tdma
+newt target set twr_tag_tdma app=apps/twr_tag_tdma
+newt target set twr_tag_tdma bsp=@mynewt-dw1000-core/hw/bsp/dwm1003
+newt target set twr_tag_tdma build_profile=debug
+newt run twr_tag_tdma 0
+
+
+```

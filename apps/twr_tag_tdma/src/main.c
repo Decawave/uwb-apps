@@ -92,7 +92,7 @@ slot_cb(struct os_event *ev){
     uint16_t node_address = ccp->frames[0]->short_address;
 
     /* Select single-sided or double sided twr every second slot */
-    int mode = DWT_DS_TWR;
+    int mode = DWT_DS_TWR_EXT;
 //    if (slot->idx%2==0) {
 //        mode = DWT_DS_TWR;
  //   }
