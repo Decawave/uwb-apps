@@ -71,6 +71,8 @@ static void slot_complete_cb(struct os_event *ev);
 static bool cir_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs);
 static bool complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs);
 
+#define ANTENNA_SEPERATION 0.0205f
+#define WAVELENGTH 0.046f
 
 static triadf_t g_angle = {0};
 static bool
@@ -90,9 +92,11 @@ cir_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
     twr_frame_t * frame1 = (twr_frame_t *) hal_dw1000_inst(1)->rxbuf;
 
     if ((cir[0]->status.valid && cir[1]->status.valid) && (frame0->seq_num == frame1->seq_num)){ 
-//            && memcmp(hal_dw1000_inst(0)->rxbuf,hal_dw1000_inst(1)->rxbuf,hal_dw1000_inst(1)->frame_len) == 0){
-        g_angle.azimuth = fmodf((cir[0]->angle - cir[0]->rcphase) - (cir[1]->angle - cir[1]->rcphase) + 3*M_PI, 2*M_PI) - M_PI;
+        float pd = fmodf((cir[0]->angle - cir[0]->rcphase) - (cir[1]->angle - cir[1]->rcphase) + 3*M_PI, 2*M_PI) - M_PI;
+        float pd_dist = pd / (2*M_PI) * WAVELENGTH;
+        g_angle.azimuth = asinf(pd_dist/ANTENNA_SEPERATION);
    }
+
    
 #endif
     return true;

@@ -81,7 +81,7 @@ newt run twr_tag_tdma 0
 
 ```
 
-3. For PDOA on DWM1002 module. 
+6. For PDOA on DWM1002 module. 
 
 ```no-highlight
 
@@ -97,6 +97,22 @@ newt target set twr_tag_tdma app=apps/twr_tag_tdma
 newt target set twr_tag_tdma bsp=@mynewt-dw1000-core/hw/bsp/dwm1003
 newt target set twr_tag_tdma build_profile=debug
 newt run twr_tag_tdma 0
+
+
+```
+
+7. On the console you should see the following expected result. 
+
+```no-highlight
+
+{"utime": 15046841179648, "twr": {"raz": ["5.397","1.662","null"],"uid": "56a5"},"uid": "4dad", "diag": {"rssi": "-79.178","los": "1.000"}}
+{"utime": 15047270679552, "twr": {"raz": ["5.388","1.798","null"],"uid": "56a5"},"uid": "4dad", "diag": {"rssi": "-79.644","los": "1.000"}}
+{"utime": 15047699727872, "twr": {"raz": ["5.408","1.565","null"],"uid": "56a5"},"uid": "4dad", "diag": {"rssi": "-79.651","los": "1.000"}}
+{"utime": 15048129227264, "twr": {"raz": ["5.430","1.390","null"],"uid": "56a5"},"uid": "4dad", "diag": {"rssi": "-79.516","los": "1.000"}}
+{"utime": 15048558718976, "twr": {"raz": ["5.381","1.075","null"],"uid": "56a5"},"uid": "4dad", "diag": {"rssi": "-78.911","los": "1.000"}}
+{"utime": 15048988214272, "twr": {"raz": ["5.402","1.595","null"],"uid": "56a5"},"uid": "4dad", "diag": {"rssi": "-79.438","los": "1.000"}}
+{"utime": 15049417705984, "twr": {"raz": ["5.412","1.637","null"],"uid": "56a5"},"uid": "4dad", "diag": {"rssi": "-79.239","los": "1.000"}}
+{"utime": 15049847641088, "twr": {"raz": ["5.440","1.924","null"],"uid": "56a5"},"uid": "4dad", "diag": {"rssi": "-79.339","los": "1.000"}}
 
 
 ```
