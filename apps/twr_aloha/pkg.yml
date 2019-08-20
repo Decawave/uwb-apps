@@ -50,7 +50,6 @@ pkg.deps:
 pkg.cflags:
     - "-std=gnu99"
     - "-fms-extensions"
-    - "-DNRF52"
     - "-Wno-strict-aliasing"
 
 pkg.lflags:

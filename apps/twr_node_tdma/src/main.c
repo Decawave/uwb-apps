@@ -59,6 +59,7 @@
 #include <cir/cir.h>
 #endif
 
+#define dpl_event_get_arg(ev) ev->ev_arg
 
 //#define DIAGMSG(s,u) printf(s,u)
 #ifndef DIAGMSG
@@ -67,6 +68,39 @@
 
 static bool dw1000_config_updated = false;
 static void slot_complete_cb(struct os_event *ev);
+static bool cir_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs);
+static bool complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs);
+
+#define ANTENNA_SEPERATION 0.0205f
+#define WAVELENGTH 0.046f
+
+static triadf_t g_angle = {0};
+static bool
+cir_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
+
+    if(inst->fctrl != FCNTL_IEEE_RANGE_16){
+        return false;
+    }
+    
+#if MYNEWT_VAL(DW1000_DEVICE_0) && MYNEWT_VAL(DW1000_DEVICE_1)
+    cir_instance_t * cir[] = {
+        hal_dw1000_inst(0)->cir,
+        hal_dw1000_inst(1)->cir
+    };
+ 
+    twr_frame_t * frame0 = (twr_frame_t *) hal_dw1000_inst(0)->rxbuf;
+    twr_frame_t * frame1 = (twr_frame_t *) hal_dw1000_inst(1)->rxbuf;
+
+    if ((cir[0]->status.valid && cir[1]->status.valid) && (frame0->seq_num == frame1->seq_num)){ 
+        float pd = fmodf((cir[0]->angle - cir[0]->rcphase) - (cir[1]->angle - cir[1]->rcphase) + 3*M_PI, 2*M_PI) - M_PI;
+        float pd_dist = pd / (2*M_PI) * WAVELENGTH;
+        g_angle.azimuth = asinf(pd_dist/ANTENNA_SEPERATION);
+   }
+
+   
+#endif
+    return true;
+}
 
 /*! 
  * @fn complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
@@ -87,23 +121,26 @@ static void slot_complete_cb(struct os_event *ev);
  * returns bool
  */
 /* The timer callout */
-
-static struct os_callout slot_callout;
-static uint16_t g_idx_latest;
-
+static struct os_event slot_event;
 static bool
 complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
+
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
     }
-    dw1000_rng_instance_t* rng = (dw1000_rng_instance_t*)cbs->inst_ptr;
 
-    g_idx_latest = (rng->idx)%rng->nframes; // Store valid frame pointer
-    os_callout_init(&slot_callout, os_eventq_dflt_get(), slot_complete_cb, rng);
-    os_eventq_put(os_eventq_dflt_get(), &slot_callout.c_ev);
+    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t*)cbs->inst_ptr;
+    twr_frame_t * frame = rng->frames[rng->idx_current];
+    
+    frame->spherical.azimuth = g_angle.azimuth;
+    frame->spherical.zenith = g_angle.zenith;
+
+    slot_event.ev_cb  = slot_complete_cb;
+    slot_event.ev_arg = (void*) rng;
+    os_eventq_put(os_eventq_dflt_get(), &slot_event);
+
     return true;
 }
-
 
 /*! 
  * @fn slot_complete_cb(struct os_event * ev)
@@ -125,43 +162,6 @@ slot_complete_cb(struct os_event *ev)
     assert(ev->ev_arg != NULL);
   
     hal_gpio_toggle(LED_BLINK_PIN);
-    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)ev->ev_arg;
-    dw1000_dev_instance_t * inst = rng->dev_inst;
-    twr_frame_t * frame = rng->frames[(g_idx_latest)%rng->nframes];
-
-    if (frame->code == DWT_DS_TWR_FINAL || frame->code == DWT_DS_TWR_EXT_FINAL) {
-        float time_of_flight = dw1000_rng_twr_to_tof(rng, g_idx_latest);
-        uint32_t utime =os_cputime_ticks_to_usecs(os_cputime_get32()); 
-        float rssi = dw1000_get_rssi(inst);
-        printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"azimuth\": %lu,\"res_tra\":\"%lX\","
-                    " \"rec_tra\":\"%lX\", \"rssi\":%lu}\n",
-                utime,
-                *(uint32_t *)(&time_of_flight), 
-                *(uint32_t *)(&frame->spherical.range),
-                *(uint32_t *)(&frame->spherical.azimuth),
-                (frame->response_timestamp - frame->request_timestamp),
-                (frame->transmission_timestamp - frame->reception_timestamp),
-                *(uint32_t *)(&rssi)
-        );
-        frame->code = DWT_DS_TWR_END;
-    }    
-    else if (frame->code == DWT_SS_TWR_FINAL) {
-        float time_of_flight = dw1000_rng_twr_to_tof(rng,g_idx_latest);
-        float range = dw1000_rng_tof_to_meters(time_of_flight);
-        uint32_t utime =os_cputime_ticks_to_usecs(os_cputime_get32()); 
-        float rssi = dw1000_get_rssi(inst);
- 
-        printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_tra\":\"%lX\","
-                    " \"rec_tra\":\"%lX\", \"rssi\":%lu}\n",
-                utime,
-                *(uint32_t *)(&time_of_flight), 
-                *(uint32_t *)(&range),
-                (frame->response_timestamp - frame->request_timestamp),
-                (frame->transmission_timestamp - frame->reception_timestamp),
-                *(uint32_t *)(&rssi)
-        );
-        frame->code = DWT_SS_TWR_END;
-    }
 }
 
 
@@ -197,28 +197,63 @@ uwb_config_updated()
  */
    
 static void 
-slot_cb(struct os_event * ev){
+slot_cb(struct os_event * ev)
+{
     assert(ev);
 
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
     tdma_instance_t * tdma = slot->parent;
+    dw1000_ccp_instance_t * ccp = tdma->ccp;
     dw1000_dev_instance_t * inst = tdma->dev_inst;
     uint16_t idx = slot->idx;
-    dw1000_rng_instance_t *rng = (dw1000_rng_instance_t*)slot->arg;
+    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t*)slot->arg;
+
+    g_angle.azimuth = g_angle.zenith = NAN;
+
+    /* Avoid colliding with the ccp in case we've got out of sync */
+    if (os_sem_get_count(&ccp->sem) == 0) {
+        return;
+    }
 
     if (dw1000_config_updated) {
-        dw1000_mac_config(inst, NULL);
-        dw1000_phy_config_txrf(inst, &inst->config.txrf);
+        dw1000_mac_config(hal_dw1000_inst(0), NULL);
+        dw1000_phy_config_txrf(hal_dw1000_inst(0), &hal_dw1000_inst(0)->config.txrf);
+#if MYNEWT_VAL(DW1000_DEVICE_1)
+        dw1000_mac_config(hal_dw1000_inst(1), NULL);
+        dw1000_phy_config_txrf(hal_dw1000_inst(1), &hal_dw1000_inst(1)->config.txrf);
+#endif
         dw1000_config_updated = false;
     }
+
 
     dw1000_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
     uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(ieee_rng_response_frame_t))                 
                         + rng->config.rx_timeout_delay;// tx_holdoff_delay;         // Remote side turn arroud time.
-                            
-    dw1000_set_rx_timeout(inst, timeout);
+
+#if MYNEWT_VAL(DW1000_DEVICE_0) && MYNEWT_VAL(DW1000_DEVICE_1)   
+{   
+    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+    dw1000_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
+    dw1000_set_rx_timeout(inst, timeout + 0x300);   
+    cir_enable(inst->cir, true);
+    dw1000_start_rx(inst);  // RX enabled but frames handled as unsolicited inbound          
+}
+{   
+    dw1000_dev_instance_t * inst = hal_dw1000_inst(1);
+    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_RNG);
+    dw1000_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
+    dw1000_set_rx_timeout(inst, timeout + 0x300);  
+    cir_enable(inst->cir, true);            
     dw1000_rng_listen(rng, DWT_BLOCKING);
 }
+#else
+    dw1000_set_rx_timeout(inst, timeout);
+    dw1000_rng_listen(rng, DWT_BLOCKING);
+#endif
+
+}
+
+
 
 int main(int argc, char **argv){
     int rc;
@@ -236,27 +271,61 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
 
+#if MYNEWT_VAL(DW1000_DEVICE_0) && MYNEWT_VAL(DW1000_DEVICE_1)
+{   
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    dw1000_rng_instance_t* rng = (dw1000_rng_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_RNG);
+    dw1000_set_dblrxbuff(inst, false);
+}
+{   
+    dw1000_dev_instance_t * inst = hal_dw1000_inst(1);
+    dw1000_set_dblrxbuff(inst, false);
+}
+#endif
+
+#if MYNEWT_VAL(DW1000_DEVICE_0) && MYNEWT_VAL(DW1000_DEVICE_1)
+{   
+    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+    dw1000_set_dblrxbuff(inst, false);
+}
+    dw1000_dev_instance_t * inst = hal_dw1000_inst(1);
+    dw1000_set_dblrxbuff(inst, false);
+    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)dw1000_mac_find_cb_inst_ptr(inst, DW1000_RNG);
     assert(rng);
+#elif  MYNEWT_VAL(DW1000_DEVICE_0) && !MYNEWT_VAL(DW1000_DEVICE_1)
+    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+    dw1000_set_dblrxbuff(inst, false);
+    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)dw1000_mac_find_cb_inst_ptr(inst, DW1000_RNG);
+    assert(rng);
+#endif
     
     dw1000_mac_interface_t cbs = (dw1000_mac_interface_t){
         .id =  DW1000_APP0,
         .inst_ptr = rng,
-        .complete_cb = complete_cb
+        .complete_cb = complete_cb,
+        .cir_complete_cb = cir_complete_cb
     };
     dw1000_mac_append_interface(inst, &cbs);
 
-    dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
+    dw1000_ccp_instance_t * ccp = (dw1000_ccp_instance_t *)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
     assert(ccp);
     
-    if (inst->role&DW1000_ROLE_CCP_MASTER) {
+    if (inst->role & DW1000_ROLE_CCP_MASTER) {
         /* Start as clock-master */
         dw1000_ccp_start(ccp, CCP_ROLE_MASTER);
     } else {
         dw1000_ccp_start(ccp, CCP_ROLE_SLAVE);        
     }
-    
+
+#if MYNEWT_VAL(DW1000_DEVICE_0) && MYNEWT_VAL(DW1000_DEVICE_1)
+{
+    dw1000_dev_instance_t * inst[] = {
+                hal_dw1000_inst(0),
+                hal_dw1000_inst(1)
+            };
+    hal_bsp_dw_clk_sync(inst, 2);
+}
+#endif
+
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
     printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 
     printf("{\"utime\": %lu,\"msg\": \"device_id = 0x%lX\"}\n",utime,inst->device_id);
@@ -275,6 +344,10 @@ int main(int argc, char **argv){
     /* Slot 0:ccp, 1+ twr */
     for (uint16_t i = 1; i < MYNEWT_VAL(TDMA_NSLOTS); i++)
         tdma_assign_slot(tdma, slot_cb,  i, (void*)rng);
+
+#if MYNEWT_VAL(RNG_VERBOSE) > 1
+    inst->config.rxdiag_enable = 1;
+#endif
 
     while (1) {
         os_eventq_run(os_eventq_dflt_get());
