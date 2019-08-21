@@ -12,6 +12,7 @@ Master node (only one allowed per network):
 newt target create nrng_master_node
 newt target set nrng_master_node app=apps/twr_nranges_tdma
 newt target set nrng_master_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set nrng_master_node build_profile=debug
 newt target amend nrng_master_node syscfg=PANMASTER_ISSUER=1
 newt run nrng_master_node 0.1.0
 ```
@@ -21,6 +22,7 @@ Slave nodes
 newt target create nrng_slave_node
 newt target set nrng_slave_node app=apps/twr_nranges_tdma
 newt target set nrng_slave_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set nrng_slave_node build_profile=debug
 newt target amend nrng_slave_node syscfg=NRANGES_ANCHOR=1
 newt run nrng_slave_node 0.1.0
 ```
