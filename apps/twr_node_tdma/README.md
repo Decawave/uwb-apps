@@ -116,3 +116,13 @@ newt run twr_tag_tdma 0
 
 
 ```
+
+### Visualisation
+
+If you have node-red installed you can import the flow in the node-red folder. Note that
+it uses RTT to connect to the dwm1002 board so you have to be still running the
+```newt run twr_node_tdma 0``` command on the same computer for it to work.
+
+In node-red, open up the menu in the top right corner, select import, clipboard, and select file to import.
+Navigate to the node-red directory and select the pdoa_viewer.json file. Or, simply drag and drop the file
+on the node-red webpage. 
