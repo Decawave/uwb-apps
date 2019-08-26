@@ -123,6 +123,23 @@ If you have node-red installed you can import the flow in the node-red folder. N
 it uses RTT to connect to the dwm1002 board so you have to be still running the
 ```newt run twr_node_tdma 0``` command on the same computer for it to work.
 
-In node-red, open up the menu in the top right corner, select import, clipboard, and select file to import.
+```
+# Install nodejs and node-red
+sudo apt-get install -y nodejs
+sudo npm install -g --unsafe-perm node-red
+# Once installed, run node-red on the commandline:
+node-red
+```
+
+The palette of node-red modules needs to be updated to have
+**node-red-dashboard** installed:
+
+1. In the top right corner menu select **Manage palette**
+2. Click on the **Install** tab
+3. Search for and install **node-red-dashboard**
+
+Once the prerequisites are setup, in node-red, open up the menu in the top right corner, select import,
+clipboard, and select file to import.
 Navigate to the node-red directory and select the pdoa_viewer.json file. Or, simply drag and drop the file
-on the node-red webpage. 
+on the node-red webpage.
+Select deploy. Done. 
