@@ -15,8 +15,11 @@ syscfg.vals:
     CIR_VERBOSE: 1     
     CIR_SIZE: 64
 
-    TWR_DS_TX_HOLDOFF: (0x0500UL)
-    TWR_SS_TX_HOLDOFF: (0x0500UL)
+    #Need to supersize to allow for CIR read
+    TWR_DS_TX_HOLDOFF: (0x0600UL)
+    TWR_SS_TX_HOLDOFF: (0x0600UL)
+    TWR_DS_EXT_TX_HOLDOFF: (0x0600UL)
+    TWR_SS_EXT_TX_HOLDOFF: (0x0600UL)
 
     # Enable newtmgr commands.
     STATS_NEWTMGR: 1

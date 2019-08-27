@@ -115,7 +115,17 @@ slave_slot_ev_cb(struct os_event *ev){
     uint64_t dx_time = tdma_tx_slot_start(tdma, idx);
     dx_time = dx_time & 0xFFFFFFFFFE00UL;
   
-    dw1000_rng_request_delay_start(rng, 0x4321, dx_time, DWT_SS_TWR);
+    switch (idx%4){
+        case 0:dw1000_rng_request_delay_start(rng, 0x4321, dx_time, DWT_SS_TWR);
+        break;
+        case 1:dw1000_rng_request_delay_start(rng, 0x4321, dx_time, DWT_SS_TWR_EXT);
+        break;
+        case 2:dw1000_rng_request_delay_start(rng, 0x4321, dx_time, DWT_DS_TWR);
+        break;
+        case 3:dw1000_rng_request_delay_start(rng, 0x4321, dx_time, DWT_DS_TWR_EXT);
+        break;
+        default:break;
+    }
 
 }
 
@@ -159,7 +169,7 @@ int main(int argc, char **argv){
     dw1000_gpio6_config_ext_rxe(inst[0]);
     dw1000_gpio6_config_ext_rxe(inst[1]);
 
-    for (uint16_t i = 3; i < MYNEWT_VAL(TDMA_NSLOTS) - 8; i+=8){
+    for (uint16_t i = 3; i < MYNEWT_VAL(TDMA_NSLOTS); i+=1){
         tdma_assign_slot(dw1000_mac_find_cb_inst_ptr(inst[0], DW1000_TDMA), master_slot_ev_cb, i, NULL);
         tdma_assign_slot(dw1000_mac_find_cb_inst_ptr(inst[1], DW1000_TDMA), slave_slot_ev_cb, i, NULL);
     }
