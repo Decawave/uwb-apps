@@ -60,9 +60,7 @@
 static void master_slot_ev_cb(struct os_event * ev);
 static void slave_slot_ev_cb(struct os_event * ev);
 
-//static uint16_t g_slot[MYNEWT_VAL(TDMA_NSLOTS)] = {0};
 #define NINST 2
-
 
 static void 
 clk_sync(dw1000_dev_instance_t * inst[], uint8_t n){
@@ -103,9 +101,6 @@ master_slot_ev_cb(struct os_event * ev){
 }
 
 
-
-
-
 static void 
 slave_slot_ev_cb(struct os_event *ev){
     assert(ev);
@@ -120,20 +115,8 @@ slave_slot_ev_cb(struct os_event *ev){
     uint64_t dx_time = tdma_tx_slot_start(tdma, idx);
     dx_time = dx_time & 0xFFFFFFFFFE00UL;
   
-#ifdef TICTOC
-    uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
-#endif
-    if(dw1000_rng_request_delay_start(rng, 0x4321, dx_time, DWT_SS_TWR).start_tx_error){
-    }else{
-#ifdef TICTOC
-        os_error_t err = os_sem_pend(&inst->rng->sem, OS_TIMEOUT_NEVER); // Wait for completion of transactions 
-        assert(err == OS_OK);
-        err = os_sem_release(&inst->rng->sem);
-        assert(err == OS_OK);
-        uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
-        printf("{\"utime\": %lu,\"dw1000_rng_request_delay_start_tic_toc\": %ld}\n",toc, (toc - tic));
-#endif
-    }
+    dw1000_rng_request_delay_start(rng, 0x4321, dx_time, DWT_SS_TWR);
+
 }
 
 
@@ -170,17 +153,16 @@ int main(int argc, char **argv){
     dw1000_ccp_start(dw1000_mac_find_cb_inst_ptr(inst[0], DW1000_CCP), CCP_ROLE_MASTER);
     dw1000_ccp_start(dw1000_mac_find_cb_inst_ptr(inst[1], DW1000_CCP), CCP_ROLE_SLAVE);
 
-//    for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
-//        g_slot[i] = i;
-//    for (uint16_t i = 1; i < sizeof(g_slot)/sizeof(uint16_t); i++){
-//        tdma_assign_slot(dw1000_mac_find_cb_inst_ptr(inst[0], DW1000_TDMA), master_slot_ev_cb, g_slot[i], &g_slot[i]);
-//        tdma_assign_slot(dw1000_mac_find_cb_inst_ptr(inst[1], DW1000_TDMA), slave_slot_ev_cb, g_slot[i], &g_slot[i]);        
-//    }
+    // Using GPIO5 and GPIO6 to study timing.
+    dw1000_gpio5_config_ext_txe(inst[0]);
+    dw1000_gpio5_config_ext_txe(inst[1]);
+    dw1000_gpio6_config_ext_rxe(inst[0]);
+    dw1000_gpio6_config_ext_rxe(inst[1]);
 
-      for (uint16_t i = 3; i < MYNEWT_VAL(TDMA_NSLOTS) - 8; i+=8){
+    for (uint16_t i = 3; i < MYNEWT_VAL(TDMA_NSLOTS) - 8; i+=8){
         tdma_assign_slot(dw1000_mac_find_cb_inst_ptr(inst[0], DW1000_TDMA), master_slot_ev_cb, i, NULL);
         tdma_assign_slot(dw1000_mac_find_cb_inst_ptr(inst[1], DW1000_TDMA), slave_slot_ev_cb, i, NULL);
-      }
+    }
     
     clk_sync(inst, 2);
     while (1) {
