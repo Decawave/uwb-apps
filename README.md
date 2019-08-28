@@ -20,6 +20,7 @@
 -->
 
 # Decawave DW1000 Applications 
+[![Build Status](https://travis-ci.org/Decawave/mynewt-dw1000-apps.svg?branch=master)](https://travis-ci.org/Decawave/mynewt-dw1000-apps)
 
 ## Overview
 
@@ -69,25 +70,7 @@ Prerequisites: You should follow the generic tutorials at http://mynewt.apache.o
 
 ```no-highlight
 $ JLinkExe -device nRF52 -speed 4000 -if SWD
-SEGGER J-Link Commander V5.12c (Compiled Apr 21 2016 16:05:51)
-DLL version V5.12c, compiled Apr 21 2016 16:05:45
-
-Connecting to J-Link via USB...O.K.
-Firmware: J-Link OB-SAM3U128-V2-NordicSemi compiled Mar 15 2016 18:03:17
-Hardware version: V1.00
-S/N: 682863966
-VTref = 3.300V
-
-
-Type "connect" to establish a target connection, '?' for help
 J-Link>erase
-Cortex-M4 identified.
-Erasing device (0;?i?)...
-Comparing flash   [100%] Done.
-Erasing flash     [100%] Done.
-Verifying flash   [100%] Done.
-J-Link: Flash download: Total time needed: 0.363s (Prepare: 0.093s, Compare: 0.000s, Erase: 0.262s, Program: 0.000s, Verify: 0.000s, Restore: 0.008s)
-Erasing done.
 J-Link>exit
 $ 
 ```
@@ -143,6 +126,6 @@ newt run twr_node_tdma 0
 
 ```no-highlight
 
-telnet localhost 19021
+nc localhost 19021
 
 ```

@@ -228,21 +228,22 @@ slot_cb(struct os_event * ev)
 
     dw1000_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
     uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(ieee_rng_response_frame_t))                 
-                        + rng->config.rx_timeout_delay;// tx_holdoff_delay;         // Remote side turn arroud time.
+                        + rng->config.rx_timeout_delay;
 
 #if MYNEWT_VAL(DW1000_DEVICE_0) && MYNEWT_VAL(DW1000_DEVICE_1)   
 {   
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     dw1000_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
-    dw1000_set_rx_timeout(inst, timeout + 0x300);   
-    cir_enable(inst->cir, true);
+    dw1000_set_rx_timeout(inst, timeout);   
+    cir_enable(inst->cir, true);  
+    dw1000_set_rxauto_disable(inst, true);
     dw1000_start_rx(inst);  // RX enabled but frames handled as unsolicited inbound          
 }
 {   
     dw1000_dev_instance_t * inst = hal_dw1000_inst(1);
     dw1000_rng_instance_t * rng = (dw1000_rng_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_RNG);
     dw1000_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
-    dw1000_set_rx_timeout(inst, timeout + 0x300);  
+    dw1000_set_rx_timeout(inst, timeout);  
     cir_enable(inst->cir, true);            
     dw1000_rng_listen(rng, DWT_BLOCKING);
 }
@@ -297,6 +298,8 @@ int main(int argc, char **argv){
     dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)dw1000_mac_find_cb_inst_ptr(inst, DW1000_RNG);
     assert(rng);
 #endif
+
+
     
     dw1000_mac_interface_t cbs = (dw1000_mac_interface_t){
         .id =  DW1000_APP0,
@@ -340,6 +343,14 @@ int main(int argc, char **argv){
 
     tdma_instance_t * tdma = (tdma_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_TDMA);
     assert(tdma);
+
+#if  MYNEWT_VAL(DW1000_DEVICE_0) && MYNEWT_VAL(DW1000_DEVICE_1)
+    // Using GPIO5 and GPIO6 to study timing.
+    dw1000_gpio5_config_ext_txe( hal_dw1000_inst(0));
+    dw1000_gpio5_config_ext_txe( hal_dw1000_inst(1));
+    dw1000_gpio6_config_ext_rxe( hal_dw1000_inst(0));
+    dw1000_gpio6_config_ext_rxe( hal_dw1000_inst(1));
+#endif
 
     /* Slot 0:ccp, 1+ twr */
     for (uint16_t i = 1; i < MYNEWT_VAL(TDMA_NSLOTS); i++)

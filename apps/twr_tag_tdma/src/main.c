@@ -251,6 +251,11 @@ int main(int argc, char **argv){
 
     tdma_instance_t * tdma = (tdma_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_TDMA);
     assert(tdma);
+
+     // Using GPIO5 and GPIO6 to study timing.
+    dw1000_gpio5_config_ext_txe( inst);
+    dw1000_gpio6_config_ext_rxe( inst);
+
     /* Slot 0:ccp, 1+ twr */
     for (uint16_t i = 1; i < MYNEWT_VAL(TDMA_NSLOTS); i++)
         tdma_assign_slot(tdma, slot_cb,  i, (void*)rng);
