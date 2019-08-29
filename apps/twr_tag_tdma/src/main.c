@@ -68,16 +68,16 @@ static void slot_complete_cb(struct os_event * ev);
  * duration as elapsed. This ensures that the transceiver is in receive mode for the minimum time required.   
  *
  * input parameters
- * @param inst - struct os_event *  
+ * @param inst - struct dpl_event *  
  *
  * output parameters
  *
  * returns none 
  */
 static void 
-slot_cb(struct os_event *ev){
+slot_cb(struct dpl_event *ev){
     assert(ev);
-    tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
+    tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
     tdma_instance_t * tdma = slot->parent;
     dw1000_dev_instance_t * inst = tdma->dev_inst;
     uint16_t idx = slot->idx;

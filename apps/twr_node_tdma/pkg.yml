@@ -56,5 +56,3 @@ pkg.cflags:
     - "-fms-extensions"
     - "-Wno-strict-aliasing"
 
-pkg.lflags:
-    - "-lm"

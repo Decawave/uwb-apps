@@ -49,7 +49,7 @@
 #include "dw1000/dw1000_mac.h"
 
 /* The timer callout */
-static struct os_callout tdoa_callout;
+static struct dpl_callout tdoa_callout;
 static int16_t g_blink_rate = 1;
 static bool config_changed = false;
 
@@ -93,7 +93,7 @@ uwb_conf_set(int argc, char **argv, char *val)
             return CONF_VALUE_SET(val, CONF_STRING, uwb_config.blink_rate);
         }
     }
-    return OS_ENOENT;
+    return DPL_ENOENT;
 }
 
 static int
@@ -105,7 +105,7 @@ uwb_conf_commit(void)
 
     /* Start blinking if we weren't before */
     if (g_blink_rate > 0 && old_blink_rate==0) {
-        os_callout_reset(&tdoa_callout, OS_TICKS_PER_SEC/g_blink_rate);
+        dpl_callout_reset(&tdoa_callout, DPL_TICKS_PER_SEC/g_blink_rate);
     }
     return 0;
 }
@@ -149,7 +149,7 @@ static ieee_blink_frame_t tdoa_blink_frame = {
 };
 
 static
-void tdoa_timer_ev_cb(struct os_event *ev) {
+void tdoa_timer_ev_cb(struct dpl_event *ev) {
     assert(ev != NULL);
 
     hal_gpio_write(LED_BLINK_PIN, 1);
@@ -172,9 +172,9 @@ void tdoa_timer_ev_cb(struct os_event *ev) {
 
     /* Should not really need this section but due to sleeping the dw1000 post tx
      * it may be needed */
-    if(os_sem_get_count(&inst->tx_sem) == 0) {
+    if(dpl_sem_get_count(&inst->tx_sem) == 0) {
         printf("sem rel\n");
-        os_sem_release(&inst->tx_sem);
+        dpl_sem_release(&inst->tx_sem);
     }
 
     if (dw1000_start_tx(inst).start_tx_error){
@@ -186,7 +186,7 @@ void tdoa_timer_ev_cb(struct os_event *ev) {
     
     tdoa_blink_frame.seq_num++;
     if (g_blink_rate) {
-        os_callout_reset(&tdoa_callout, OS_TICKS_PER_SEC/g_blink_rate);
+        dpl_callout_reset(&tdoa_callout, DPL_TICKS_PER_SEC/g_blink_rate);
     }
 }
 
@@ -195,9 +195,9 @@ static void init_timer(void) {
     /*
      * Initialize the callout for a timer event.
      */
-    os_callout_init(&tdoa_callout, os_eventq_dflt_get(), tdoa_timer_ev_cb, NULL);
+    dpl_callout_init(&tdoa_callout, dpl_eventq_dflt_get(), tdoa_timer_ev_cb, NULL);
     if (g_blink_rate) {
-        os_callout_reset(&tdoa_callout, OS_TICKS_PER_SEC/g_blink_rate);
+        dpl_callout_reset(&tdoa_callout, DPL_TICKS_PER_SEC/g_blink_rate);
     }
 }
 
@@ -254,7 +254,7 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_BLINK_PIN, 0);
 
     while (1) {
-        os_eventq_run(os_eventq_dflt_get());   
+        dpl_eventq_run(dpl_eventq_dflt_get());   
     }
 
     assert(0);

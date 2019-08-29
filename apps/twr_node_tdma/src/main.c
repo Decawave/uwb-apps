@@ -162,6 +162,44 @@ slot_complete_cb(struct os_event *ev)
     assert(ev->ev_arg != NULL);
   
     hal_gpio_toggle(LED_BLINK_PIN);
+    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)ev->ev_arg;
+    dw1000_dev_instance_t * inst = rng->dev_inst;
+
+    twr_frame_t * frame = rng->frames[(g_idx_latest)%rng->nframes];
+
+    if (frame->code == DWT_DS_TWR_FINAL || frame->code == DWT_DS_TWR_EXT_FINAL) {
+        float time_of_flight = dw1000_rng_twr_to_tof(rng, g_idx_latest);
+        uint32_t utime =os_cputime_ticks_to_usecs(os_cputime_get32()); 
+        float rssi = dw1000_get_rssi(inst);
+        printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"azimuth\": %lu,\"res_tra\":\"%lX\","
+                    " \"rec_tra\":\"%lX\", \"rssi\":%lu}\n",
+                utime,
+                *(uint32_t *)(&time_of_flight), 
+                *(uint32_t *)(&frame->spherical.range),
+                *(uint32_t *)(&frame->spherical.azimuth),
+                (frame->response_timestamp - frame->request_timestamp),
+                (frame->transmission_timestamp - frame->reception_timestamp),
+                *(uint32_t *)(&rssi)
+        );
+        frame->code = DWT_DS_TWR_END;
+    }    
+    else if (frame->code == DWT_SS_TWR_FINAL) {
+        float time_of_flight = dw1000_rng_twr_to_tof(rng,g_idx_latest);
+        float range = dw1000_rng_tof_to_meters(time_of_flight);
+        uint32_t utime =os_cputime_ticks_to_usecs(os_cputime_get32()); 
+        float rssi = dw1000_get_rssi(inst);
+ 
+        printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_tra\":\"%lX\","
+                    " \"rec_tra\":\"%lX\", \"rssi\":%lu}\n",
+                utime,
+                *(uint32_t *)(&time_of_flight), 
+                *(uint32_t *)(&range),
+                (frame->response_timestamp - frame->request_timestamp),
+                (frame->transmission_timestamp - frame->reception_timestamp),
+                *(uint32_t *)(&rssi)
+        );
+        frame->code = DWT_SS_TWR_END;
+    }
 }
 
 
@@ -197,11 +235,11 @@ uwb_config_updated()
  */
    
 static void 
-slot_cb(struct os_event * ev)
+slot_cb(struct dpl_event * ev)
 {
     assert(ev);
 
-    tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
+    tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
     tdma_instance_t * tdma = slot->parent;
     dw1000_ccp_instance_t * ccp = tdma->ccp;
     dw1000_dev_instance_t * inst = tdma->dev_inst;

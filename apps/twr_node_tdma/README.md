@@ -63,6 +63,7 @@ newt target create twr_tag_tdma
 newt target set twr_tag_tdma app=apps/twr_tag_tdma
 newt target set twr_tag_tdma bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target set twr_tag_tdma build_profile=debug
+newt target amend twr_tag_tdma syscfg=CONSOLE_UART_BAUD=115200
 newt run twr_tag_tdma 0
 
 ```
