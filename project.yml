@@ -22,7 +22,6 @@ project.name: "mynewt-dw1000-apps"
 project.repositories:
     - apache-mynewt-core
     - mynewt-dw1000-core
-    - mynewt-timescale-lib
 
 # Use github's distribution mechanism for core ASF libraries.
 # This provides mirroring automatically for us.
@@ -39,11 +38,3 @@ repository.mynewt-dw1000-core:
     user: decawave
     repo: mynewt-dw1000-core
     url: 'git@github.com:Decawave/mynewt-dw1000-core.git'
-
-repository.mynewt-timescale-lib:
-    type: github
-    vers: 0-dev
-    user: decawave
-    repo: mynewt-timescale-lib
-    url: 'git@github.com:Decawave/mynewt-timescale-lib.git'
-
