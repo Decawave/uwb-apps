@@ -335,7 +335,7 @@ low_battery_mode()
             struct dpl_event *ev;
             ev = dpl_eventq_get_no_wait(dpl_eventq_dflt_get());
             if (ev != NULL) {
-                dpl_event_run_cb(ev);
+                dpl_event_run(ev);
             }
             dpl_time_delay(DPL_TICKS_PER_SEC/10);
         }
