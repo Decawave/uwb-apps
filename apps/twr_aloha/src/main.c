@@ -137,7 +137,7 @@ uwb_ev_cb(struct os_event *ev)
     os_callout_reset(&tx_callout, OS_TICKS_PER_SEC/25);
     
     if (inst->role&DW1000_ROLE_ANCHOR) {
-        if(os_sem_get_count(&rng->sem) == 1){
+        if(dpl_sem_get_count(&rng->sem) == 1){
             dw1000_set_rx_timeout(inst, 0xFFFF);
             dw1000_rng_listen(rng, DWT_NONBLOCKING);
         }
@@ -170,7 +170,8 @@ uwb_config_updated()
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     dw1000_mac_config(inst, NULL);
     dw1000_phy_config_txrf(inst, &inst->config.txrf);
-    dw1000_start_rx(inst);
+    dw1000_phy_set_rx_antennadelay(inst, inst->rx_antenna_delay);
+    dw1000_phy_set_tx_antennadelay(inst, inst->tx_antenna_delay);
     return 0;
 }
 
