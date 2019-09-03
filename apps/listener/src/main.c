@@ -70,6 +70,7 @@ static struct lstnr_config {
 
 #define VERBOSE_CARRIER_INTEGRATOR (0x1)
 #define VERBOSE_RX_DIAG            (0x2)
+#define VERBOSE_CIR                (0x4)
 
 static char *lstnr_get(int argc, char **argv, char *val, int val_len_max);
 static int lstnr_set(int argc, char **argv, char *val);
@@ -119,6 +120,9 @@ lstnr_commit(void)
 {
     conf_value_from_str(lstnr_config.acc_samples, CONF_INT16,
                         (void*)&(local_conf.acc_samples_to_load), 0);
+    if (local_conf.acc_samples_to_load > MYNEWT_VAL(CIR_SIZE)) {
+        local_conf.acc_samples_to_load = MYNEWT_VAL(CIR_SIZE);
+    }
     conf_value_from_str(lstnr_config.verbose, CONF_INT16,
                         (void*)&(local_conf.verbose), 0);
     uwb_config_updated();
@@ -138,17 +142,22 @@ lstnr_export(void (*export_func)(char *name, char *val),
 /* Incoming messages mempool and queue */
 struct uwb_msg_hdr {
     uint32_t utime;
-    uint64_t ts[N_DW_INSTANCES];
     uint16_t dlen;
-    uint16_t acc_len[N_DW_INSTANCES];
-    uint16_t acc_offset[N_DW_INSTANCES];
-    float    pd;
-    struct _dw1000_dev_rxdiag_t diag[N_DW_INSTANCES];
     int32_t  carrier_integrator;
-    float    cir_fp_idx[N_DW_INSTANCES];
-    float    cir_rcphase[N_DW_INSTANCES];
-    float    cir_angle[N_DW_INSTANCES];
-    uint64_t cir_rawts[N_DW_INSTANCES];
+#ifdef MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
+    uint64_t ts[MYNEWT_VAL(PDOA_SPI_NUM_INSTANCES)];
+    struct _dw1000_dev_rxdiag_t diag[MYNEWT_VAL(PDOA_SPI_NUM_INSTANCES)];
+#else
+    uint64_t ts[N_DW_INSTANCES];
+    struct _dw1000_dev_rxdiag_t diag[N_DW_INSTANCES];
+#endif
+#if MYNEWT_VAL(CIR_ENABLED)
+#ifdef MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
+    float    pd[MYNEWT_VAL(PDOA_SPI_NUM_INSTANCES)-1];
+#else
+    float    pd[1];
+#endif
+#endif
 };
 
 #define MBUF_PKTHDR_OVERHEAD    sizeof(struct os_mbuf_pkthdr) + sizeof(struct uwb_msg_hdr)
@@ -180,6 +189,9 @@ create_mbuf_pool(void)
     assert(rc == 0);
 }
 
+#if MYNEWT_VAL(CIR_ENABLED)
+static struct _cir_instance_t tmp_cir;
+#endif
 static uint8_t print_buffer[1024];
 static void
 process_rx_data_queue(struct os_event *ev)
@@ -188,6 +200,12 @@ process_rx_data_queue(struct os_event *ev)
     struct os_mbuf *om;
     struct uwb_msg_hdr *hdr;
     int payload_len;
+    uint64_t ts;
+#ifdef MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
+    int n_instances = MYNEWT_VAL(PDOA_SPI_NUM_INSTANCES);
+#else
+    int n_instances = N_DW_INSTANCES;
+#endif
 
     hal_gpio_init_out(LED_BLINK_PIN, 0);
     while ((om = os_mqueue_get(&rxpkt_q)) != NULL) { 
@@ -206,17 +224,36 @@ process_rx_data_queue(struct os_event *ev)
 
         printf("{\"utime\":%lu", hdr->utime);
         
-        for(int j=0;j<N_DW_INSTANCES;j++) {
-            /* Print individual data for each instance */
-            printf(",\"ts%d\":%llu", j, hdr->ts[j]);
-            float rssi = dw1000_calc_rssi(hal_dw1000_inst(j), &hdr->diag[j]);
-            if (rssi > -200 && rssi < 100) {
-#if N_DW_INSTANCES == 1
-                printf(",\"rssi\":%d.%01d", (int)rssi, abs((int)(10*(rssi-(int)rssi))));
-#else
-                printf(",\"rssi%d\":%d.%01d", j, (int)rssi, abs((int)(10*(rssi-(int)rssi))));
-#endif
+        printf(",\"ts\":[");
+        for(int j=0;j<n_instances;j++) {
+            ts = hdr->ts[j];
+            printf("%s%llu", (j==0)?"":",", ts);
+        }
+        console_out(']');
+
+        if ((local_conf.verbose&VERBOSE_RX_DIAG)) {
+            printf(",\"rssi\":[");
+            for(int j=0;j<n_instances;j++) {
+                float rssi = dw1000_calc_rssi(hal_dw1000_inst(0), &hdr->diag[j]);
+                if (rssi > -200 && rssi < 100) {
+                    printf("%s%d.%01d", (j==0)?"":",",
+                           (int)rssi, abs((int)(10*(rssi-(int)rssi))));
+                } else {
+                    printf("%snull", (j==0)?"":",");
+                }
             }
+            console_out(']');
+            printf(",\"fppl\":[");
+            for(int j=0;j<n_instances;j++) {
+                float fppl = dw1000_calc_fppl(hal_dw1000_inst(0), &hdr->diag[j]);
+                if (fppl > -200 && fppl < 100) {
+                    printf("%s%d.%01d", (j==0)?"":",",
+                           (int)fppl, abs((int)(10*(fppl-(int)fppl))));
+                } else {
+                    printf("%snull", (j==0)?"":",");
+                }
+            }
+            console_out(']');
         }
         if (hdr->carrier_integrator && (local_conf.verbose&VERBOSE_CARRIER_INTEGRATOR)) {
             float ccor = dw1000_calc_clock_offset_ratio(hal_dw1000_inst(0), hdr->carrier_integrator);
@@ -227,11 +264,20 @@ process_rx_data_queue(struct os_event *ev)
                 );
         }
 #if MYNEWT_VAL(CIR_ENABLED)
-        if (fabsf(hdr->pd) > 0.0) {
-            printf(",\"pd\":");
-            printf((hdr->pd < 0)?"-%d.%03d":"%d.%03d", abs((int)hdr->pd), abs((int)(1000*(hdr->pd-(int)hdr->pd))));
+        printf(",\"pd\":[");
+        for(int j=0;j<n_instances-1;j++) {
+            if (isnan(hdr->pd[j])) {
+                /* Json can't handle Nan, but it can handle null */
+                printf("%snull", (j==0)?"":",");
+                continue;
+            }
+            printf((hdr->pd[j] < 0)?"%s-%d.%03d":"%s%d.%03d",
+                   (j==0)?"":",",
+                   abs((int)hdr->pd[j]), abs((int)(1000*(hdr->pd[j]-(int)hdr->pd[j]))));
         }
-#endif
+        console_out(']');
+#endif // CIR_ENABLED
+
         printf(",\"dlen\":%d", hdr->dlen);
         printf(",\"d\":\"");
         for (int i=0;i<sizeof(print_buffer) && i<hdr->dlen;i++)
@@ -240,29 +286,40 @@ process_rx_data_queue(struct os_event *ev)
         }
         console_out('"');
 #if MYNEWT_VAL(CIR_ENABLED)
-        cir_complex_t *cirp;
-        for(int j=0;j<N_DW_INSTANCES;j++) {
-            if (hdr->acc_offset[j] > 0) {
-                cirp = (cir_complex_t *) (print_buffer + hdr->acc_offset[j]);
-                //float idx = ((float) hdr->diag[j].fp_idx)/64.0f;
-                float idx = hdr->cir_fp_idx[j];
-                float ph = hdr->cir_rcphase[j];
-                float an = hdr->cir_angle[j];
-                printf(",\"cir%d\":{\"o\":%d,\"fp_idx\":%d.%03d,\"rcphase\":%d.%03d,\"angle\":%d.%03d,\"rts\":%lld,\"real\":",
-                       j, MYNEWT_VAL(CIR_OFFSET), (int)idx, (int)(1000*(idx-(int)idx)),
-                       (int)ph, (int)fabsf((1000*(ph-(int)ph))),
-                       (int)an, (int)fabsf((1000*(an-(int)an))),
-                       hdr->cir_rawts[j]
-                    );
-                for (int i=0;i<hdr->acc_len[j];i++) {
-                    printf("%c%d", (i==0)? '[':',', cirp[i].real);
+        if (local_conf.verbose&VERBOSE_CIR) {
+            printf(",\"cir\":[");
+            for(int j=0;j<n_instances;j++) {
+                rc = os_mbuf_copydata(om, hdr->dlen + j*sizeof(struct _cir_instance_t), sizeof(struct _cir_instance_t), &tmp_cir);
+                struct _cir_instance_t* cirp = &tmp_cir;
+                if (cirp->status.valid > 0 || 1) {
+                    //float idx = ((float) hdr->diag[j].fp_idx)/64.0f;
+                    float idx = cirp->fp_idx;
+                    float ph = cirp->rcphase;
+                    float an = cirp->angle;
+                    printf("%s{\"o\":%d,\"fp_idx\":%d.%03d,\"rcphase\":%d.%03d,\"angle\":%d.%03d,\"rts\":%lld",
+                           (j==0)?"":",", MYNEWT_VAL(CIR_OFFSET), (int)idx, (int)(1000*(idx-(int)idx)),
+                           (int)ph, (int)fabsf((1000*(ph-(int)ph))),
+                           (int)an, (int)fabsf((1000*(an-(int)an))),
+                           cirp->raw_ts
+                        );
+                    printf(",\"fp_amp\":[%d,%d,%d]", hdr->diag[j].fp_amp, hdr->diag[j].fp_amp2, hdr->diag[j].fp_amp3);
+                    printf(",\"cir_pwr\":%d", hdr->diag[j].cir_pwr);
+                    printf(",\"rx_std\":%d", hdr->diag[j].rx_std);
+                    if (local_conf.acc_samples_to_load) {
+                        printf(",\"real\":[");
+                        for (int i=0;i<local_conf.acc_samples_to_load;i++) {
+                            printf("%s%d", (i==0)? "":",", cirp->cir.array[i].real);
+                        }
+                        printf("],\"imag\":[");
+                        for (int i=0;i<local_conf.acc_samples_to_load;i++) {
+                            printf("%s%d", (i==0)? "":",", cirp->cir.array[i].imag);
+                        }
+                        console_out(']');
+                    }
+                    console_out('}');
                 }
-                printf("],\"imag\":");
-                for (int i=0;i<hdr->acc_len[j];i++) {
-                    printf("%c%d", (i==0)? '[':',', cirp[i].imag);
-                }
-                printf("]}");
             }
+            console_out(']');
         }
 #endif
         printf("}\n");
@@ -290,7 +347,7 @@ rx_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
 #endif
 
 #if N_DW_INSTANCES == 2
-    /* Only use incoming data from the first instance */
+    /* Only use incoming data from the last instance */
     if (inst != hal_dw1000_inst(1)) {
         return true;
     }
@@ -306,48 +363,78 @@ rx_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
         struct uwb_msg_hdr *hdr = (struct uwb_msg_hdr*)OS_MBUF_USRHDR(om);
         memset(hdr, 0, sizeof(struct uwb_msg_hdr));
         hdr->dlen = inst->frame_len;
-        
         hdr->utime = os_cputime_ticks_to_usecs(os_cputime_get32());
         hdr->carrier_integrator = inst->carrier_integrator;
 
+#ifdef MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
+        for(int i=0;i<MYNEWT_VAL(PDOA_SPI_NUM_INSTANCES);i++) {
+            struct pdoa_cir_data *pdata = hal_bsp_get_pdoa_cir_data(i);
+            memcpy(&hdr->diag[i], &pdata->rxdiag, sizeof(hdr->diag[i]));
+            hdr->ts[i] = pdata->ts;
+        }
+#else
         for(int i=0;i<N_DW_INSTANCES;i++) {
             memcpy(&hdr->diag[i], &hal_dw1000_inst(i)->rxdiag, sizeof(struct _dw1000_dev_rxdiag_t));
             if (!hal_dw1000_inst(i)->status.lde_error) {
                 hdr->ts[i] = hal_dw1000_inst(i)->rxtimestamp;
             }
         }
+#endif
         rc = os_mbuf_copyinto(om, 0, inst->rxbuf, hdr->dlen);
         if (rc != 0) {
             return true;
         }
 
 #if MYNEWT_VAL(CIR_ENABLED)
-        if (N_DW_INSTANCES == 2) {
-            if (cir[0]->status.valid && cir[1]->status.valid) {
-                hdr->pd = cir_get_pdoa(cir[0], cir[1]);
+
+#ifdef MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
+        struct pdoa_cir_data *pdata0 = hal_bsp_get_pdoa_cir_data(0);
+        for(int j=1;j<MYNEWT_VAL(PDOA_SPI_NUM_INSTANCES);j++) {
+            struct pdoa_cir_data *pdata = hal_bsp_get_pdoa_cir_data(j);
+            /* Verify crc and data length */
+            if (pdata0->rxbuf_crc16 != pdata->rxbuf_crc16 || pdata0->rx_length != pdata->rx_length) {
+                hdr->pd[j-1] = nanf("");
+                continue;
+            }
+            /* Verify that we're measuring the same leading edge */
+            int raw_ts_diff = (pdata->cir.raw_ts - cir[0]->raw_ts)/64;
+            float fp_diff = roundf(pdata->cir.fp_idx) - roundf(cir[0]->fp_idx) + raw_ts_diff;
+            if (fabsf(fp_diff) > 1.0) {
+                hdr->pd[j-1] = nanf("");
+                continue;
+            }
+            if (cir[0]->status.valid && pdata->cir.status.valid) {
+                hdr->pd[j-1] = cir_get_pdoa(cir[0], &pdata->cir);
             }
         }
-
-        /* Do we need to load accumulator data */
-        if (local_conf.acc_samples_to_load) {
-            int acc_len = (local_conf.acc_samples_to_load < MYNEWT_VAL(CIR_SIZE)) ?
-                local_conf.acc_samples_to_load : MYNEWT_VAL(CIR_SIZE);
-
-            for(int i=0;i<N_DW_INSTANCES;i++) {
-                if (hal_dw1000_inst(i)->cir->status.valid) {
-                    hdr->cir_fp_idx[i] = cir[i]->fp_idx;
-                    hdr->cir_rcphase[i] = cir[i]->rcphase;
-                    hdr->cir_angle[i] = cir[i]->angle;
-                    hdr->cir_rawts[i] = cir[i]->raw_ts;
-                    hdr->acc_offset[i] = OS_MBUF_PKTLEN(om);
-                    rc = os_mbuf_copyinto(om, hdr->acc_offset[i],
-                                          (uint8_t*)hal_dw1000_inst(i)->cir->cir.array,
-                                          acc_len * sizeof(cir_complex_t));
-                    hdr->acc_len[i] = acc_len;
-                }
+#else
+        if (N_DW_INSTANCES == 2) {
+            if (cir[0]->status.valid && cir[1]->status.valid) {
+                hdr->pd[0] = cir_get_pdoa(cir[0], cir[1]);
             }
         }
 #endif
+
+        /* Do we need to load accumulator data */
+        if (local_conf.acc_samples_to_load) {
+            struct _cir_instance_t *src;
+#ifdef MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
+            for(int i=0;i<MYNEWT_VAL(PDOA_SPI_NUM_INSTANCES);i++) {
+                if (i==0) {
+                    src = hal_dw1000_inst(i)->cir;
+                } else {
+                    struct pdoa_cir_data *pdata = hal_bsp_get_pdoa_cir_data(i);
+                    src = &pdata->cir;
+                }
+#else
+            for(int i=0;i<N_DW_INSTANCES;i++) {
+                src = hal_dw1000_inst(i)->cir;
+#endif
+                rc = os_mbuf_copyinto(om, hdr->dlen + i*sizeof(struct _cir_instance_t),
+                                      src, sizeof(struct _cir_instance_t));
+            }
+        }
+#endif // CIR_ENABLED
 
         rc = os_mqueue_put(&rxpkt_q, os_eventq_dflt_get(), om);
         if (rc != 0) {
@@ -424,6 +511,12 @@ static dw1000_mac_interface_t g_cbs = {
     .reset_cb = reset_cb
 };
 
+bool dw1000_post_sync_cb(struct _dw1000_dev_instance_t *inst)
+{
+    dw1000_set_rx_timeout(inst, 0);
+    dw1000_start_rx(inst);
+    return true;
+}
 
 int main(int argc, char **argv){
     int rc;
@@ -474,7 +567,9 @@ int main(int argc, char **argv){
     conf_load();
 
 #ifdef MYNEWT_VAL_DW1000_PDOA_SYNC
+    /* TODO: For master add this as an event that can be re-run */
     hal_bsp_dw_clk_sync(inst, N_DW_INSTANCES);
+    hal_bsp_dw_sync_set_cb(dw1000_post_sync_cb);
 #endif
     
     ble_init(inst[0]->my_long_address);
