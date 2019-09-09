@@ -57,8 +57,8 @@
 #include <timescale/timescale.h> 
 #endif
 
-static void master_slot_ev_cb(struct os_event * ev);
-static void slave_slot_ev_cb(struct os_event * ev);
+static void master_slot_ev_cb(struct dpl_event * ev);
+static void slave_slot_ev_cb(struct dpl_event * ev);
 
 #define NINST 2
 
@@ -83,10 +83,10 @@ clk_sync(dw1000_dev_instance_t * inst[], uint8_t n){
 }
    
 static void 
-master_slot_ev_cb(struct os_event * ev){
+master_slot_ev_cb(struct dpl_event * ev){
     assert(ev);
 
-    tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
+    tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
     tdma_instance_t * tdma = slot->parent;
     dw1000_dev_instance_t * inst = tdma->dev_inst;
     dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *) dw1000_mac_find_cb_inst_ptr(inst, DW1000_RNG);
@@ -102,10 +102,10 @@ master_slot_ev_cb(struct os_event * ev){
 
 
 static void 
-slave_slot_ev_cb(struct os_event *ev){
+slave_slot_ev_cb(struct dpl_event *ev){
     assert(ev);
 
-    tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
+    tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
     tdma_instance_t * tdma = slot->parent;
     dw1000_dev_instance_t * inst = tdma->dev_inst;
     dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *) dw1000_mac_find_cb_inst_ptr(inst, DW1000_RNG);

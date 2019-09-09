@@ -177,7 +177,7 @@ uwb_config_updated()
 }
 
 /*! 
- * @fn slot_cb(struct os_event * ev)
+ * @fn slot_cb(struct dpl_event * ev)
  * 
  * In this example, slot_cb schedules the turning of the transceiver to receive mode at the desired epoch. 
  * The precise timing is under the control of the DW1000, and the dw_time variable defines this epoch. 
@@ -187,7 +187,7 @@ uwb_config_updated()
  * that the preamble are received. The transceiver, when transmitting adjust the txtime accordingly.
  *
  * input parameters
- * @param inst - struct os_event *  
+ * @param inst - struct dpl_event *
  *
  * output parameters
  *
@@ -359,7 +359,7 @@ int main(int argc, char **argv){
 #endif
 
     while (1) {
-        os_eventq_run(os_eventq_dflt_get());
+        dpl_eventq_run(dpl_eventq_dflt_get());
     }
     assert(0);
     return rc;
