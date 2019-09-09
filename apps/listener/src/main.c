@@ -174,6 +174,7 @@ static struct os_mempool g_mbuf_mempool;
 static os_membuf_t g_mbuf_buffer[MBUF_MEMPOOL_SIZE];
 static struct os_mqueue rxpkt_q;
 
+static struct dpl_callout rx_reenable_callout;
 
 static void
 create_mbuf_pool(void)
@@ -331,11 +332,10 @@ process_rx_data_queue(struct os_event *ev)
 }
 
 static bool
-rx_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
+rx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 {
     int rc;
     struct os_mbuf *om;
-    inst->control.on_error_continue_enabled = 1;
 
 #if MYNEWT_VAL(CIR_ENABLED)
     cir_instance_t * cir[] = {
@@ -348,12 +348,25 @@ rx_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
 
 #if N_DW_INSTANCES == 2
     /* Only use incoming data from the last instance */
-    if (inst != hal_dw1000_inst(1)) {
+    if (inst != uwb_dev_idx_lookup(1)) {
+        if (!inst->status.rx_restarted) {
+            dpl_callout_reset(&rx_reenable_callout, DPL_TICKS_PER_SEC/100);
+        }
         return true;
     }
+#if MYNEWT_VAL(CIR_ENABLED)
+    dpl_callout_stop(&rx_reenable_callout);
+    /* Restart receivers */
+    for(int i=0;i<N_DW_INSTANCES;i++) {
+        uwb_set_rx_timeout(uwb_dev_idx_lookup(i), 0xffff);
+        uwb_set_rxauto_disable(uwb_dev_idx_lookup(i), MYNEWT_VAL(CIR_ENABLED));
+        uwb_start_rx(uwb_dev_idx_lookup(i));
+    }
+#endif
+
     /* Skip packet if other dw instance doesn't have the same data in it's buffer */
-    if (memcmp(hal_dw1000_inst(0)->rxbuf, hal_dw1000_inst(1)->rxbuf, hal_dw1000_inst(0)->frame_len)) {
-        return false;
+    if (memcmp(uwb_dev_idx_lookup(0)->rxbuf, uwb_dev_idx_lookup(1)->rxbuf, uwb_dev_idx_lookup(0)->frame_len)) {
+        return true;
     }
 #endif
 
@@ -375,8 +388,8 @@ rx_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
 #else
         for(int i=0;i<N_DW_INSTANCES;i++) {
             memcpy(&hdr->diag[i], &hal_dw1000_inst(i)->rxdiag, sizeof(struct _dw1000_dev_rxdiag_t));
-            if (!hal_dw1000_inst(i)->status.lde_error) {
-                hdr->ts[i] = hal_dw1000_inst(i)->rxtimestamp;
+            if (!uwb_dev_idx_lookup(i)->status.lde_error) {
+                hdr->ts[i] = uwb_dev_idx_lookup(i)->rxtimestamp;
             }
         }
 #endif
@@ -396,6 +409,7 @@ rx_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
                 hdr->pd[j-1] = nanf("");
                 continue;
             }
+
             /* Verify that we're measuring the same leading edge */
             int raw_ts_diff = (pdata->cir.raw_ts - cir[0]->raw_ts)/64;
             float fp_diff = roundf(pdata->cir.fp_idx) - roundf(cir[0]->fp_idx) + raw_ts_diff;
@@ -403,6 +417,7 @@ rx_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
                 hdr->pd[j-1] = nanf("");
                 continue;
             }
+
             if (cir[0]->status.valid && pdata->cir.status.valid) {
                 hdr->pd[j-1] = cir_get_pdoa(cir[0], &pdata->cir);
             }
@@ -448,25 +463,29 @@ rx_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
 }
 
 bool
-error_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
+error_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 {
-    printf("# err_cb s %lx\n", inst->sys_status);
+    printf("# err_cb s %lx\n", ((struct _dw1000_dev_instance_t*)inst)->sys_status);
     return true;
 }
 
 bool
-timeout_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
+timeout_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 {
-    dw1000_set_rx_timeout(inst, 0);
-    inst->control.on_error_continue_enabled = 1;
-    dw1000_start_rx(inst);
+    printf("# listener to\n");
+    /* Restart receivers */
+    for(int i=0;i<N_DW_INSTANCES;i++) {
+        dw1000_set_rx_timeout(hal_dw1000_inst(i), 0);
+        dw1000_set_rxauto_disable(hal_dw1000_inst(i), MYNEWT_VAL(CIR_ENABLED));
+        dw1000_start_rx(hal_dw1000_inst(i));
+    }
     return true;
 }
 
 bool
-reset_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
+reset_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 {
-    printf("# rst_cb s %lx\n", inst->sys_status);
+    printf("# rst_cb s %lx\n", ((struct _dw1000_dev_instance_t*)inst)->sys_status);
     return true;
 }
 
@@ -480,6 +499,7 @@ uwb_config_update(struct os_event * ev)
         dw1000_set_dblrxbuff(inst, true);
 #endif
         dw1000_set_rx_timeout(inst, 0);
+        dw1000_set_rxauto_disable(inst, MYNEWT_VAL(CIR_ENABLED));
         dw1000_start_rx(inst);
         inst->config.rxdiag_enable = (local_conf.verbose&VERBOSE_RX_DIAG) != 0;
     }
@@ -497,12 +517,22 @@ uwb_config_updated()
     return 0;
 }
 
+static
+void rx_reenable_ev_cb(struct dpl_event *ev) {
+    /* Restart receivers */
+    for(int i=0;i<N_DW_INSTANCES;i++) {
+        dw1000_set_rx_timeout(hal_dw1000_inst(i), 0);
+        dw1000_set_rxauto_disable(hal_dw1000_inst(i), MYNEWT_VAL(CIR_ENABLED));
+        dw1000_start_rx(hal_dw1000_inst(i));
+    }
+}
+
 static struct uwbcfg_cbs uwb_cb = {
     .uc_update = uwb_config_updated
 };
 
-static dw1000_mac_interface_t g_cbs = {
-    .id = 72,
+static struct uwb_mac_interface g_cbs = {
+    .id = UWBEXT_APP0,
     .rx_complete_cb = rx_complete_cb,
     .rx_timeout_cb = timeout_cb,
     .rx_error_cb = error_cb,
@@ -521,11 +551,13 @@ bool dw1000_post_sync_cb(struct _dw1000_dev_instance_t *inst)
 int main(int argc, char **argv){
     int rc;
     dw1000_dev_instance_t * inst[N_DW_INSTANCES];
+    struct uwb_dev *udev[N_DW_INSTANCES];
 
     sysinit();
     hal_gpio_init_out(LED_BLINK_PIN, 1);
 
     for(int i=0;i<N_DW_INSTANCES;i++) {
+        udev[i] = uwb_dev_idx_lookup(i);
         inst[i] = hal_dw1000_inst(i);
         inst[i]->config.rxdiag_enable = (local_conf.verbose&VERBOSE_RX_DIAG) != 0;
         inst[i]->config.framefilter_enabled = 0;
@@ -550,15 +582,15 @@ int main(int argc, char **argv){
         inst[i]->config.cir_enable = (N_DW_INSTANCES>1) ? true : false;
         inst[i]->config.cir_enable = true;
 #endif
-        inst[i]->my_short_address = inst[i]->partID&0xffff;
-        inst[i]->my_long_address = ((uint64_t) inst[i]->lotID << 33) + inst[i]->partID;
+        udev[i]->uid = inst[i]->part_id&0xffff;
+        udev[i]->euid = ((uint64_t) inst[i]->lot_id << 33) + inst[i]->part_id;
         printf("{\"device_id\"=\"%lX\"",inst[i]->device_id);
-        printf(",\"PANID=\"%X\"",inst[i]->PANID);
-        printf(",\"addr\"=\"%X\"",inst[i]->my_short_address);
-        printf(",\"partID\"=\"%lX\"",inst[i]->partID);
-        printf(",\"lotID\"=\"%lX\"",inst[i]->lotID);
+        printf(",\"PANID=\"%X\"",udev[i]->pan_id);
+        printf(",\"addr\"=\"%X\"",udev[i]->uid);
+        printf(",\"partID\"=\"%lX\"",inst[i]->part_id);
+        printf(",\"lotID\"=\"%lX\"",inst[i]->lot_id);
         printf(",\"xtal_trim\"=\"%X\"}\n",inst[i]->xtal_trim);
-        dw1000_mac_append_interface(inst[i], &g_cbs);
+        uwb_mac_append_interface(udev[i], &g_cbs);
     }
 
     /* Load any saved uwb settings */
@@ -572,18 +604,20 @@ int main(int argc, char **argv){
     hal_bsp_dw_sync_set_cb(dw1000_post_sync_cb);
 #endif
     
-    ble_init(inst[0]->my_long_address);
+    ble_init(udev[0]->euid);
 
     for (int i=0;i<sizeof(g_mbuf_buffer)/sizeof(g_mbuf_buffer[0]);i++) {
         g_mbuf_buffer[i] = 0xdeadbeef;
     }
     create_mbuf_pool();    
     os_mqueue_init(&rxpkt_q, process_rx_data_queue, NULL);
+    dpl_callout_init(&rx_reenable_callout, dpl_eventq_dflt_get(), rx_reenable_ev_cb, NULL);
     
     /* Start timeout-free rx on all devices */
     for(int i=0;i<N_DW_INSTANCES;i++) {
-        dw1000_set_rx_timeout(inst[i], 0);
-        dw1000_start_rx(inst[i]);
+        uwb_set_rx_timeout(udev[i], 0);
+        uwb_set_rxauto_disable(udev[i], MYNEWT_VAL(CIR_ENABLED));
+        uwb_start_rx(udev[i]);
     }
 
     while (1) {

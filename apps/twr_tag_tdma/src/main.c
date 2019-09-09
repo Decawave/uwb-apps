@@ -53,7 +53,7 @@
 #endif
 
 
-static bool error_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs);
+static bool error_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs);
 static void slot_complete_cb(struct os_event * ev);
 
 /*! 
@@ -79,7 +79,6 @@ slot_cb(struct dpl_event *ev){
     assert(ev);
     tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
     tdma_instance_t * tdma = slot->parent;
-    dw1000_dev_instance_t * inst = tdma->dev_inst;
     uint16_t idx = slot->idx;
     dw1000_rng_instance_t *rng = (dw1000_rng_instance_t*)slot->arg;
 
@@ -87,15 +86,14 @@ slot_cb(struct dpl_event *ev){
     uint64_t dx_time = tdma_tx_slot_start(tdma, idx) & 0xFFFFFFFFFE00UL;
   
     /* Range with the clock master by default */
-    dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
-    assert(ccp);
+    dw1000_ccp_instance_t *ccp = tdma->ccp;
     uint16_t node_address = ccp->frames[0]->short_address;
 
-    /* Select single-sided or double sided twr every second slot */
+    /* Select single-sided or double sided twr every second slot */    
     int mode = DWT_DS_TWR_EXT;
-//    if (slot->idx%2==0) {
-//        mode = DWT_DS_TWR;
- //   }
+    //if (slot->idx%2==0) {
+    //mode = DWT_SS_TWR_EXT;
+        //}
     dw1000_rng_request_delay_start(rng, node_address, dx_time, mode);
 }
 
@@ -123,7 +121,8 @@ static struct os_callout slot_callout;
 static uint16_t g_idx_latest;
 
 static bool
-complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
+complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
+{
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
     }
@@ -169,7 +168,7 @@ slot_complete_cb(struct os_event * ev){
  * returns none 
  */
 static bool
-error_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
+error_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 { 
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
@@ -220,39 +219,37 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
     
+    struct uwb_dev *udev = uwb_dev_idx_lookup(0);
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    dw1000_rng_instance_t* rng = (dw1000_rng_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_RNG);
+    dw1000_rng_instance_t* rng = (dw1000_rng_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_RNG);
     assert(rng);
 
-    dw1000_mac_interface_t cbs = {
-        .id = DW1000_APP0,
+    struct uwb_mac_interface cbs = {
+        .id = UWBEXT_APP0,
         .inst_ptr = rng,
         .tx_error_cb = error_cb,
         .rx_error_cb = error_cb,
         .complete_cb = complete_cb
     };
-    dw1000_mac_append_interface(inst, &cbs);
+    uwb_mac_append_interface(udev, &cbs);
     
-    dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
-    assert(ccp);
-    dw1000_ccp_start(ccp, CCP_ROLE_SLAVE);
+    tdma_instance_t * tdma = (tdma_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_TDMA);
+    assert(tdma);
+    dw1000_ccp_start(tdma->ccp, CCP_ROLE_SLAVE);
 
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
     printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 
     printf("{\"utime\": %lu,\"msg\": \"device_id = 0x%lX\"}\n",utime,inst->device_id);
-    printf("{\"utime\": %lu,\"msg\": \"PANID = 0x%X\"}\n",utime,inst->PANID);
-    printf("{\"utime\": %lu,\"msg\": \"DeviceID = 0x%X\"}\n",utime,inst->my_short_address);
-    printf("{\"utime\": %lu,\"msg\": \"partID = 0x%lX\"}\n",utime,inst->partID);
-    printf("{\"utime\": %lu,\"msg\": \"lotID = 0x%lX\"}\n",utime,inst->lotID);
+    printf("{\"utime\": %lu,\"msg\": \"PANID = 0x%X\"}\n",utime,udev->pan_id);
+    printf("{\"utime\": %lu,\"msg\": \"DeviceID = 0x%X\"}\n",utime,udev->uid);
+    printf("{\"utime\": %lu,\"msg\": \"partID = 0x%lX\"}\n",utime,inst->part_id);
+    printf("{\"utime\": %lu,\"msg\": \"lotID = 0x%lX\"}\n",utime,inst->lot_id);
     printf("{\"utime\": %lu,\"msg\": \"xtal_trim = 0x%X\"}\n",utime,inst->xtal_trim);  
-    printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime,dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t))); 
-    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,dw1000_phy_SHR_duration(&inst->attrib)); 
-    printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay))); 
+    printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime, uwb_phy_frame_duration(udev, sizeof(twr_frame_final_t))); 
+    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime, uwb_phy_SHR_duration(udev)); 
+    printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay))); 
 
-    tdma_instance_t * tdma = (tdma_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_TDMA);
-    assert(tdma);
-
-     // Using GPIO5 and GPIO6 to study timing.
+     // Using DW GPIO5 and GPIO6 to study timing.
     dw1000_gpio5_config_ext_txe( inst);
     dw1000_gpio6_config_ext_rxe( inst);
 

@@ -66,16 +66,16 @@
 
 static bool dw1000_config_updated = false;
 static void slot_complete_cb(struct os_event *ev);
-static bool cir_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs);
-static bool complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs);
+static bool cir_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs);
+static bool complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs);
 
 #define ANTENNA_SEPERATION 0.0205f
 #define WAVELENGTH 0.046f
 
 static triadf_t g_angle = {0};
 static bool
-cir_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
-
+cir_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
+{
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
     }
@@ -86,8 +86,8 @@ cir_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
         hal_dw1000_inst(1)->cir
     };
  
-    twr_frame_t * frame0 = (twr_frame_t *) hal_dw1000_inst(0)->rxbuf;
-    twr_frame_t * frame1 = (twr_frame_t *) hal_dw1000_inst(1)->rxbuf;
+    twr_frame_t * frame0 = (twr_frame_t *) uwb_dev_idx_lookup(0)->rxbuf;
+    twr_frame_t * frame1 = (twr_frame_t *) uwb_dev_idx_lookup(1)->rxbuf;
 
     if ((cir[0]->status.valid && cir[1]->status.valid) && (frame0->seq_num == frame1->seq_num)){ 
         float pd = fmodf((cir[0]->angle - cir[0]->rcphase) - (cir[1]->angle - cir[1]->rcphase) + 3*M_PI, 2*M_PI) - M_PI;
@@ -121,8 +121,8 @@ cir_complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
 /* The timer callout */
 static struct os_event slot_event;
 static bool
-complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
-
+complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
+{
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
     }
@@ -202,11 +202,11 @@ slot_cb(struct dpl_event * ev)
     tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
     tdma_instance_t * tdma = slot->parent;
     dw1000_ccp_instance_t * ccp = tdma->ccp;
-    dw1000_dev_instance_t * inst = tdma->dev_inst;
+    struct uwb_dev *inst = tdma->dev_inst;
     uint16_t idx = slot->idx;
     dw1000_rng_instance_t * rng = (dw1000_rng_instance_t*)slot->arg;
-
     g_angle.azimuth = g_angle.zenith = NAN;
+    //printf("idx%d\n", idx);
 
     /* Avoid colliding with the ccp in case we've got out of sync */
     if (dpl_sem_get_count(&ccp->sem) == 0) {
@@ -224,29 +224,29 @@ slot_cb(struct dpl_event * ev)
     }
 
 
-    dw1000_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
-    uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(ieee_rng_response_frame_t))                 
+    uint16_t timeout = uwb_phy_frame_duration(inst, sizeof(ieee_rng_response_frame_t))                 
                         + rng->config.rx_timeout_delay;
 
 #if MYNEWT_VAL(DW1000_DEVICE_0) && MYNEWT_VAL(DW1000_DEVICE_1)   
 {   
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    dw1000_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
-    dw1000_set_rx_timeout(inst, timeout);   
-    cir_enable(inst->cir, true);  
-    dw1000_set_rxauto_disable(inst, true);
-    dw1000_start_rx(inst);  // RX enabled but frames handled as unsolicited inbound          
+    struct uwb_dev * inst = uwb_dev_idx_lookup(0);
+    uwb_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
+    uwb_set_rx_timeout(inst, timeout);   
+    cir_enable(hal_dw1000_inst(0)->cir, true);  
+    uwb_set_rxauto_disable(inst, true);
+    uwb_start_rx(inst);  // RX enabled but frames handled as unsolicited inbound          
 }
 {   
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(1);
-    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_RNG);
-    dw1000_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
-    dw1000_set_rx_timeout(inst, timeout);  
-    cir_enable(inst->cir, true);            
+    struct uwb_dev * inst = uwb_dev_idx_lookup(1);
+    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t*)uwb_mac_find_cb_inst_ptr(inst, UWBEXT_RNG);
+    uwb_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
+    uwb_set_rx_timeout(inst, timeout);  
+    cir_enable(hal_dw1000_inst(1)->cir, true);
     dw1000_rng_listen(rng, DWT_BLOCKING);
 }
 #else
-    dw1000_set_rx_timeout(inst, timeout);
+    uwb_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
+    uwb_set_rx_timeout(inst, timeout);
     dw1000_rng_listen(rng, DWT_BLOCKING);
 #endif
 
@@ -275,42 +275,32 @@ int main(int argc, char **argv){
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     dw1000_set_dblrxbuff(inst, false);
 }
-{   
+    struct uwb_dev * udev = uwb_dev_idx_lookup(1);
     dw1000_dev_instance_t * inst = hal_dw1000_inst(1);
     dw1000_set_dblrxbuff(inst, false);
-}
-#endif
-
-#if MYNEWT_VAL(DW1000_DEVICE_0) && MYNEWT_VAL(DW1000_DEVICE_1)
-{   
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    dw1000_set_dblrxbuff(inst, false);
-}
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(1);
-    dw1000_set_dblrxbuff(inst, false);
-    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)dw1000_mac_find_cb_inst_ptr(inst, DW1000_RNG);
+    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_RNG);
     assert(rng);
 #elif  MYNEWT_VAL(DW1000_DEVICE_0) && !MYNEWT_VAL(DW1000_DEVICE_1)
+    struct uwb_dev * udev = uwb_dev_idx_lookup(0);
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     dw1000_set_dblrxbuff(inst, false);
-    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)dw1000_mac_find_cb_inst_ptr(inst, DW1000_RNG);
+    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_RNG);
     assert(rng);
 #endif
 
 
-    
-    dw1000_mac_interface_t cbs = (dw1000_mac_interface_t){
-        .id =  DW1000_APP0,
+    struct uwb_mac_interface cbs = (struct uwb_mac_interface){
+        .id =  UWBEXT_APP0,
         .inst_ptr = rng,
         .complete_cb = complete_cb,
         .cir_complete_cb = cir_complete_cb
     };
-    dw1000_mac_append_interface(inst, &cbs);
+    uwb_mac_append_interface(udev, &cbs);
 
-    dw1000_ccp_instance_t * ccp = (dw1000_ccp_instance_t *)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
+    dw1000_ccp_instance_t * ccp = (dw1000_ccp_instance_t *)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_CCP);
     assert(ccp);
     
-    if (inst->role & DW1000_ROLE_CCP_MASTER) {
+    if (udev->role & UWB_ROLE_CCP_MASTER) {
         /* Start as clock-master */
         dw1000_ccp_start(ccp, CCP_ROLE_MASTER);
     } else {
@@ -330,16 +320,16 @@ int main(int argc, char **argv){
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
     printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 
     printf("{\"utime\": %lu,\"msg\": \"device_id = 0x%lX\"}\n",utime,inst->device_id);
-    printf("{\"utime\": %lu,\"msg\": \"PANID = 0x%X\"}\n",utime,inst->PANID);
-    printf("{\"utime\": %lu,\"msg\": \"DeviceID = 0x%X\"}\n",utime,inst->my_short_address);
-    printf("{\"utime\": %lu,\"msg\": \"partID = 0x%lX\"}\n",utime,inst->partID);
-    printf("{\"utime\": %lu,\"msg\": \"lotID = 0x%lX\"}\n",utime,inst->lotID);
+    printf("{\"utime\": %lu,\"msg\": \"PANID = 0x%X\"}\n",utime,udev->pan_id);
+    printf("{\"utime\": %lu,\"msg\": \"DeviceID = 0x%X\"}\n",utime,udev->my_short_address);
+    printf("{\"utime\": %lu,\"msg\": \"partID = 0x%lX\"}\n",utime,inst->part_id);
+    printf("{\"utime\": %lu,\"msg\": \"lotID = 0x%lX\"}\n",utime,inst->lot_id);
     printf("{\"utime\": %lu,\"msg\": \"xtal_trim = 0x%X\"}\n",utime,inst->xtal_trim);  
-    printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime,dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t))); 
-    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,dw1000_phy_SHR_duration(&inst->attrib)); 
-    printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay))); 
+    printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime,uwb_phy_frame_duration(udev, sizeof(twr_frame_final_t))); 
+    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,uwb_phy_SHR_duration(udev)); 
+    printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay))); 
 
-    tdma_instance_t * tdma = (tdma_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_TDMA);
+    tdma_instance_t * tdma = (tdma_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_TDMA);
     assert(tdma);
 
 #if  MYNEWT_VAL(DW1000_DEVICE_0) && MYNEWT_VAL(DW1000_DEVICE_1)

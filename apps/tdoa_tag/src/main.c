@@ -31,7 +31,7 @@
 #include "mcu/mcu_sim.h"
 #endif
 
-#include "bleprph.h"
+#include "bleprph/bleprph.h"
 
 #include "sensor/sensor.h"
 #include "sensor/accel.h"
@@ -154,8 +154,9 @@ void tdoa_timer_ev_cb(struct dpl_event *ev) {
 
     hal_gpio_write(LED_BLINK_PIN, 1);
 
+    struct uwb_dev *udev = uwb_dev_idx_lookup(0);
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    if (inst->status.sleeping) {
+    if (udev->status.sleeping) {
         dw1000_dev_wakeup(inst);
     }
 
@@ -168,7 +169,7 @@ void tdoa_timer_ev_cb(struct dpl_event *ev) {
     dw1000_dev_configure_sleep(inst);
     dw1000_dev_enter_sleep_after_tx(inst, g_blink_rate < 10);
 
-    dw1000_write_tx_fctrl(inst, sizeof(ieee_blink_frame_t), 0);
+    uwb_write_tx_fctrl(udev, sizeof(ieee_blink_frame_t), 0);
 
     /* Should not really need this section but due to sleeping the dw1000 post tx
      * it may be needed */
@@ -177,10 +178,10 @@ void tdoa_timer_ev_cb(struct dpl_event *ev) {
         dpl_sem_release(&inst->tx_sem);
     }
 
-    if (dw1000_start_tx(inst).start_tx_error){
+    if (uwb_start_tx(udev).start_tx_error){
         printf("start tx err\n");
     } else {
-        dw1000_write_tx(inst, tdoa_blink_frame.array, 0, sizeof(ieee_blink_frame_t));
+        uwb_write_tx(udev, tdoa_blink_frame.array, 0, sizeof(ieee_blink_frame_t));
     }
     hal_gpio_write(LED_BLINK_PIN, 0);
     
@@ -227,6 +228,7 @@ int main(int argc, char **argv){
     /* Load config from flash */
     conf_load();
 
+    struct uwb_dev *udev = uwb_dev_idx_lookup(0);
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     inst->config.dblbuffon_enabled = 0;
     inst->config.framefilter_enabled = 0;
@@ -240,14 +242,14 @@ int main(int argc, char **argv){
     uwb_sleep();
     
     printf("{\"device_id\"=\"%lX\"",inst->device_id);
-    printf(",\"PANID=\"%X\"",inst->PANID);
-    printf(",\"addr\"=\"%X\"",inst->my_short_address);
-    printf(",\"partID\"=\"%lX\"",inst->partID);
-    printf(",\"lotID\"=\"%lX\"}\n",inst->lotID);
+    printf(",\"panid=\"%X\"",udev->pan_id);
+    printf(",\"addr\"=\"%X\"",udev->uid);
+    printf(",\"part_id\"=\"%lX\"",inst->part_id);
+    printf(",\"lot_id\"=\"%lX\"}\n",inst->lot_id);
 
-    tdoa_blink_frame.long_address = inst->my_long_address;
+    tdoa_blink_frame.long_address = udev->my_long_address;
 #if MYNEWT_VAL(BLE_ENABLED)
-    ble_init(inst->my_long_address);
+    ble_init(udev->my_long_address);
 #endif    
 
     init_timer();

@@ -31,7 +31,7 @@ pkg.deps:
     - "@apache-mynewt-core/hw/hal"
     - "@apache-mynewt-core/sys/console/full" 
     - "@apache-mynewt-core/sys/shell"
-    - "@mynewt-dw1000-core/hw/drivers/dw1000"
+    - "@mynewt-dw1000-core/hw/drivers/uwb"
     - "@apache-mynewt-core/encoding/json"
     - "@mynewt-dw1000-core/net/ip/lwip_base"
     - "@mynewt-dw1000-core/lib/lwip"

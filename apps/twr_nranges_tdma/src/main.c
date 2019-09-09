@@ -71,13 +71,14 @@ uwb_config_updated()
 {
     /* Workaround in case we're stuck waiting for ccp with the 
      * wrong radio settings */
+    struct uwb_dev * udev = uwb_dev_idx_lookup(0);
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
+    dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_CCP);
     if (dpl_sem_get_count(&ccp->sem) == 0) {
-        dw1000_phy_forcetrxoff(inst);
+        uwb_phy_forcetrxoff(udev);
         dw1000_mac_config(inst, NULL);
         dw1000_phy_config_txrf(inst, &inst->config.txrf);
-        dw1000_start_rx(inst);
+        uwb_start_rx(udev);
         return 0;
     }
 
@@ -126,7 +127,7 @@ static void nrng_complete_cb(struct dpl_event *ev) {
  */
 /* The timer callout */
 static struct dpl_callout slot_callout;
-static bool complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
+static bool complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 {
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
@@ -158,7 +159,7 @@ slot_cb(struct dpl_event * ev){
     tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
     tdma_instance_t * tdma = slot->parent;
     dw1000_ccp_instance_t *ccp = tdma->ccp;
-    dw1000_dev_instance_t * inst = tdma->dev_inst;
+    struct uwb_dev * udev = tdma->dev_inst;
     uint16_t idx = slot->idx;
     dw1000_nrng_instance_t *nrng = (dw1000_nrng_instance_t *)slot->arg;
 
@@ -166,30 +167,29 @@ slot_cb(struct dpl_event * ev){
     if (dpl_sem_get_count(&ccp->sem) == 0) {
         return;
     }
-    if (ccp->local_epoch==0 || inst->slot_id == 0xffff) return;
+    if (ccp->local_epoch==0 || udev->slot_id == 0xffff) return;
 
     /* Process any newtmgr packages queued up */
     if (idx > 6 && idx < (tdma->nslots-6) && (idx%4)==0) {
-        nmgr_uwb_instance_t *nmgruwb = (nmgr_uwb_instance_t *)dw1000_mac_find_cb_inst_ptr(inst, DW1000_NMGR_UWB);
+        nmgr_uwb_instance_t *nmgruwb = (nmgr_uwb_instance_t *)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_NMGR_UWB);
         assert(nmgruwb);
         if (uwb_nmgr_process_tx_queue(nmgruwb, tdma_tx_slot_start(tdma, idx))) {
             return;
         }
     }
 
-    if (inst->role&DW1000_ROLE_ANCHOR) {
+    if (udev->role&UWB_ROLE_ANCHOR) {
         /* Listen for a ranging tag */
-        dw1000_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
-        uint16_t timeout = dw1000_phy_frame_duration(
-            &inst->attrib, sizeof(nrng_request_frame_t))
-            + nrng->config.rx_timeout_delay;    
+        uwb_set_delay_start(udev, tdma_rx_slot_start(tdma, idx));
+        uint16_t timeout = uwb_phy_frame_duration(udev, sizeof(nrng_request_frame_t))
+            + nrng->config.rx_timeout_delay;
 
         /* Padded timeout to allow us to receive any nmgr packets too */
-        dw1000_set_rx_timeout(inst, timeout + 0x1000);
+        uwb_set_rx_timeout(udev, timeout + 0x1000);
         dw1000_nrng_listen(nrng, DWT_BLOCKING);
     } else {
         /* Range with the anchors */
-        if (idx%MYNEWT_VAL(NRNG_NTAGS) != inst->slot_id) {
+        if (idx%MYNEWT_VAL(NRNG_NTAGS) != udev->slot_id) {
             return;
         }
 
@@ -256,34 +256,34 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
 
+    struct uwb_dev * udev = uwb_dev_idx_lookup(0);
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     inst->config.rxauto_enable = false;
     inst->config.dblbuffon_enabled = false;
     dw1000_set_dblrxbuff(inst, inst->config.dblbuffon_enabled);  
 
-    dw1000_nrng_instance_t* nrng = (dw1000_nrng_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_NRNG);
+    dw1000_nrng_instance_t* nrng = (dw1000_nrng_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_NRNG);
     assert(nrng);
 
-    dw1000_mac_interface_t cbs = (dw1000_mac_interface_t){
-        .id =  DW1000_APP0,
+    struct uwb_mac_interface cbs = (struct uwb_mac_interface){
+        .id = UWBEXT_APP0,
         .inst_ptr = nrng,
         .complete_cb = complete_cb
     };
 
-    dw1000_mac_append_interface(inst, &cbs);
-    inst->slot_id = 0xffff;
-    inst->my_long_address = ((uint64_t) inst->lotID << 32) + inst->partID;
+    uwb_mac_append_interface(udev, &cbs);
+    udev->slot_id = 0xffff;
 #if MYNEWT_VAL(BLEPRPH_ENABLED)
     ble_init(inst->my_long_address);
 #endif
-    dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
+    dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_CCP);
     assert(ccp);
-    dw1000_pan_instance_t *pan = (dw1000_pan_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_PAN);
+    dw1000_pan_instance_t *pan = (dw1000_pan_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_PAN);
     assert(pan);
-    dw1000_rng_instance_t* rng = (dw1000_rng_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_RNG);
+    dw1000_rng_instance_t* rng = (dw1000_rng_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_RNG);
     assert(rng);
     
-    if (inst->role&DW1000_ROLE_CCP_MASTER) {
+    if (udev->role&UWB_ROLE_CCP_MASTER) {
         /* Start as clock-master */
         dw1000_ccp_start(ccp, CCP_ROLE_MASTER);
     } else {
@@ -291,22 +291,22 @@ int main(int argc, char **argv){
         dw1000_ccp_set_tof_comp_cb(ccp, tof_comp_cb);
     }
 
-    if (inst->role&DW1000_ROLE_PAN_MASTER) {
+    if (udev->role&UWB_ROLE_PAN_MASTER) {
         /* As pan-master, first lookup our address and slot_id */
         struct image_version fw_ver;
         struct panmaster_node *node;
-        panmaster_find_node(inst->my_long_address, NETWORK_ROLE_ANCHOR, &node);
+        panmaster_find_node(udev->euid, NETWORK_ROLE_ANCHOR, &node);
         assert(node);
         /* Update my fw-version in the panmaster db */
         imgr_my_version(&fw_ver);
-        panmaster_add_version(inst->my_long_address, &fw_ver);
+        panmaster_add_version(udev->euid, &fw_ver);
         /* Set short address and slot id */
-        inst->my_short_address = node->addr;
-        inst->slot_id = node->slot_id;
+        udev->uid = node->addr;
+        udev->slot_id = node->slot_id;
         dw1000_pan_start(pan, PAN_ROLE_MASTER, NETWORK_ROLE_ANCHOR);
     } else {
         dw1000_pan_set_postprocess(pan, pan_complete_cb);
-        network_role_t role = (inst->role&DW1000_ROLE_ANCHOR)?
+        network_role_t role = (udev->role&UWB_ROLE_ANCHOR)?
             NETWORK_ROLE_ANCHOR : NETWORK_ROLE_TAG;
         dw1000_pan_start(pan, PAN_ROLE_RELAY, role);
     }
@@ -314,23 +314,23 @@ int main(int argc, char **argv){
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
     printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 
     printf("{\"utime\": %lu,\"msg\": \"device_id = 0x%lX\"}\n",utime,inst->device_id);
-    printf("{\"utime\": %lu,\"msg\": \"PANID = 0x%X\"}\n",utime,inst->PANID);
-    printf("{\"utime\": %lu,\"msg\": \"DeviceID = 0x%X\"}\n",utime,inst->my_short_address);
-    printf("{\"utime\": %lu,\"msg\": \"partID = 0x%lX\"}\n",utime,inst->partID);
-    printf("{\"utime\": %lu,\"msg\": \"lotID = 0x%lX\"}\n",utime,inst->lotID);
+    printf("{\"utime\": %lu,\"msg\": \"PANID = 0x%X\"}\n",utime,udev->pan_id);
+    printf("{\"utime\": %lu,\"msg\": \"DeviceID = 0x%X\"}\n",utime,udev->my_short_address);
+    printf("{\"utime\": %lu,\"msg\": \"partID = 0x%lX\"}\n",utime,inst->part_id);
+    printf("{\"utime\": %lu,\"msg\": \"lotID = 0x%lX\"}\n",utime,inst->lot_id);
     printf("{\"utime\": %lu,\"msg\": \"xtal_trim = 0x%X\"}\n",utime,inst->xtal_trim);  
-    printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime,dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t))); 
-    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,dw1000_phy_SHR_duration(&inst->attrib)); 
-    printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay))); 
+    printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime, uwb_phy_frame_duration(udev, sizeof(twr_frame_final_t))); 
+    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime, uwb_phy_SHR_duration(udev)); 
+    printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay))); 
 
     /* Pan is slots 1&2 */
-    tdma_instance_t * tdma = (tdma_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_TDMA);
+    tdma_instance_t * tdma = (tdma_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_TDMA);
     assert(tdma);
     tdma_assign_slot(tdma, dw1000_pan_slot_timer_cb, 1, (void*)pan);
     tdma_assign_slot(tdma, dw1000_pan_slot_timer_cb, 2, (void*)pan);
     
 #if MYNEWT_VAL(SURVEY_ENABLED)
-    survey_instance_t *survey = (survey_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_SURVEY);
+    survey_instance_t *survey = (survey_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_SURVEY);
     
     tdma_assign_slot(tdma, survey_slot_range_cb, MYNEWT_VAL(SURVEY_RANGE_SLOT), (void*)survey);
     tdma_assign_slot(tdma, survey_slot_broadcast_cb, MYNEWT_VAL(SURVEY_BROADCAST_SLOT), (void*)survey);

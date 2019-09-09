@@ -32,7 +32,7 @@ pkg.deps:
     - "@apache-mynewt-core/sys/shell"
     - "@apache-mynewt-core/sys/stats/full"
     - "@apache-mynewt-core/encoding/json"
-    - "@mynewt-dw1000-core/hw/drivers/dw1000"
+    - "@mynewt-dw1000-core/hw/drivers/uwb"
     - "@mynewt-dw1000-core/lib/tdma"
     - "@mynewt-dw1000-core/lib/ccp"
     - "@mynewt-dw1000-core/lib/wcs"

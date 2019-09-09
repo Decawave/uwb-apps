@@ -36,7 +36,7 @@ pkg.deps:
     - "@apache-mynewt-core/sys/sysinit"
     - "@apache-mynewt-core/sys/id"
     - "@apache-mynewt-core/encoding/json"
-    - "@mynewt-dw1000-core/hw/drivers/dw1000"
+    - "@mynewt-dw1000-core/hw/drivers/uwb"
     - "@mynewt-dw1000-core/lib/dsp"
     - "@mynewt-dw1000-core/lib/tdma"
     - "@mynewt-dw1000-core/lib/ccp"
