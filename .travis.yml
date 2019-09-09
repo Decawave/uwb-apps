@@ -37,23 +37,23 @@ matrix:
     - os: linux
       env:
         - TEST=BUILD_TARGETS
-        - VM_AMOUNT=1
+        - VM_AMOUNT=4
         - TARGET_SET=1
-#    - os: linux
-#      env:
-#        - TEST=BUILD_TARGETS
-#        - VM_AMOUNT=4
-#        - TARGET_SET=2
-#    - os: linux
-#      env:
-#        - TEST=BUILD_TARGETS
-#        - VM_AMOUNT=4
-#        - TARGET_SET=3
-#    - os: linux
-#      env:
-#        - TEST=BUILD_TARGETS
-#        - VM_AMOUNT=4
-#        - TARGET_SET=4
+    - os: linux
+      env:
+        - TEST=BUILD_TARGETS
+        - VM_AMOUNT=4
+        - TARGET_SET=2
+    - os: linux
+      env:
+        - TEST=BUILD_TARGETS
+        - VM_AMOUNT=4
+        - TARGET_SET=3
+    - os: linux
+      env:
+        - TEST=BUILD_TARGETS
+        - VM_AMOUNT=4
+        - TARGET_SET=4
 
     # newt test all (Linux)
 #    - os: linux
@@ -92,17 +92,13 @@ before_script:
   - cp -R $HOME/ci/mynewt-dw1000-apps-project.yml project.yml
   - cp -R $HOME/ci/mynewt-dw1000-apps-targets targets
   - newt install
+    # Try to sync branches between core and apps
+  - $HOME/ci/mynewt-dw1000-apps-setup.sh
     # pass in the number of target sets
   - $HOME/ci/prepare_test.sh $VM_AMOUNT
 
 script:
-  # the following list of targets are known to fail building blinky, or
-  # might have extra dependencies hard to provide, non-common toolchains, etc
-  # NOTE: "native" is here to avoid having to install gcc-multilib
-  - export IGNORED_BSPS="ci40 embarc_emsk hifive1 native-armv7 native-mips
-                         pic32mx470_6lp_clicker pic32mz2048_wi-fire sensorhub
-                         native"
-  - $HOME/ci/run_test.sh
+ - $HOME/ci/run_test.sh
 
 cache:
   directories:
