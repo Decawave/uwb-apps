@@ -51,6 +51,8 @@ newt target set twr_node_tdma app=apps/twr_node_tdma
 newt target set twr_node_tdma bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target set twr_node_tdma build_profile=debug
 newt target amend twr_node_tdma syscfg=LOG_LEVEL=1:UWBCFG_DEF_ROLE='"0x1"'
+# Uncomment next line to use uart instead of rtt console
+#newt target amend twr_node_tdma syscfg=CONSOLE_UART_BAUD=115200:CONSOLE_UART=1:CONSOLE_RTT=0
 newt run twr_node_tdma 0
 
 ```
@@ -63,7 +65,8 @@ newt target create twr_tag_tdma
 newt target set twr_tag_tdma app=apps/twr_tag_tdma
 newt target set twr_tag_tdma bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
 newt target set twr_tag_tdma build_profile=debug
-newt target amend twr_tag_tdma syscfg=CONSOLE_UART_BAUD=115200
+# Uncomment next line to use uart instead of rtt console
+#newt target amend twr_tag_tdma syscfg=CONSOLE_UART_BAUD=115200:CONSOLE_UART=1:CONSOLE_RTT=0
 newt run twr_tag_tdma 0
 
 ```
@@ -86,18 +89,22 @@ newt run twr_tag_tdma 0
 
 ```no-highlight
 
-newt target create twr_node_tdma
-newt target set twr_node_tdma app=apps/twr_node_tdma
-newt target set twr_node_tdma bsp=@mynewt-dw1000-core/hw/bsp/dwm1002
-newt target set twr_node_tdma build_profile=debug
-newt target amend twr_node_tdma syscfg=DW1000_DEVICE_0=1:DW1000_DEVICE_1=1:USE_DBLBUFFER=0:CIR_ENABLED=1:LOG_LEVEL=1:UWBCFG_DEF_ROLE='"0x1"'
-newt run twr_node_tdma 0
+newt target create dwm1002_twr_node_tdma
+newt target set dwm1002_twr_node_tdma app=apps/twr_node_tdma
+newt target set dwm1002_twr_node_tdma bsp=@mynewt-dw1000-core/hw/bsp/dwm1002
+newt target set dwm1002_twr_node_tdma build_profile=debug
+newt target amend dwm1002_twr_node_tdma syscfg=DW1000_DEVICE_0=1:DW1000_DEVICE_1=1:USE_DBLBUFFER=0:CIR_ENABLED=1:LOG_LEVEL=1:UWBCFG_DEF_ROLE='"0x1"'
+# Uncomment next line to use uart instead of rtt console
+#newt target amend dwm1002_twr_node_tdma syscfg=CONSOLE_UART=1:CONSOLE_RTT=0
+newt run dwm1002_twr_node_tdma 0
 
-newt target create twr_tag_tdma
-newt target set twr_tag_tdma app=apps/twr_tag_tdma
-newt target set twr_tag_tdma bsp=@mynewt-dw1000-core/hw/bsp/dwm1003
-newt target set twr_tag_tdma build_profile=debug
-newt run twr_tag_tdma 0
+newt target create dwm1003_twr_tag_tdma
+newt target set dwm1003_twr_tag_tdma app=apps/twr_tag_tdma
+newt target set dwm1003_twr_tag_tdma bsp=@mynewt-dw1000-core/hw/bsp/dwm1003
+newt target set dwm1003_twr_tag_tdma build_profile=debug
+# Uncomment next line to use uart instead of rtt console
+#newt target amend dwm1003_twr_tag_tdma syscfg=CONSOLE_UART=1:CONSOLE_RTT=0
+newt run dwm1003_twr_tag_tdma 0
 
 
 ```
