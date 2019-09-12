@@ -38,11 +38,8 @@
 #include <config/config.h>
 #include "uwbcfg/uwbcfg.h"
 
-#include "dw1000/dw1000_ftypes.h"
-#include "dw1000/dw1000_dev.h"
+#include <uwb/uwb.h>
 #include "dw1000/dw1000_hal.h"
-#include "dw1000/dw1000_phy.h"
-#include "dw1000/dw1000_mac.h"
 #if MYNEWT_VAL(CIR_ENABLED)
 #include <cir/cir.h>
 #endif
@@ -264,7 +261,7 @@ process_rx_data_queue(struct os_event *ev)
                    (int)roundf(fabsf(ccor-ppm/1000000.0f)*1000000000.0f)
                 );
         }
-#if MYNEWT_VAL(CIR_ENABLED)
+#if MYNEWT_VAL(CIR_ENABLED) && N_DW_INSTANCES > 1
         printf(",\"pd\":[");
         for(int j=0;j<n_instances-1;j++) {
             if (isnan(hdr->pd[j])) {
@@ -472,12 +469,14 @@ error_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 bool
 timeout_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 {
-    printf("# listener to\n");
     /* Restart receivers */
     for(int i=0;i<N_DW_INSTANCES;i++) {
-        dw1000_set_rx_timeout(hal_dw1000_inst(i), 0);
-        dw1000_set_rxauto_disable(hal_dw1000_inst(i), MYNEWT_VAL(CIR_ENABLED));
-        dw1000_start_rx(hal_dw1000_inst(i));
+        struct uwb_dev *udev = uwb_dev_idx_lookup(i);
+        uwb_set_rx_timeout(udev, 0);
+#if N_DW_INSTANCES > 1
+        uwb_set_rxauto_disable(udev, MYNEWT_VAL(CIR_ENABLED));
+#endif
+        uwb_start_rx(udev);
     }
     return true;
 }
@@ -500,7 +499,9 @@ uwb_config_update(struct os_event * ev)
         dw1000_set_dblrxbuff((dw1000_dev_instance_t*)inst, true);
 #endif
         uwb_set_rx_timeout(inst, 0);
+#if N_DW_INSTANCES > 1
         uwb_set_rxauto_disable(inst, MYNEWT_VAL(CIR_ENABLED));
+#endif
         uwb_start_rx(inst);
         inst->config.rxdiag_enable = (local_conf.verbose&VERBOSE_RX_DIAG) != 0;
     }
@@ -522,9 +523,12 @@ static
 void rx_reenable_ev_cb(struct dpl_event *ev) {
     /* Restart receivers */
     for(int i=0;i<N_DW_INSTANCES;i++) {
-        dw1000_set_rx_timeout(hal_dw1000_inst(i), 0);
-        dw1000_set_rxauto_disable(hal_dw1000_inst(i), MYNEWT_VAL(CIR_ENABLED));
-        dw1000_start_rx(hal_dw1000_inst(i));
+        struct uwb_dev *udev = uwb_dev_idx_lookup(i);
+        uwb_set_rx_timeout(udev, 0);
+#if N_DW_INSTANCES > 1
+        uwb_set_rxauto_disable(udev, MYNEWT_VAL(CIR_ENABLED));
+#endif
+        uwb_start_rx(udev);
     }
 }
 
@@ -617,7 +621,9 @@ int main(int argc, char **argv){
     /* Start timeout-free rx on all devices */
     for(int i=0;i<N_DW_INSTANCES;i++) {
         uwb_set_rx_timeout(udev[i], 0);
+#if N_DW_INSTANCES > 1
         uwb_set_rxauto_disable(udev[i], MYNEWT_VAL(CIR_ENABLED));
+#endif
         uwb_start_rx(udev[i]);
     }
 
