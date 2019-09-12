@@ -22,7 +22,7 @@
 # Decawave blemesh Example
 
 ## Overview
-The node_mesh and tag_mesh are simple examples that showcase the TDMA features along with mesh facility. The default behavior divides the TDMA_PERIOD into TDMA_NSLOTS and allocates slots to a single ranging task and able to provision the devices into mesh.
+The tag_mesh is a simple example that showcase the TDMA features along with mesh facility. The default behavior divides the TDMA_PERIOD into TDMA_NSLOTS and allocates slots to a single ranging task and able to provision the devices into mesh.
 
 To run the below applications which are configured with UART, change the pins in hw/bsp/dwm1001/syscfg.yml
 
@@ -35,18 +35,18 @@ J-Link>exit
 $ 
 ```
 
-2. On 1st dwm1001-dev board build the mesh node (node_mesh) applications for the DWM1001 module. 
+2. On 1st dwm1001-dev board build the mesh node (twr_node_tdma) application for the DWM1001 module. 
 
 ```no-highlight
 
-newt target create node_mesh
-newt target set node_mesh app=apps/node_mesh
-newt target set node_mesh bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target set node_mesh build_profile=optimized
-newt target set node_mesh syscfg=BLE_MESH_PB_GATT=1:BLE_MESH_DEV_UUID='(uint8_t[16]){0x22, 0x20, 0}'
-newt build node_mesh
-newt create-image node_mesh 1.0.0
-newt load node_mesh
+newt target create node_tdma
+newt target set node_tdma app=apps/twr_node_tdma
+newt target set node_tdma bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set node_tdma build_profile=optimized
+newt target set node_tdma syscfg=BLE_MESH_PB_GATT=1:BLE_MESH_DEV_UUID='(uint8_t[16]){0x22, 0x20, 0}'
+newt build node_tdma
+newt create-image node_tdma 1.0.0
+newt load node_tdma
 
 ```
 
