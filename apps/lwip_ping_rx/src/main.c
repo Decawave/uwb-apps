@@ -31,10 +31,8 @@
 #include "mcu/mcu_sim.h"
 #endif
 
-#include <dw1000/dw1000_dev.h>
+#include <uwb/uwb.h>
 #include <dw1000/dw1000_hal.h>
-#include <dw1000/dw1000_phy.h>
-#include <dw1000/dw1000_mac.h>
 #include <lwip/lwip.h>
 #include <dw1000/dw1000_ftypes.h>
 #include <lwip/lwip.h>
@@ -45,6 +43,8 @@
 
 #define PING_ID 0xDDEE
 #define RX_STATUS true
+
+static struct os_callout rx_callout;
 
 static
 dw1000_lwip_config_t lwip_config = {
@@ -73,6 +73,34 @@ struct ping_payload{
 
 struct ping_payload *ping_pl;
 
+static void
+uwb_ev_cb(struct os_event *ev)
+{
+    dw1000_lwip_instance_t *lwip = (dw1000_lwip_instance_t *)ev->ev_arg;
+    
+    if (lwip->status.start_rx_error)
+        printf("timer_ev_cb:[start_rx_error]\n");
+    if (lwip->status.rx_error)
+        printf("timer_ev_cb:[rx_error]\n");
+    if (lwip->status.request_timeout){
+        printf("timer_ev_cb:[request_timeout]\n");
+    }
+    if (lwip->status.rx_timeout_error){
+        printf("timer_ev_cb:[rx_timeout_error]\n");
+    }
+    
+    if (lwip->status.rx_error || lwip->status.request_timeout ||  lwip->status.rx_timeout_error){
+        lwip->status.start_tx_error = lwip->status.rx_error = lwip->status.request_timeout = lwip->status.rx_timeout_error = 0;
+    }
+    
+	dw1000_lwip_context_t *cntxt;
+	cntxt = (dw1000_lwip_context_t*)lwip->lwip_netif.state;
+    cntxt->rx_cb.recv(lwip, 0xffff);
+    os_callout_reset(&rx_callout, OS_TICKS_PER_SEC);
+}
+
+
+
 static u8_t ping_recv(void *arg, struct raw_pcb *pcb, struct pbuf *p, const ip_addr_t *addr);
 
 int
@@ -83,23 +111,22 @@ main(int argc, char **argv){
 	sysinit();
     hal_gpio_init_out(LED_BLINK_PIN, 1);
 
+    struct uwb_dev *udev = uwb_dev_idx_lookup(0);
 	dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
 
-	dw1000_lwip_context_t *cntxt;
+	udev->pan_id = MYNEWT_VAL(PANID);
+	udev->my_short_address = MYNEWT_VAL(DW_DEVICE_ID_0);
+	udev->fctrl_array[0] = 'L';
+	udev->fctrl_array[1] = 'W';
 
-	inst->PANID = MYNEWT_VAL(PANID);
-	inst->my_short_address = MYNEWT_VAL(DW_DEVICE_ID_0);
-	inst->fctrl_array[0] = 'L';
-	inst->fctrl_array[1] = 'W';
+	dw1000_set_panid(inst,udev->pan_id);
 
-	dw1000_set_panid(inst,inst->PANID);
-
-	dw1000_lwip_instance_t *lwip = dw1000_lwip_init(inst, &lwip_config, MYNEWT_VAL(NUM_FRAMES), MYNEWT_VAL(BUFFER_SIZE));
+	dw1000_lwip_instance_t *lwip = dw1000_lwip_init(udev, &lwip_config, MYNEWT_VAL(NUM_FRAMES),
+                                                    MYNEWT_VAL(BUFFER_SIZE));
     dw1000_netif_config(lwip, &lwip->lwip_netif, &my_ip_addr, RX_STATUS);
 	lwip_init();
     lowpan6_if_init(&lwip->lwip_netif);
 
-	cntxt = (dw1000_lwip_context_t*)lwip->lwip_netif.state;
     lwip->dst_addr = 0x1234;
 
    	IP_ADDR6(ip6_tgt_addr, MYNEWT_VAL(TGT_IP6_ADDR_1), MYNEWT_VAL(TGT_IP6_ADDR_2), 
@@ -108,33 +135,21 @@ main(int argc, char **argv){
     dw1000_pcb_init(lwip);
     raw_recv(lwip->pcb, ping_recv, lwip);
 
-	while (1) {
-		if (lwip->status.start_rx_error)
-			printf("timer_ev_cb:[start_rx_error]\n");
-		if (lwip->status.rx_error)
-			printf("timer_ev_cb:[rx_error]\n");
-		if (lwip->status.request_timeout){
-			printf("timer_ev_cb:[request_timeout]\n");
-		}
-		if (lwip->status.rx_timeout_error){
-			printf("timer_ev_cb:[rx_timeout_error]\n");
-		}
-
-		if (lwip->status.rx_error || lwip->status.request_timeout ||  lwip->status.rx_timeout_error){
-			lwip->status.start_tx_error = lwip->status.rx_error = lwip->status.request_timeout = lwip->status.rx_timeout_error = 0;
-		}
-
-		cntxt->rx_cb.recv(lwip, 0xffff);
+    os_callout_init(&rx_callout, os_eventq_dflt_get(), uwb_ev_cb, lwip);
+    os_callout_reset(&rx_callout, 1);
+    
+    while (1) {
+        os_eventq_run(os_eventq_dflt_get());
 	}
-
+    
 	assert(0);
 	return rc;
 }
 
 
 static u8_t
-ping_recv(void *arg, struct raw_pcb *pcb, struct pbuf *p, const ip_addr_t *addr){
-
+ping_recv(void *arg, struct raw_pcb *pcb, struct pbuf *p, const ip_addr_t *addr)
+{
 	LWIP_UNUSED_ARG(arg);
 	LWIP_UNUSED_ARG(pcb);
 	LWIP_UNUSED_ARG(addr);

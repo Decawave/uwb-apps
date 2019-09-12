@@ -86,7 +86,7 @@ static void timer_ev_cb(struct os_event *ev) {
     hal_gpio_toggle(LED_BLINK_PIN);
     
     dw1000_lwip_instance_t* lwip = (dw1000_lwip_instance_t *)ev->ev_arg;
-    dw1000_dev_instance_t * inst = lwip->dev_inst;
+    struct uwb_dev *inst = lwip->dev_inst;
 	uint16_t payload_size = (uint16_t)sizeof(struct ping_payload);
 
     os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC/SAMPLE_FREQ);
@@ -137,14 +137,16 @@ int main(int argc, char **argv){
 	sysinit();
     hal_gpio_init_out(LED_BLINK_PIN, 1);
 
+    struct uwb_dev *udev = uwb_dev_idx_lookup(0);
 	dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-	inst->PANID = MYNEWT_VAL(PANID);
-	inst->fctrl_array[0] = 'L';
-	inst->fctrl_array[1] = 'W';
+	udev->pan_id = MYNEWT_VAL(PANID);
+	udev->fctrl_array[0] = 'L';
+	udev->fctrl_array[1] = 'W';
 
-	dw1000_set_panid(inst,inst->PANID);
+	dw1000_set_panid(inst,udev->pan_id);
 
-	dw1000_lwip_instance_t *lwip = dw1000_lwip_init(inst, &lwip_config, MYNEWT_VAL(NUM_FRAMES), MYNEWT_VAL(BUFFER_SIZE));
+	dw1000_lwip_instance_t *lwip = dw1000_lwip_init(udev, &lwip_config, MYNEWT_VAL(NUM_FRAMES),
+                                                    MYNEWT_VAL(BUFFER_SIZE));
     dw1000_netif_config(lwip, &lwip->lwip_netif, &my_ip_addr, RX_STATUS);
 	lwip_init();
     lowpan6_if_init(&lwip->lwip_netif);
