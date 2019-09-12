@@ -30,11 +30,8 @@
 #include "hal/hal_gpio.h"
 #include "hal/hal_bsp.h"
 #include "imgmgr/imgmgr.h"
-#include <dw1000/dw1000_dev.h>
+#include <uwb/uwb.h>
 #include <dw1000/dw1000_hal.h>
-#include <dw1000/dw1000_phy.h>
-#include <dw1000/dw1000_mac.h>
-#include <dw1000/dw1000_ftypes.h>
 #include "uwbcfg/uwbcfg.h"
 #include <config/config.h>
 #include <tdma/tdma.h>
@@ -72,12 +69,11 @@ uwb_config_updated()
     /* Workaround in case we're stuck waiting for ccp with the 
      * wrong radio settings */
     struct uwb_dev * udev = uwb_dev_idx_lookup(0);
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_CCP);
     if (dpl_sem_get_count(&ccp->sem) == 0) {
         uwb_phy_forcetrxoff(udev);
-        dw1000_mac_config(inst, NULL);
-        dw1000_phy_config_txrf(inst, &inst->config.txrf);
+        uwb_mac_config(udev, NULL);
+        uwb_txrf_config(udev, &udev->config.txrf);
         uwb_start_rx(udev);
         return 0;
     }
@@ -258,9 +254,9 @@ int main(int argc, char **argv){
 
     struct uwb_dev * udev = uwb_dev_idx_lookup(0);
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    inst->config.rxauto_enable = false;
-    inst->config.dblbuffon_enabled = false;
-    dw1000_set_dblrxbuff(inst, inst->config.dblbuffon_enabled);  
+    udev->config.rxauto_enable = false;
+    udev->config.dblbuffon_enabled = false;
+    dw1000_set_dblrxbuff(inst, udev->config.dblbuffon_enabled);  
 
     dw1000_nrng_instance_t* nrng = (dw1000_nrng_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_NRNG);
     assert(nrng);
@@ -274,7 +270,7 @@ int main(int argc, char **argv){
     uwb_mac_append_interface(udev, &cbs);
     udev->slot_id = 0xffff;
 #if MYNEWT_VAL(BLEPRPH_ENABLED)
-    ble_init(inst->my_long_address);
+    ble_init(udev->euid);
 #endif
     dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_CCP);
     assert(ccp);

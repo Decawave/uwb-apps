@@ -49,12 +49,6 @@
 #if MYNEWT_VAL(CCP_ENABLED)
 #include <ccp/ccp.h>
 #endif
-#if MYNEWT_VAL(DW1000_LWIP)
-#include <lwip/lwip.h>
-#endif
-#if MYNEWT_VAL(TIMESCALE)
-#include <timescale/timescale.h> 
-#endif
 #if MYNEWT_VAL(CIR_ENABLED)
 #include <cir/cir.h>
 #endif
@@ -64,8 +58,8 @@
 #define DIAGMSG(s,u)
 #endif
 
-static bool dw1000_config_updated = false;
-static void slot_complete_cb(struct os_event *ev);
+static bool uwb_config_updated = false;
+static void slot_complete_cb(struct dpl_event *ev);
 static bool cir_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs);
 static bool complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs);
 
@@ -101,7 +95,7 @@ cir_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 }
 
 /*! 
- * @fn complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
+ * @fn complete_cb
  *
  * @brief This callback is part of the  dw1000_mac_interface_t extension interface and invoked of the completion of a range request. 
  * The dw1000_mac_interface_t is in the interrupt context and is used to schedule events an event queue. Processing should be kept 
@@ -111,15 +105,15 @@ cir_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
  * NOTE: The MAC extension interface is a link-list of callbacks, subsequent callbacks on the list will be not be called in the 
  * event of returning true. 
  *
- * @param inst  - dw1000_dev_instance_t *
- * @param cbs   - dw1000_mac_interface_t *
+ * @param inst  - struct uwb_dev *
+ * @param cbs   - struct uwb_mac_interface *
  *
  * output parameters
  *
  * returns bool
  */
 /* The timer callout */
-static struct os_event slot_event;
+static struct dpl_event slot_event = {0};
 static bool
 complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 {
@@ -133,10 +127,10 @@ complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     frame->spherical.azimuth = g_angle.azimuth;
     frame->spherical.zenith = g_angle.zenith;
 
-    slot_event.ev_cb  = slot_complete_cb;
-    slot_event.ev_arg = (void*) rng;
-    os_eventq_put(os_eventq_dflt_get(), &slot_event);
-
+    if (!dpl_event_is_queued(&slot_event)) {
+        dpl_event_init(&slot_event, slot_complete_cb, rng);
+        dpl_eventq_put(dpl_eventq_dflt_get(), &slot_event);
+    }
     return true;
 }
 
@@ -154,10 +148,9 @@ complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
  */
 
 static void
-slot_complete_cb(struct os_event *ev)
+slot_complete_cb(struct dpl_event *ev)
 {
     assert(ev != NULL);
-    assert(ev->ev_arg != NULL);
   
     hal_gpio_toggle(LED_BLINK_PIN);
 }
@@ -170,9 +163,25 @@ slot_complete_cb(struct os_event *ev)
  * having received a commit/load of new uwb configuration.
  */
 int
-uwb_config_updated()
+uwb_config_updated_func()
 {
-    dw1000_config_updated = true;
+    /* Workaround in case we're stuck waiting for ccp with the 
+     * wrong radio settings */
+    struct uwb_dev * udev = uwb_dev_idx_lookup(0);
+    dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_CCP);
+    if (dpl_sem_get_count(&ccp->sem) == 0) {
+        uwb_phy_forcetrxoff(udev);
+        uwb_mac_config(udev, NULL);
+        uwb_txrf_config(udev, &udev->config.txrf);
+#if MYNEWT_VAL(DW1000_DEVICE_1)
+        uwb_mac_config(uwb_dev_idx_lookup(1), NULL);
+        uwb_txrf_config(uwb_dev_idx_lookup(1), &uwb_dev_idx_lookup(1)->config.txrf);
+#endif
+        uwb_start_rx(udev);
+        return 0;
+    }
+
+    uwb_config_updated = true;
     return 0;
 }
 
@@ -213,14 +222,14 @@ slot_cb(struct dpl_event * ev)
         return;
     }
 
-    if (dw1000_config_updated) {
-        dw1000_mac_config(hal_dw1000_inst(0), NULL);
-        dw1000_phy_config_txrf(hal_dw1000_inst(0), &hal_dw1000_inst(0)->config.txrf);
+    if (uwb_config_updated) {
+        uwb_mac_config(inst, NULL);
+        uwb_txrf_config(inst, &inst->config.txrf);
 #if MYNEWT_VAL(DW1000_DEVICE_1)
-        dw1000_mac_config(hal_dw1000_inst(1), NULL);
-        dw1000_phy_config_txrf(hal_dw1000_inst(1), &hal_dw1000_inst(1)->config.txrf);
+        uwb_mac_config(uwb_dev_idx_lookup(1), NULL);
+        uwb_txrf_config(uwb_dev_idx_lookup(1), &uwb_dev_idx_lookup(1)->config.txrf);
 #endif
-        dw1000_config_updated = false;
+        uwb_config_updated = false;
     }
 
 
@@ -260,7 +269,7 @@ int main(int argc, char **argv){
     sysinit();
     /* Register callback for UWB configuration changes */
     struct uwbcfg_cbs uwb_cb = {
-        .uc_update = uwb_config_updated
+        .uc_update = uwb_config_updated_func
     };
     uwbcfg_register(&uwb_cb);
     /* Load config from flash */
@@ -345,7 +354,7 @@ int main(int argc, char **argv){
         tdma_assign_slot(tdma, slot_cb,  i, (void*)rng);
 
 #if MYNEWT_VAL(RNG_VERBOSE) > 1
-    inst->config.rxdiag_enable = 1;
+    udev->config.rxdiag_enable = 1;
 #endif
 
     while (1) {

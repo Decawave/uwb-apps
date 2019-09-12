@@ -34,21 +34,18 @@
 #include "mcu/mcu_sim.h"
 #endif
 
-#include <dw1000/dw1000_dev.h>
+#include <uwb/uwb.h>
 #include <dw1000/dw1000_hal.h>
-#include <dw1000/dw1000_phy.h>
-#include <dw1000/dw1000_mac.h>
-#include <dw1000/dw1000_ftypes.h>
 #include <rng/rng.h>
 #include <config/config.h>
-#include "uwbcfg/uwbcfg.h"
+#include <uwbcfg/uwbcfg.h>
 #include <rng/rng_encode.h>
 //#define DIAGMSG(s,u) printf(s,u)
 #ifndef DIAGMSG
 #define DIAGMSG(s,u)
 #endif
 
-static void slot_complete_cb(struct os_event *ev);
+static void slot_complete_cb(struct dpl_event *ev);
 
 /*! 
  * @fn complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
@@ -70,7 +67,7 @@ static void slot_complete_cb(struct os_event *ev);
  */
 /* The timer callout */
 
-static struct os_callout slot_callout;
+static struct dpl_event slot_event = {0};
 static struct os_callout tx_callout;
 static uint16_t g_idx_latest;
 
@@ -82,8 +79,10 @@ complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     }
     dw1000_rng_instance_t * rng = (dw1000_rng_instance_t*)cbs->inst_ptr;
     g_idx_latest = (rng->idx)%rng->nframes; // Store valid frame pointer
-    os_callout_init(&slot_callout, os_eventq_dflt_get(), slot_complete_cb, rng);
-    os_eventq_put(os_eventq_dflt_get(), &slot_callout.c_ev);
+    if (!dpl_event_is_queued(&slot_event)) {
+        dpl_event_init(&slot_event, slot_complete_cb, rng);
+        dpl_eventq_put(dpl_eventq_dflt_get(), &slot_event);
+    }
     return true;
 }
 
@@ -114,14 +113,13 @@ rx_timeout_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
  * returns none 
  */
 
-static void slot_complete_cb(struct os_event *ev)
+static void slot_complete_cb(struct dpl_event *ev)
 {
     assert(ev != NULL);
-    assert(ev->ev_arg != NULL);
   
     hal_gpio_toggle(LED_BLINK_PIN);
     
-    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)ev->ev_arg;
+    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)dpl_event_get_arg(ev);
     struct uwb_dev * inst = rng->dev_inst;
 
     if (inst->role&UWB_ROLE_ANCHOR) {
@@ -134,7 +132,6 @@ uwb_ev_cb(struct os_event *ev)
 {
     dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)ev->ev_arg;
     struct uwb_dev * inst = rng->dev_inst;
-    os_callout_reset(&tx_callout, OS_TICKS_PER_SEC/25);
     
     if (inst->role&UWB_ROLE_ANCHOR) {
         if(dpl_sem_get_count(&rng->sem) == 1){
@@ -155,6 +152,7 @@ uwb_ev_cb(struct os_event *ev)
         dw1000_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_SS_TWR_EXT);
 #endif
     }
+    os_callout_reset(&tx_callout, OS_TICKS_PER_SEC/25);
 }
 
 
@@ -167,12 +165,11 @@ uwb_ev_cb(struct os_event *ev)
 int
 uwb_config_updated()
 {
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    //struct uwb_dev *inst = uwb_dev_idx_lookup(0);
-    dw1000_mac_config(inst, NULL);
-    dw1000_phy_config_txrf(inst, &inst->config.txrf);
-    dw1000_phy_set_rx_antennadelay(inst, inst->uwb_dev.rx_antenna_delay);
-    dw1000_phy_set_tx_antennadelay(inst, inst->uwb_dev.tx_antenna_delay);
+    struct uwb_dev *inst = uwb_dev_idx_lookup(0);
+    uwb_mac_config(inst, NULL);
+    uwb_txrf_config(inst, &inst->config.txrf);
+    //uwb_phy_set_rx_antennadelay(inst, inst->rx_antenna_delay);
+    //uwb_phy_set_tx_antennadelay(inst, inst->tx_antenna_delay);
     return 0;
 }
 
@@ -197,7 +194,7 @@ int main(int argc, char **argv){
     dw1000_rng_instance_t * rng = (dw1000_rng_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_RNG);
     assert(rng);
     struct uwb_mac_interface cbs = (struct uwb_mac_interface){
-        .id =  DW1000_APP0,
+        .id = UWBEXT_APP0,
         .inst_ptr = rng,
         .complete_cb = complete_cb,
         .rx_timeout_cb = rx_timeout_cb
@@ -214,9 +211,9 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"xtal_trim = 0x%X\"}\n",utime,inst->xtal_trim);  
     printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime, uwb_phy_frame_duration(&inst->uwb_dev, sizeof(twr_frame_final_t))); 
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,uwb_phy_SHR_duration(&inst->uwb_dev)); 
-    printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay))); 
+    printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay))); 
 
-    dw1000_set_rx_timeout(inst, 0xFFFF);
+    uwb_set_rx_timeout(udev, 0xFFFF);
     dw1000_rng_listen(rng, DWT_NONBLOCKING);
 
     os_callout_init(&tx_callout, os_eventq_dflt_get(), uwb_ev_cb, rng);
@@ -226,7 +223,7 @@ int main(int argc, char **argv){
         udev->my_short_address = MYNEWT_VAL(ANCHOR_ADDRESS);
     }
 #if MYNEWT_VAL(RNG_VERBOSE) > 1
-    inst->config.rxdiag_enable = 1;
+    udev->config.rxdiag_enable = 1;
 #endif
     while (1) {
         os_eventq_run(os_eventq_dflt_get());

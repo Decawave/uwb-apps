@@ -32,14 +32,11 @@
 #include "mcu/mcu_sim.h"
 #endif
 
-#include <dw1000/dw1000_dev.h>
+#include <uwb/uwb.h>
 #include <dw1000/dw1000_hal.h>
-#include <dw1000/dw1000_phy.h>
-#include <dw1000/dw1000_mac.h>
-#include <dw1000/dw1000_ftypes.h>
 #include <rng/rng.h>
 #include <config/config.h>
-#include "uwbcfg/uwbcfg.h"
+#include <uwbcfg/uwbcfg.h>
 
 #include <tdma/tdma.h>
 #include <ccp/ccp.h>
@@ -54,7 +51,7 @@
 
 
 static bool error_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs);
-static void slot_complete_cb(struct os_event * ev);
+static void slot_complete_cb(struct dpl_event * ev);
 
 /*! 
  * @fn slot_cb(struct os_event * ev)
@@ -117,7 +114,7 @@ slot_cb(struct dpl_event *ev){
  * returns bool
  */
 /* The timer callout */
-static struct os_callout slot_callout;
+static struct dpl_event slot_event = {0};
 static uint16_t g_idx_latest;
 
 static bool
@@ -128,9 +125,10 @@ complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     }
     dw1000_rng_instance_t* rng = (dw1000_rng_instance_t*)cbs->inst_ptr;
     g_idx_latest = (rng->idx)%rng->nframes; // Store valid frame pointer
-
-    os_callout_init(&slot_callout, os_eventq_dflt_get(), slot_complete_cb, rng);
-    os_eventq_put(os_eventq_dflt_get(), &slot_callout.c_ev);
+    if (!dpl_event_is_queued(&slot_event)) {
+        dpl_event_init(&slot_event, slot_complete_cb, rng);
+        dpl_eventq_put(dpl_eventq_dflt_get(), &slot_event);
+    }
     return true;
 }
 
@@ -147,9 +145,8 @@ complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
  * returns none 
  */
 static void 
-slot_complete_cb(struct os_event * ev){
+slot_complete_cb(struct dpl_event * ev){
     assert(ev != NULL);
-    assert(ev->ev_arg != NULL);
   
     hal_gpio_toggle(LED_BLINK_PIN);
 }
@@ -195,9 +192,9 @@ int
 uwb_config_updated()
 {
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    dw1000_mac_config(inst, NULL);
-    dw1000_phy_config_txrf(inst, &inst->config.txrf);
+    struct uwb_dev *udev = uwb_dev_idx_lookup(0);
+    uwb_mac_config(udev, NULL);
+    uwb_txrf_config(udev, &udev->config.txrf);
     printf("{\"utime\": %lu,\"msg\": \"new config applied\"}\n",utime);
     return 0;
 }
@@ -258,7 +255,7 @@ int main(int argc, char **argv){
         tdma_assign_slot(tdma, slot_cb,  i, (void*)rng);
 
 #if MYNEWT_VAL(RNG_VERBOSE) > 1
-    inst->config.rxdiag_enable = 1;
+    udev->config.rxdiag_enable = 1;
 #endif
 
     while (1) {

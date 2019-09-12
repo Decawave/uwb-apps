@@ -161,8 +161,8 @@ void tdoa_timer_ev_cb(struct dpl_event *ev) {
     }
 
     if (config_changed) {
-        dw1000_mac_config(inst, NULL);
-        dw1000_phy_config_txrf(inst, &inst->config.txrf);
+        uwb_mac_config(udev, NULL);
+        uwb_txrf_config(udev, &udev->config.txrf);
         config_changed = false;
     }
 
@@ -230,14 +230,14 @@ int main(int argc, char **argv){
 
     struct uwb_dev *udev = uwb_dev_idx_lookup(0);
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    inst->config.dblbuffon_enabled = 0;
-    inst->config.framefilter_enabled = 0;
-    inst->config.bias_correction_enable = 0;
-    inst->config.LDE_enable = 1;
-    inst->config.LDO_enable = 0;
-    inst->config.sleep_enable = 1;
-    inst->config.wakeup_rx_enable = 0;
-    inst->config.rxauto_enable = 0;
+    udev->config.dblbuffon_enabled = 0;
+    udev->config.framefilter_enabled = 0;
+    udev->config.bias_correction_enable = 0;
+    udev->config.LDE_enable = 1;
+    udev->config.LDO_enable = 0;
+    udev->config.sleep_enable = 1;
+    udev->config.wakeup_rx_enable = 0;
+    udev->config.rxauto_enable = 0;
 
     uwb_sleep();
     

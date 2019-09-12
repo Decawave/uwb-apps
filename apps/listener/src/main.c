@@ -493,14 +493,15 @@ void
 uwb_config_update(struct os_event * ev)
 {
     for(int i=0;i<N_DW_INSTANCES;i++) {
-        dw1000_dev_instance_t * inst = hal_dw1000_inst(i);
-        dw1000_mac_config(inst, NULL);
+        struct uwb_dev *inst = uwb_dev_idx_lookup(0);
+        uwb_mac_config(inst, NULL);
+        uwb_txrf_config(inst, &inst->config.txrf);
 #if MYNEWT_VAL(USE_DBLBUFFER)
-        dw1000_set_dblrxbuff(inst, true);
+        dw1000_set_dblrxbuff((dw1000_dev_instance_t*)inst, true);
 #endif
-        dw1000_set_rx_timeout(inst, 0);
-        dw1000_set_rxauto_disable(inst, MYNEWT_VAL(CIR_ENABLED));
-        dw1000_start_rx(inst);
+        uwb_set_rx_timeout(inst, 0);
+        uwb_set_rxauto_disable(inst, MYNEWT_VAL(CIR_ENABLED));
+        uwb_start_rx(inst);
         inst->config.rxdiag_enable = (local_conf.verbose&VERBOSE_RX_DIAG) != 0;
     }
 }
@@ -559,28 +560,28 @@ int main(int argc, char **argv){
     for(int i=0;i<N_DW_INSTANCES;i++) {
         udev[i] = uwb_dev_idx_lookup(i);
         inst[i] = hal_dw1000_inst(i);
-        inst[i]->config.rxdiag_enable = (local_conf.verbose&VERBOSE_RX_DIAG) != 0;
-        inst[i]->config.framefilter_enabled = 0;
-        inst[i]->config.bias_correction_enable = 0;
-        inst[i]->config.LDE_enable = 1;
-        inst[i]->config.LDO_enable = 0;
-        inst[i]->config.sleep_enable = 0;
-        inst[i]->config.wakeup_rx_enable = 1;
-        inst[i]->config.trxoff_enable = 1;
+        udev[i]->config.rxdiag_enable = (local_conf.verbose&VERBOSE_RX_DIAG) != 0;
+        udev[i]->config.framefilter_enabled = 0;
+        udev[i]->config.bias_correction_enable = 0;
+        udev[i]->config.LDE_enable = 1;
+        udev[i]->config.LDO_enable = 0;
+        udev[i]->config.sleep_enable = 0;
+        udev[i]->config.wakeup_rx_enable = 1;
+        udev[i]->config.trxoff_enable = 1;
 
 #if MYNEWT_VAL(USE_DBLBUFFER)
         /* Make sure to enable double buffring */
-        inst[i]->config.dblbuffon_enabled = 1;
-        inst[i]->config.rxauto_enable = 0;
+        udev[i]->config.dblbuffon_enabled = 1;
+        udev[i]->config.rxauto_enable = 0;
         dw1000_set_dblrxbuff(inst[i], true);
 #else
-        inst[i]->config.dblbuffon_enabled = 0;
-        inst[i]->config.rxauto_enable = 1;
+        udev[i]->config.dblbuffon_enabled = 0;
+        udev[i]->config.rxauto_enable = 1;
         dw1000_set_dblrxbuff(inst[i], false);
 #endif
 #if MYNEWT_VAL(CIR_ENABLED)
-        inst[i]->config.cir_enable = (N_DW_INSTANCES>1) ? true : false;
-        inst[i]->config.cir_enable = true;
+        udev[i]->config.cir_enable = (N_DW_INSTANCES>1) ? true : false;
+        udev[i]->config.cir_enable = true;
 #endif
         udev[i]->uid = inst[i]->part_id&0xffff;
         udev[i]->euid = ((uint64_t) inst[i]->lot_id << 33) + inst[i]->part_id;
