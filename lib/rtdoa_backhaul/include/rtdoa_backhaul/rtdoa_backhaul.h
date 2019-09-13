@@ -72,10 +72,10 @@ void rtdoa_backhaul_battery_cb(float battery_volt);
 void rtdoa_backhaul_usb_cb(float usb_volt);
 void rtdoa_backhaul_set_ts(uint64_t sensor_time);
 
-struct uwb_dev_status rtdoa_backhaul_send(struct uwb_dev * inst, dw1000_rtdoa_instance_t *rtdoa, uint64_t dxtime);
+struct uwb_dev_status rtdoa_backhaul_send(struct uwb_dev * inst, struct rtdoa_instance *rtdoa, uint64_t dxtime);
 int rtdoa_backhaul_queue_size();
 void rtdoa_backhaul_send_imu_only(uint64_t ts);
-struct uwb_dev_status rtdoa_backhaul_local(struct uwb_dev * inst, dw1000_rtdoa_instance_t *rtdoa);
+struct uwb_dev_status rtdoa_backhaul_local(struct uwb_dev * inst, struct rtdoa_instance *rtdoa);
 struct uwb_dev_status rtdoa_backhaul_listen(struct uwb_dev * inst, uint64_t dx_time, uint16_t timeout_uus);
 #ifdef __cplusplus
 }

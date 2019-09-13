@@ -216,7 +216,7 @@ rtdoa_slot_timer_cb(struct dpl_event *ev)
     struct uwb_ccp_instance * ccp = tdma->ccp;
     struct uwb_dev * inst = tdma->dev_inst;
     uint16_t idx = slot->idx;
-    dw1000_rtdoa_instance_t * rtdoa = (dw1000_rtdoa_instance_t*)slot->arg;
+    struct rtdoa_instance * rtdoa = (struct rtdoa_instance*)slot->arg;
     //printf("idx%d\n", idx);
     
     /* Avoid colliding with the ccp */
@@ -225,7 +225,7 @@ rtdoa_slot_timer_cb(struct dpl_event *ev)
     }
     hal_gpio_write(LED_BLINK_PIN,1);
     uint64_t dx_time = tdma_rx_slot_start(tdma, idx);
-    if(dw1000_rtdoa_listen(rtdoa, UWB_BLOCKING, dx_time, 3*ccp->period/tdma->nslots/4).start_rx_error) {
+    if(rtdoa_listen(rtdoa, UWB_BLOCKING, dx_time, 3*ccp->period/tdma->nslots/4).start_rx_error) {
         printf("#rse\n");
     }
     hal_gpio_write(LED_BLINK_PIN,0);
@@ -278,7 +278,7 @@ tdma_allocate_slots(tdma_instance_t * tdma)
     struct uwb_dev * inst = tdma->dev_inst;
     nmgr_uwb_instance_t *nmgruwb = (nmgr_uwb_instance_t*)uwb_mac_find_cb_inst_ptr(inst, UWBEXT_NMGR_UWB);
     assert(nmgruwb);
-    dw1000_rtdoa_instance_t * rtdoa = (dw1000_rtdoa_instance_t*)uwb_mac_find_cb_inst_ptr(inst, UWBEXT_RTDOA);
+    struct rtdoa_instance * rtdoa = (struct rtdoa_instance*)uwb_mac_find_cb_inst_ptr(inst, UWBEXT_RTDOA);
     assert(rtdoa);
 
     /* anchor-to-anchor range slot is 31 */

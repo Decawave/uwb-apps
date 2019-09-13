@@ -197,11 +197,18 @@ rtdoa_slot_timer_cb(struct dpl_event *ev)
     assert(ccp);
     struct uwb_dev * inst = tdma->dev_inst;
     assert(inst);
-    dw1000_rtdoa_instance_t* rtdoa = (dw1000_rtdoa_instance_t*)slot->arg;
+    struct rtdoa_instance* rtdoa = (struct rtdoa_instance*)slot->arg;
     assert(rtdoa);
 
     /* Avoid colliding with the ccp */
     if (dpl_sem_get_count(&ccp->sem) == 0) {
+        return;
+    }
+
+    if (uwb_config_updated) {
+        uwb_mac_config(inst, NULL);
+        uwb_txrf_config(inst, &inst->config.txrf);
+        uwb_config_updated = false;
         return;
     }
 
@@ -215,13 +222,13 @@ rtdoa_slot_timer_cb(struct dpl_event *ev)
     if (inst->role & UWB_ROLE_CCP_MASTER) {
         uint64_t dx_time = tdma_tx_slot_start(tdma, idx) & 0xFFFFFFFFFE00UL;
 
-        if(dw1000_rtdoa_request(rtdoa, dx_time).start_tx_error) {
+        if(rtdoa_request(rtdoa, dx_time).start_tx_error) {
             /* Do nothing */
             printf("rtdoa_start_err\n");
         }
     } else {
         uint64_t dx_time = tdma_rx_slot_start(tdma, idx);
-        if(dw1000_rtdoa_listen(rtdoa, UWB_BLOCKING, dx_time, 3*ccp->period/tdma->nslots/4).start_rx_error) {
+        if(rtdoa_listen(rtdoa, UWB_BLOCKING, dx_time, 3*ccp->period/tdma->nslots/4).start_rx_error) {
             printf("#rse\n");
         }
     }
@@ -269,7 +276,7 @@ tdma_allocate_slots(tdma_instance_t * tdma)
 
     nmgr_uwb_instance_t *nmgruwb = (nmgr_uwb_instance_t*)uwb_mac_find_cb_inst_ptr(inst, UWBEXT_NMGR_UWB);
     assert(nmgruwb);
-    dw1000_rtdoa_instance_t* rtdoa = (dw1000_rtdoa_instance_t*)uwb_mac_find_cb_inst_ptr(inst, UWBEXT_RTDOA);
+    struct rtdoa_instance* rtdoa = (struct rtdoa_instance*)uwb_mac_find_cb_inst_ptr(inst, UWBEXT_RTDOA);
     assert(rtdoa);
     
     for (i=2;i < MYNEWT_VAL(TDMA_NSLOTS);i++) {

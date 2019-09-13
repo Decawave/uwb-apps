@@ -620,7 +620,7 @@ rtdoa_backhaul_send_imu_only(uint64_t ts)
 }
 
 struct uwb_dev_status
-rtdoa_backhaul_send(struct uwb_dev * inst, dw1000_rtdoa_instance_t *rtdoa,
+rtdoa_backhaul_send(struct uwb_dev * inst, struct rtdoa_instance *rtdoa,
                     uint64_t dx_time)
 {
     g_result_pkg.head.seq_num++;
