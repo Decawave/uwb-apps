@@ -35,17 +35,14 @@
 #include "uwbcfg/uwbcfg.h"
 #include <config/config.h>
 #include <tdma/tdma.h>
-#if MYNEWT_VAL(CCP_ENABLED)
-#include <ccp/ccp.h>
-#endif
-#if MYNEWT_VAL(NRNG_ENABLED)
+
+#include <uwb_ccp/uwb_ccp.h>
 #include <nrng/nrng.h>
-#endif
 #if MYNEWT_VAL(TIMESCALE)
 #include <timescale/timescale.h> 
 #endif
 #if MYNEWT_VAL(WCS_ENABLED)
-#include <wcs/wcs.h>
+#include <uwb_wcs/uwb_wcs.h>
 #endif
 #if MYNEWT_VAL(SURVEY_ENABLED)
 #include <survey/survey.h>
@@ -69,7 +66,7 @@ uwb_config_updated()
     /* Workaround in case we're stuck waiting for ccp with the 
      * wrong radio settings */
     struct uwb_dev * udev = uwb_dev_idx_lookup(0);
-    dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_CCP);
+    struct uwb_ccp_instance *ccp = (struct uwb_ccp_instance*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_CCP);
     if (dpl_sem_get_count(&ccp->sem) == 0) {
         uwb_phy_forcetrxoff(udev);
         uwb_mac_config(udev, NULL);
@@ -154,7 +151,7 @@ slot_cb(struct dpl_event * ev){
 
     tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
     tdma_instance_t * tdma = slot->parent;
-    dw1000_ccp_instance_t *ccp = tdma->ccp;
+    struct uwb_ccp_instance *ccp = tdma->ccp;
     struct uwb_dev * udev = tdma->dev_inst;
     uint16_t idx = slot->idx;
     dw1000_nrng_instance_t *nrng = (dw1000_nrng_instance_t *)slot->arg;
@@ -182,7 +179,7 @@ slot_cb(struct dpl_event * ev){
 
         /* Padded timeout to allow us to receive any nmgr packets too */
         uwb_set_rx_timeout(udev, timeout + 0x1000);
-        dw1000_nrng_listen(nrng, DWT_BLOCKING);
+        dw1000_nrng_listen(nrng, UWB_BLOCKING);
     } else {
         /* Range with the anchors */
         if (idx%MYNEWT_VAL(NRNG_NTAGS) != udev->slot_id) {
@@ -229,9 +226,9 @@ pan_complete_cb(struct dpl_event * ev)
 static uint32_t 
 tof_comp_cb(uint16_t short_addr) 
 {
-    float x = MYNEWT_VAL(CCP_TOF_COMP_LOCATION_X);
-    float y = MYNEWT_VAL(CCP_TOF_COMP_LOCATION_Y);
-    float z = MYNEWT_VAL(CCP_TOF_COMP_LOCATION_Z);
+    float x = MYNEWT_VAL(UWB_CCP_TOF_COMP_LOCATION_X);
+    float y = MYNEWT_VAL(UWB_CCP_TOF_COMP_LOCATION_Y);
+    float z = MYNEWT_VAL(UWB_CCP_TOF_COMP_LOCATION_Z);
     float dist_in_meters = sqrtf(x*x+y*y+z*z);
 #ifdef VERBOSE
     printf("d=%dm, %ld dwunits\n", (int)dist_in_meters,
@@ -272,7 +269,7 @@ int main(int argc, char **argv){
 #if MYNEWT_VAL(BLEPRPH_ENABLED)
     ble_init(udev->euid);
 #endif
-    dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_CCP);
+    struct uwb_ccp_instance *ccp = (struct uwb_ccp_instance*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_CCP);
     assert(ccp);
     dw1000_pan_instance_t *pan = (dw1000_pan_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_PAN);
     assert(pan);
@@ -281,10 +278,10 @@ int main(int argc, char **argv){
     
     if (udev->role&UWB_ROLE_CCP_MASTER) {
         /* Start as clock-master */
-        dw1000_ccp_start(ccp, CCP_ROLE_MASTER);
+        uwb_ccp_start(ccp, CCP_ROLE_MASTER);
     } else {
-        dw1000_ccp_start(ccp, CCP_ROLE_SLAVE);
-        dw1000_ccp_set_tof_comp_cb(ccp, tof_comp_cb);
+        uwb_ccp_start(ccp, CCP_ROLE_SLAVE);
+        uwb_ccp_set_tof_comp_cb(ccp, tof_comp_cb);
     }
 
     if (udev->role&UWB_ROLE_PAN_MASTER) {

@@ -93,7 +93,7 @@ rx_timeout_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     if (inst->role&UWB_ROLE_ANCHOR) {
         uwb_phy_forcetrxoff(inst);
         uwb_set_rx_timeout(inst, 0xFFFF);
-        dw1000_rng_listen(rng, DWT_NONBLOCKING);
+        dw1000_rng_listen(rng, UWB_NONBLOCKING);
     } else {
         /* Do nothing */
     }
@@ -123,7 +123,7 @@ static void slot_complete_cb(struct dpl_event *ev)
     struct uwb_dev * inst = rng->dev_inst;
 
     if (inst->role&UWB_ROLE_ANCHOR) {
-        dw1000_rng_listen(rng, DWT_NONBLOCKING);
+        dw1000_rng_listen(rng, UWB_NONBLOCKING);
     }
 }
 
@@ -136,7 +136,7 @@ uwb_ev_cb(struct os_event *ev)
     if (inst->role&UWB_ROLE_ANCHOR) {
         if(dpl_sem_get_count(&rng->sem) == 1){
             uwb_set_rx_timeout(inst, 0xFFFF);
-            dw1000_rng_listen(rng, DWT_NONBLOCKING);
+            dw1000_rng_listen(rng, UWB_NONBLOCKING);
         }
     } else {
 #if MYNEWT_VAL(TWR_DS_ENABLED)
@@ -214,7 +214,7 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay))); 
 
     uwb_set_rx_timeout(udev, 0xFFFF);
-    dw1000_rng_listen(rng, DWT_NONBLOCKING);
+    dw1000_rng_listen(rng, UWB_NONBLOCKING);
 
     os_callout_init(&tx_callout, os_eventq_dflt_get(), uwb_ev_cb, rng);
     os_callout_reset(&tx_callout, OS_TICKS_PER_SEC/25);

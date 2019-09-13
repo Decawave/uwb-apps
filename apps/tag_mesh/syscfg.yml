@@ -42,8 +42,3 @@ syscfg.vals:
     BLE_MESH_DEBUG_LOW_POWER: 1
     BLE_MESH_DEBUG_FRIEND: 1
     BLE_MESH_DEBUG_PROXY: 1
-        
-syscfg.defs:
-    UUID_CCP_MASTER:
-        description: Clock Master UUID
-        value: ((uint64_t){0x8000})  

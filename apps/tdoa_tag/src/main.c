@@ -42,7 +42,7 @@
 #include <config/config.h>
 #include "uwbcfg/uwbcfg.h"
 
-#include "dw1000/dw1000_ftypes.h"
+#include <uwb/uwb_ftypes.h>
 #include "dw1000/dw1000_dev.h"
 #include "dw1000/dw1000_hal.h"
 #include "dw1000/dw1000_phy.h"

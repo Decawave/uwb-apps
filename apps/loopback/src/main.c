@@ -29,11 +29,9 @@
 #include "hal/hal_gpio.h"
 #include "hal/hal_bsp.h"
 
-#include <dw1000/dw1000_dev.h>
 #include <dw1000/dw1000_hal.h>
-#include <dw1000/dw1000_phy.h>
-#include <dw1000/dw1000_mac.h>
-#include <dw1000/dw1000_ftypes.h>
+#include <uwb/uwb.h>
+#include <uwb/uwb_ftypes.h>
 
 #if MYNEWT_VAL(RNG_ENABLED)
 #include <rng/rng.h>
@@ -97,7 +95,7 @@ master_slot_ev_cb(struct dpl_event * ev){
                             + rng->config.tx_holdoff_delay;  // Remote side turn around time.
                             
     uwb_set_rx_timeout(inst, timeout);
-    dw1000_rng_listen(rng, DWT_BLOCKING);
+    dw1000_rng_listen(rng, UWB_BLOCKING);
 }
 
 
@@ -165,8 +163,8 @@ int main(int argc, char **argv){
     dw1000_rng_instance_t * rng1 = (dw1000_rng_instance_t *) uwb_mac_find_cb_inst_ptr(udev[1], UWBEXT_RNG);
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime, (uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng0->config.tx_holdoff_delay) ));
     
-    dw1000_ccp_start(uwb_mac_find_cb_inst_ptr(udev[0], UWBEXT_CCP), CCP_ROLE_MASTER);
-    dw1000_ccp_start(uwb_mac_find_cb_inst_ptr(udev[1], UWBEXT_CCP), CCP_ROLE_SLAVE);
+    uwb_ccp_start(uwb_mac_find_cb_inst_ptr(udev[0], UWBEXT_CCP), CCP_ROLE_MASTER);
+    uwb_ccp_start(uwb_mac_find_cb_inst_ptr(udev[1], UWBEXT_CCP), CCP_ROLE_SLAVE);
 
     // Using GPIO5 and GPIO6 to study timing.
     dw1000_gpio5_config_ext_txe(inst[0]);

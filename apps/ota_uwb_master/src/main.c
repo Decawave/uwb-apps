@@ -32,11 +32,10 @@
 #include "mcu/mcu_sim.h"
 #endif
 
-#include <dw1000/dw1000_dev.h>
+#include <dpl/dpl.h>
+#include <uwb/uwb.h>
+#include <uwb/uwb_ftypes.h>
 #include <dw1000/dw1000_hal.h>
-#include <dw1000/dw1000_phy.h>
-#include <dw1000/dw1000_mac.h>
-#include <dw1000/dw1000_ftypes.h>
 #include <nmgr_uwb/nmgr_uwb.h> 
 #include <nmgr_cmds/nmgr_cmds.h> 
 #include "bleprph.h"
@@ -48,7 +47,8 @@
 static struct os_callout uwb_callout;
 
 static void
-uwb_ev_cb(struct os_event *ev) {
+uwb_ev_cb(struct os_event *ev)
+{
     struct _nmgr_uwb_instance_t *nmgr = (struct _nmgr_uwb_instance_t *)ev->ev_arg;
     os_callout_reset(&uwb_callout, OS_TICKS_PER_SEC/25);
 
@@ -56,35 +56,36 @@ uwb_ev_cb(struct os_event *ev) {
         return;
     }
 
-    dw1000_set_rx_timeout(nmgr->dev_inst, 0);
-    dw1000_start_rx(nmgr->dev_inst);
+    uwb_set_rx_timeout(nmgr->dev_inst, 0);
+    uwb_start_rx(nmgr->dev_inst);
 }
 
 int main(int argc, char **argv){
     int rc;
 
     sysinit();
+    struct uwb_dev *udev = uwb_dev_idx_lookup(0);
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     char name[32]={0};
-    sprintf(name,"%X-%04X",inst->PANID,inst->my_short_address);
+    sprintf(name,"%X-%04X",udev->pan_id, udev->my_short_address);
     prph_init(name);
 
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
     printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 
     printf("{\"utime\": %lu,\"msg\": \"device_id = 0x%lX\"}\n",utime,inst->device_id);
-    printf("{\"utime\": %lu,\"msg\": \"PANID = 0x%X\"}\n",utime,inst->PANID);
-    printf("{\"utime\": %lu,\"msg\": \"DeviceID = 0x%X\"}\n",utime,inst->my_short_address);
-    printf("{\"utime\": %lu,\"msg\": \"partID = 0x%lX\"}\n",utime,inst->partID);
-    printf("{\"utime\": %lu,\"msg\": \"lotID = 0x%lX\"}\n",utime,inst->lotID);
+    printf("{\"utime\": %lu,\"msg\": \"PANID = 0x%X\"}\n",utime,udev->pan_id);
+    printf("{\"utime\": %lu,\"msg\": \"DeviceID = 0x%X\"}\n",utime,udev->my_short_address);
+    printf("{\"utime\": %lu,\"msg\": \"partID = 0x%lX\"}\n",utime,inst->part_id);
+    printf("{\"utime\": %lu,\"msg\": \"lotID = 0x%lX\"}\n",utime,inst->lot_id);
     printf("{\"utime\": %lu,\"msg\": \"xtal_trim = 0x%X\"}\n",utime,inst->xtal_trim);  
-    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,dw1000_phy_SHR_duration(&inst->attrib)); 
+    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime, uwb_phy_SHR_duration(udev)); 
 
-    struct _nmgr_uwb_instance_t *nmgr = (struct _nmgr_uwb_instance_t *) dw1000_mac_find_cb_inst_ptr(inst, DW1000_NMGR_UWB);
+    struct _nmgr_uwb_instance_t *nmgr = (struct _nmgr_uwb_instance_t *) uwb_mac_find_cb_inst_ptr(udev, UWBEXT_NMGR_UWB);
     os_callout_init(&uwb_callout, nmgr_cmds_get_eventq(), uwb_ev_cb, nmgr);
     os_callout_reset(&uwb_callout, OS_TICKS_PER_SEC/25);
 
-    dw1000_set_rx_timeout(inst, 0);
-    dw1000_start_rx(inst);
+    uwb_set_rx_timeout(udev, 0);
+    uwb_start_rx(udev);
 
     while (1) {
         os_eventq_run(os_eventq_dflt_get());

@@ -34,11 +34,9 @@
 #include "mcu/mcu_sim.h"
 #endif
 
-#include <dw1000/dw1000_dev.h>
+#include <uwb/uwb.h>
+#include <uwb/uwb_ftypes.h>
 #include <dw1000/dw1000_hal.h>
-#include <dw1000/dw1000_phy.h>
-#include <dw1000/dw1000_mac.h>
-#include <dw1000/dw1000_ftypes.h>
 #include <rng/rng.h>
 #include <config/config.h>
 #include "uwbcfg/uwbcfg.h"
@@ -46,8 +44,8 @@
 #if MYNEWT_VAL(TDMA_ENABLED)
 #include <tdma/tdma.h>
 #endif
-#if MYNEWT_VAL(CCP_ENABLED)
-#include <ccp/ccp.h>
+#if MYNEWT_VAL(UWB_CCP_ENABLED)
+#include <uwb_ccp/uwb_ccp.h>
 #endif
 #if MYNEWT_VAL(CIR_ENABLED)
 #include <cir/cir.h>
@@ -168,7 +166,7 @@ uwb_config_updated_func()
     /* Workaround in case we're stuck waiting for ccp with the 
      * wrong radio settings */
     struct uwb_dev * udev = uwb_dev_idx_lookup(0);
-    dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_CCP);
+    struct uwb_ccp_instance *ccp = (struct uwb_ccp_instance*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_CCP);
     if (dpl_sem_get_count(&ccp->sem) == 0) {
         uwb_phy_forcetrxoff(udev);
         uwb_mac_config(udev, NULL);
@@ -210,7 +208,7 @@ slot_cb(struct dpl_event * ev)
 
     tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
     tdma_instance_t * tdma = slot->parent;
-    dw1000_ccp_instance_t * ccp = tdma->ccp;
+    struct uwb_ccp_instance *ccp = tdma->ccp;
     struct uwb_dev *inst = tdma->dev_inst;
     uint16_t idx = slot->idx;
     dw1000_rng_instance_t * rng = (dw1000_rng_instance_t*)slot->arg;
@@ -251,12 +249,12 @@ slot_cb(struct dpl_event * ev)
     uwb_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
     uwb_set_rx_timeout(inst, timeout);  
     cir_enable(hal_dw1000_inst(1)->cir, true);
-    dw1000_rng_listen(rng, DWT_BLOCKING);
+    dw1000_rng_listen(rng, UWB_BLOCKING);
 }
 #else
     uwb_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
     uwb_set_rx_timeout(inst, timeout);
-    dw1000_rng_listen(rng, DWT_BLOCKING);
+    dw1000_rng_listen(rng, UWB_BLOCKING);
 #endif
 
 }
@@ -306,14 +304,14 @@ int main(int argc, char **argv){
     };
     uwb_mac_append_interface(udev, &cbs);
 
-    dw1000_ccp_instance_t * ccp = (dw1000_ccp_instance_t *)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_CCP);
+    struct uwb_ccp_instance *ccp = (struct uwb_ccp_instance*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_CCP);
     assert(ccp);
     
     if (udev->role & UWB_ROLE_CCP_MASTER) {
         /* Start as clock-master */
-        dw1000_ccp_start(ccp, CCP_ROLE_MASTER);
+        uwb_ccp_start(ccp, CCP_ROLE_MASTER);
     } else {
-        dw1000_ccp_start(ccp, CCP_ROLE_SLAVE);        
+        uwb_ccp_start(ccp, CCP_ROLE_SLAVE);        
     }
 
 #if MYNEWT_VAL(DW1000_DEVICE_0) && MYNEWT_VAL(DW1000_DEVICE_1)

@@ -41,18 +41,8 @@
 #if MYNEWT_VAL(RNG_ENABLED)
 #include <rng/rng.h>
 #endif
-#if MYNEWT_VAL(TDMA_ENABLED)
+#include <uwb_ccp/uwb_ccp.h>
 #include <tdma/tdma.h>
-#endif
-#if MYNEWT_VAL(CCP_ENABLED)
-#include <ccp/ccp.h>
-#endif
-#if MYNEWT_VAL(WCS_ENABLED)
-#include <wcs/wcs.h>
-#endif
-#if MYNEWT_VAL(DW1000_LWIP)
-#include <lwip/lwip.h>
-#endif
 
 //#define DIAGMSG(s,u) printf(s,u)
 #ifndef DIAGMSG
@@ -99,7 +89,7 @@ slot_cb(struct dpl_event *ev){
     uint64_t dx_time = tdma_tx_slot_start(tdma, idx) & 0xFFFFFFFFFE00UL;
   
     /* Range with the clock master by default */
-    dw1000_ccp_instance_t *ccp = tdma->ccp;
+    struct uwb_ccp_instance *ccp = tdma->ccp;
     uint16_t node_address = ccp->frames[0]->short_address;
 
     /* Select single-sided or double sided twr every second slot */    
@@ -254,7 +244,7 @@ int main(int argc, char **argv){
     
     tdma_instance_t * tdma = (tdma_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_TDMA);
     assert(tdma);
-    dw1000_ccp_start(tdma->ccp, CCP_ROLE_SLAVE);
+    uwb_ccp_start(tdma->ccp, CCP_ROLE_SLAVE);
 
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
     printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 

@@ -32,9 +32,8 @@
 #endif
 
 #include <uwb/uwb.h>
+#include <uwb/uwb_ftypes.h>
 #include <dw1000/dw1000_hal.h>
-#include <lwip/lwip.h>
-#include <dw1000/dw1000_ftypes.h>
 #include <lwip/lwip.h>
 
 #include <lwip/init.h>

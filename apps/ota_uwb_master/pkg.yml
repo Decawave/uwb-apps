@@ -59,7 +59,7 @@ pkg.deps:
     - "@mynewt-dw1000-core/sys/uwbcfg"   
     - "@mynewt-dw1000-core/lib/tdma"
     - "@mynewt-dw1000-core/lib/dsp"
-    - "@mynewt-dw1000-core/lib/ccp"
+    - "@mynewt-dw1000-core/lib/uwb_ccp"
 
 pkg.cflags:
     - "-std=gnu99"
