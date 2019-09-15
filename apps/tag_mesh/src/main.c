@@ -62,7 +62,6 @@
 #undef TICTOC 
 #endif 
 
-static uint16_t g_slot[MYNEWT_VAL(TDMA_NSLOTS)] = {0};
 static bool error_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs);
 static void slot_complete_cb(struct os_event * ev);
 
@@ -88,23 +87,23 @@ void mesh_init(void);
  * returns none 
  */
 static void 
-slot_cb(struct os_event *ev){
+slot_cb(struct dpl_event *ev){
     assert(ev);
 
-    tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
+    tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
     tdma_instance_t * tdma = slot->parent;
-    dw1000_dev_instance_t * inst = tdma->parent;
     uint16_t idx = slot->idx;
+    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t*)slot->arg;
 
     hal_gpio_toggle(LED_BLINK_PIN);  
 
-    uint64_t dx_time = tdma_tx_slot_start(inst, idx);
+    uint64_t dx_time = tdma_tx_slot_start(tdma, idx);
     dx_time = dx_time & 0xFFFFFFFFFE00UL;
   
 #ifdef TICTOC
     uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
 #endif
-    if(dw1000_rng_request_delay_start(inst, 0x4321, dx_time, DWT_SS_TWR).start_tx_error){
+    if(dw1000_rng_request_delay_start(rng, 0x4321, dx_time, DWT_SS_TWR).start_tx_error){
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
         printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\",\"%s\":%d}\n",utime,idx,__FILE__, __LINE__);
     }else{
@@ -113,20 +112,6 @@ slot_cb(struct os_event *ev){
         printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %ld}\n",toc, (toc - tic) - MYNEWT_VAL(OS_LATENCY));
 #endif
     }
-}
-
-/*! 
- * @fn slot0_cb(struct os_event * ev)
- * @brief This function is a place holder for PAN or other Slot0 related housekeeping.
- *
- * input parameters
- * @param inst - struct os_event *  
- * output parameters
- * returns none 
- */
-static void 
-slot0_cb(struct os_event *ev){
-  //  printf("{\"utime\": %lu,\"msg\": \"%s:[%d]:slot0_timer_cb\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()),__FILE__, __LINE__); 
 }
 
 
@@ -157,10 +142,10 @@ complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
     }
-    dw1000_rng_instance_t * rng = inst->rng;
+    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t*)cbs->inst_ptr;
     g_idx_latest = (rng->idx)%rng->nframes; // Store valid frame pointer
 
-    os_callout_init(&slot_complete_callout, os_eventq_dflt_get(), slot_complete_cb, inst);
+    os_callout_init(&slot_complete_callout, os_eventq_dflt_get(), slot_complete_cb, rng);
     os_eventq_put(os_eventq_dflt_get(), &slot_complete_callout.c_ev);
     return true;
 }
@@ -184,11 +169,10 @@ slot_complete_cb(struct os_event * ev){
     assert(ev->ev_arg != NULL);
 
     hal_gpio_toggle(LED_BLINK_PIN);
-    dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *) ev->ev_arg;
-    dw1000_rng_instance_t * rng = inst->rng;
+    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)ev->ev_arg;
     
     twr_frame_t * frame = rng->frames[g_idx_latest%rng->nframes];
-    float skew = dw1000_calc_clock_offset_ratio(inst, frame->carrier_integrator);
+    float skew = dw1000_calc_clock_offset_ratio(rng->dev_inst, frame->carrier_integrator);
     
     if (frame->code == DWT_SS_TWR_FINAL) {
         float time_of_flight = (float) dw1000_rng_twr_to_tof(rng, g_idx_latest);
@@ -283,9 +267,12 @@ int main(int argc, char **argv){
     mesh_init();
     
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)dw1000_mac_find_cb_inst_ptr(inst, DW1000_RNG);
+    assert(rng);
     
     dw1000_mac_interface_t cbs = {
         .id = DW1000_APP0,
+        .inst_ptr = rng,
         .tx_error_cb = error_cb,
         .rx_error_cb = error_cb,
         .complete_cb = complete_cb
@@ -293,7 +280,9 @@ int main(int argc, char **argv){
     dw1000_mac_append_interface(inst, &cbs);
     
 #if MYNEWT_VAL(CCP_ENABLED)
-    dw1000_ccp_start(inst, CCP_ROLE_SLAVE);
+    struct _dw1000_ccp_instance_t *ccp = (struct _dw1000_ccp_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
+    assert(ccp);
+    dw1000_ccp_start(ccp, CCP_ROLE_SLAVE);
 #endif
 
     printf("device_id = 0x%lX\n",inst->device_id);
@@ -304,13 +293,11 @@ int main(int argc, char **argv){
     printf("xtal_trim = 0x%X\n",inst->xtal_trim);
     printf("frame_duration = %d usec\n",dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t)));
     printf("SHR_duration = %d usec\n",dw1000_phy_SHR_duration(&inst->attrib));
-    printf("holdoff = %d usec\n",(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(inst->rng->config.tx_holdoff_delay)));
 
-   for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
-        g_slot[i] = i;
-    tdma_assign_slot(inst->tdma, slot0_cb, g_slot[0], &g_slot[0]);
-    for (uint16_t i = 1; i < sizeof(g_slot)/sizeof(uint16_t); i++)
-        tdma_assign_slot(inst->tdma, slot_cb, g_slot[i], &g_slot[i]);
+    tdma_instance_t * tdma = (tdma_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_TDMA);
+    assert(tdma);
+    for (uint16_t i = 1; i < MYNEWT_VAL(TDMA_NSLOTS); i++)
+        tdma_assign_slot(tdma, slot_cb,  i, (void*)rng);
 
     while (1) {
         os_eventq_run(os_eventq_dflt_get());
