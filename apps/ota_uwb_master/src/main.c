@@ -49,15 +49,15 @@ static struct os_callout uwb_callout;
 
 static void
 uwb_ev_cb(struct os_event *ev) {
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+    struct _nmgr_uwb_instance_t *nmgr = (struct _nmgr_uwb_instance_t *)ev->ev_arg;
     os_callout_reset(&uwb_callout, OS_TICKS_PER_SEC/25);
 
-    if (uwb_nmgr_process_tx_queue(inst, 0) == false) {
+    if (uwb_nmgr_process_tx_queue(nmgr, 0) == false) {
         return;
     }
 
-    dw1000_set_rx_timeout(inst, 0);
-    dw1000_start_rx(inst);
+    dw1000_set_rx_timeout(nmgr->dev_inst, 0);
+    dw1000_start_rx(nmgr->dev_inst);
 }
 
 int main(int argc, char **argv){
@@ -79,7 +79,8 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"xtal_trim = 0x%X\"}\n",utime,inst->xtal_trim);  
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,dw1000_phy_SHR_duration(&inst->attrib)); 
 
-    os_callout_init(&uwb_callout, nmgr_cmds_get_eventq(), uwb_ev_cb, NULL);
+    struct _nmgr_uwb_instance_t *nmgr = (struct _nmgr_uwb_instance_t *) dw1000_mac_find_cb_inst_ptr(inst, DW1000_NMGR_UWB);
+    os_callout_init(&uwb_callout, nmgr_cmds_get_eventq(), uwb_ev_cb, nmgr);
     os_callout_reset(&uwb_callout, OS_TICKS_PER_SEC/25);
 
     dw1000_set_rx_timeout(inst, 0);
