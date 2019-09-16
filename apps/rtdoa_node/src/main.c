@@ -115,7 +115,7 @@ nrng_slot_timer_cb(struct dpl_event *ev)
     tdma_instance_t * tdma = slot->parent;
     struct uwb_dev * inst = tdma->dev_inst;
     struct uwb_ccp_instance * ccp = tdma->ccp;
-    dw1000_nrng_instance_t * nrng = (dw1000_nrng_instance_t *) uwb_mac_find_cb_inst_ptr(inst, UWBEXT_NRNG);
+    struct nrng_instance * nrng = (struct nrng_instance *) uwb_mac_find_cb_inst_ptr(inst, UWBEXT_NRNG);
     
     uint16_t idx = slot->idx;
 
@@ -131,8 +131,8 @@ nrng_slot_timer_cb(struct dpl_event *ev)
         uint64_t dx_time = tdma_tx_slot_start(tdma, idx) & 0xFFFFFFFFFE00UL;
         uint32_t slot_mask = 0xFFFF;
 
-        if(dw1000_nrng_request_delay_start(nrng, BROADCAST_ADDRESS, dx_time,
-                                           DWT_SS_TWR_NRNG, slot_mask, 0).start_tx_error){
+        if(nrng_request_delay_start(nrng, BROADCAST_ADDRESS, dx_time,
+                                    DWT_SS_TWR_NRNG, slot_mask, 0).start_tx_error){
             /* Do nothing */
         }
     } else {
@@ -141,7 +141,7 @@ nrng_slot_timer_cb(struct dpl_event *ev)
             + nrng->config.rx_timeout_delay;
 
         uwb_set_rx_timeout(inst, timeout + 0x100);
-        dw1000_nrng_listen(nrng, UWB_BLOCKING);
+        nrng_listen(nrng, UWB_BLOCKING);
     }
     hal_gpio_write(LED_BLINK_PIN, 0);
 }
@@ -152,7 +152,7 @@ nrng_complete_cb(struct dpl_event *ev)
     assert(ev != NULL);
     assert(dpl_event_get_arg(ev));
 
-    dw1000_nrng_instance_t * nrng = (dw1000_nrng_instance_t *) dpl_event_get_arg(ev);
+    struct nrng_instance * nrng = (struct nrng_instance *) dpl_event_get_arg(ev);
     nrng_frame_t * frame = nrng->frames[(nrng->idx)%nrng->nframes];
 
     for (int i=0;i<nrng->nframes;i++) {
@@ -162,7 +162,7 @@ nrng_complete_cb(struct dpl_event *ev)
             continue;
         }
 
-        float tof = dw1000_nrng_twr_to_tof_frames(nrng->dev_inst, frame, frame);
+        float tof = nrng_twr_to_tof_frames(nrng->dev_inst, frame, frame);
         // float rssi = dw1000_calc_rssi(inst, &frame->diag);
         tofdb_set_tof(dst_addr, tof);
     }
@@ -270,7 +270,7 @@ tdma_allocate_slots(tdma_instance_t * tdma)
     tdma_assign_slot(tdma, dw1000_pan_slot_timer_cb, 1, (void*)pan);
 
     /* anchor-to-anchor range slot is 31 */
-    dw1000_nrng_instance_t * nrng = (dw1000_nrng_instance_t *)uwb_mac_find_cb_inst_ptr(inst, UWBEXT_NRNG);
+    struct nrng_instance * nrng = (struct nrng_instance *)uwb_mac_find_cb_inst_ptr(inst, UWBEXT_NRNG);
     assert(nrng);
     tdma_assign_slot(tdma, nrng_slot_timer_cb, 31, (void*)nrng);
 
@@ -310,7 +310,7 @@ main(int argc, char **argv)
     struct uwb_dev *udev = uwb_dev_idx_lookup(0);
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     uwb_mac_append_interface(udev, &cbs);
-    dw1000_nrng_instance_t * nrng = (dw1000_nrng_instance_t *)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_NRNG);
+    struct nrng_instance * nrng = (struct nrng_instance *)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_NRNG);
     assert(nrng);
     dpl_event_init(&slot_event, nrng_complete_cb, nrng);
 

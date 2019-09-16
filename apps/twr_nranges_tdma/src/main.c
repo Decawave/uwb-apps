@@ -88,7 +88,7 @@ static void nrng_complete_cb(struct dpl_event *ev) {
     assert(dpl_event_get_arg(ev) != NULL);
 
     hal_gpio_toggle(LED_BLINK_PIN);
-    dw1000_nrng_instance_t * nrng = (dw1000_nrng_instance_t *) dpl_event_get_arg(ev);
+    struct nrng_instance * nrng = (struct nrng_instance *) dpl_event_get_arg(ev);
     nrng_frame_t * frame = nrng->frames[(nrng->idx)%nrng->nframes];
 
 #ifdef VERBOSE
@@ -125,7 +125,7 @@ static bool complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
     }
-    dw1000_nrng_instance_t* nrng = (dw1000_nrng_instance_t*)cbs->inst_ptr;
+    struct nrng_instance* nrng = (struct nrng_instance*)cbs->inst_ptr;
     dpl_callout_init(&slot_callout, dpl_eventq_dflt_get(), nrng_complete_cb, nrng);
     dpl_eventq_put(dpl_eventq_dflt_get(), (struct dpl_event *) &slot_callout.co.c_ev);
     return true;
@@ -154,7 +154,7 @@ slot_cb(struct dpl_event * ev){
     struct uwb_ccp_instance *ccp = tdma->ccp;
     struct uwb_dev * udev = tdma->dev_inst;
     uint16_t idx = slot->idx;
-    dw1000_nrng_instance_t *nrng = (dw1000_nrng_instance_t *)slot->arg;
+    struct nrng_instance *nrng = (struct nrng_instance *)slot->arg;
 
     /* Avoid colliding with the ccp in case we've got out of sync */
     if (dpl_sem_get_count(&ccp->sem) == 0) {
@@ -179,7 +179,7 @@ slot_cb(struct dpl_event * ev){
 
         /* Padded timeout to allow us to receive any nmgr packets too */
         uwb_set_rx_timeout(udev, timeout + 0x1000);
-        dw1000_nrng_listen(nrng, UWB_BLOCKING);
+        nrng_listen(nrng, UWB_BLOCKING);
     } else {
         /* Range with the anchors */
         if (idx%MYNEWT_VAL(NRNG_NTAGS) != udev->slot_id) {
@@ -194,7 +194,7 @@ slot_cb(struct dpl_event * ev){
             slot_mask |= 1UL << i;
         }
 
-        if(dw1000_nrng_request_delay_start(
+        if(nrng_request_delay_start(
                nrng, BROADCAST_ADDRESS, dx_time,
                DWT_SS_TWR_NRNG, slot_mask, 0).start_tx_error) {
             uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
@@ -255,7 +255,7 @@ int main(int argc, char **argv){
     udev->config.dblbuffon_enabled = false;
     dw1000_set_dblrxbuff(inst, udev->config.dblbuffon_enabled);  
 
-    dw1000_nrng_instance_t* nrng = (dw1000_nrng_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_NRNG);
+    struct nrng_instance* nrng = (struct nrng_instance*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_NRNG);
     assert(nrng);
 
     struct uwb_mac_interface cbs = (struct uwb_mac_interface){
