@@ -146,7 +146,12 @@ struct uwb_msg_hdr {
     struct _dw1000_dev_rxdiag_t diag[MYNEWT_VAL(PDOA_SPI_NUM_INSTANCES)];
 #else
     uint64_t ts[N_DW_INSTANCES];
-    struct _dw1000_dev_rxdiag_t diag[N_DW_INSTANCES];
+    struct {
+        union {
+            struct uwb_dev_rxdiag diag;
+            uint8_t diag_storage[MYNEWT_VAL(UWB_DEV_RXDIAG_MAXLEN)];
+        };
+    } diag[N_DW_INSTANCES];
 #endif
 #if MYNEWT_VAL(CIR_ENABLED)
 #ifdef MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
@@ -232,7 +237,7 @@ process_rx_data_queue(struct os_event *ev)
         if ((local_conf.verbose&VERBOSE_RX_DIAG)) {
             printf(",\"rssi\":[");
             for(int j=0;j<n_instances;j++) {
-                float rssi = dw1000_calc_rssi(hal_dw1000_inst(0), &hdr->diag[j]);
+                float rssi = uwb_calc_rssi(uwb_dev_idx_lookup(0), &hdr->diag[j].diag);
                 if (rssi > -200 && rssi < 100) {
                     printf("%s%d.%01d", (j==0)?"":",",
                            (int)rssi, abs((int)(10*(rssi-(int)rssi))));
@@ -243,7 +248,7 @@ process_rx_data_queue(struct os_event *ev)
             console_out(']');
             printf(",\"fppl\":[");
             for(int j=0;j<n_instances;j++) {
-                float fppl = dw1000_calc_fppl(hal_dw1000_inst(0), &hdr->diag[j]);
+                float fppl = uwb_calc_fppl(uwb_dev_idx_lookup(0), &hdr->diag[j].diag);
                 if (fppl > -200 && fppl < 100) {
                     printf("%s%d.%01d", (j==0)?"":",",
                            (int)fppl, abs((int)(10*(fppl-(int)fppl))));
@@ -300,9 +305,9 @@ process_rx_data_queue(struct os_event *ev)
                            (int)an, (int)fabsf((1000*(an-(int)an))),
                            cirp->raw_ts
                         );
-                    printf(",\"fp_amp\":[%d,%d,%d]", hdr->diag[j].fp_amp, hdr->diag[j].fp_amp2, hdr->diag[j].fp_amp3);
-                    printf(",\"cir_pwr\":%d", hdr->diag[j].cir_pwr);
-                    printf(",\"rx_std\":%d", hdr->diag[j].rx_std);
+                    // printf(",\"fp_amp\":[%d,%d,%d]", hdr->diag[j].fp_amp, hdr->diag[j].fp_amp2, hdr->diag[j].fp_amp3);
+                    // printf(",\"cir_pwr\":%d", hdr->diag[j].cir_pwr);
+                    // printf(",\"rx_std\":%d", hdr->diag[j].rx_std);
                     if (local_conf.acc_samples_to_load) {
                         printf(",\"real\":[");
                         for (int i=0;i<local_conf.acc_samples_to_load;i++) {
@@ -384,7 +389,7 @@ rx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
         }
 #else
         for(int i=0;i<N_DW_INSTANCES;i++) {
-            memcpy(&hdr->diag[i], &hal_dw1000_inst(i)->rxdiag, sizeof(struct _dw1000_dev_rxdiag_t));
+            memcpy(&hdr->diag[i], uwb_dev_idx_lookup(i)->rxdiag, uwb_dev_idx_lookup(i)->rxdiag->rxd_len);
             if (!uwb_dev_idx_lookup(i)->status.lde_error) {
                 hdr->ts[i] = uwb_dev_idx_lookup(i)->rxtimestamp;
             }

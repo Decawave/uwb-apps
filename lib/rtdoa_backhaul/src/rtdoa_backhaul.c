@@ -649,8 +649,8 @@ rtdoa_backhaul_send(struct uwb_dev * inst, struct rtdoa_instance *rtdoa,
         if (rtdoa->frames[i]->src_address == 0) {
             continue;
         }
-        float rssi = dw1000_calc_rssi(hal_dw1000_inst(0), &rtdoa->frames[i]->diag);
-        float fppl = dw1000_calc_fppl(hal_dw1000_inst(0), &rtdoa->frames[i]->diag);
+        float rssi = uwb_calc_rssi(inst, &rtdoa->frames[i]->diag);
+        float fppl = uwb_calc_fppl(inst, &rtdoa->frames[i]->diag);
 #if MYNEWT_VAL(RTDOABH_STATS)
         RTDOABH_STATS_INC(num_ranges);
         update_range_stats(i, diff_mm, rssi);
