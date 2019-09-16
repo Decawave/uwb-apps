@@ -69,8 +69,8 @@
 #endif
 
 
-#if MYNEWT_VAL(PAN_ENABLED)
-#include <pan/pan.h>
+#if MYNEWT_VAL(UWB_PAN_ENABLED)
+#include <uwb_pan/uwb_pan.h>
 
 #include "panmaster/panmaster.h"
 
@@ -265,9 +265,9 @@ tdma_allocate_slots(tdma_instance_t * tdma)
     struct uwb_dev * inst = tdma->dev_inst;
 
     /* Pan is slot 1 */
-    dw1000_pan_instance_t *pan = (dw1000_pan_instance_t*)uwb_mac_find_cb_inst_ptr(inst, UWBEXT_PAN);
+    struct uwb_pan_instance *pan = (struct uwb_pan_instance*)uwb_mac_find_cb_inst_ptr(inst, UWBEXT_PAN);
     assert(pan);
-    tdma_assign_slot(tdma, dw1000_pan_slot_timer_cb, 1, (void*)pan);
+    tdma_assign_slot(tdma, uwb_pan_slot_timer_cb, 1, (void*)pan);
 
     /* anchor-to-anchor range slot is 31 */
     struct nrng_instance * nrng = (struct nrng_instance *)uwb_mac_find_cb_inst_ptr(inst, UWBEXT_NRNG);
@@ -327,7 +327,7 @@ main(int argc, char **argv)
 
     struct uwb_ccp_instance *ccp = (struct uwb_ccp_instance *) uwb_mac_find_cb_inst_ptr(udev, UWBEXT_CCP);
     assert(ccp);
-    dw1000_pan_instance_t *pan = (dw1000_pan_instance_t *) uwb_mac_find_cb_inst_ptr(udev, UWBEXT_PAN);
+    struct uwb_pan_instance *pan = (struct uwb_pan_instance *) uwb_mac_find_cb_inst_ptr(udev, UWBEXT_PAN);
     assert(pan);
 
     if (udev->role & UWB_ROLE_CCP_MASTER) {
@@ -342,10 +342,10 @@ main(int argc, char **argv)
         panmaster_add_version(udev->my_long_address, &fw_ver);
         udev->my_short_address = node->addr;
         udev->slot_id = node->slot_id;
-        dw1000_pan_start(pan, PAN_ROLE_MASTER, NETWORK_ROLE_ANCHOR);
+        uwb_pan_start(pan, UWB_PAN_ROLE_MASTER, NETWORK_ROLE_ANCHOR);
     } else {
         uwb_ccp_start(ccp, CCP_ROLE_RELAY);
-        dw1000_pan_start(pan, PAN_ROLE_RELAY, NETWORK_ROLE_ANCHOR);
+        uwb_pan_start(pan, UWB_PAN_ROLE_RELAY, NETWORK_ROLE_ANCHOR);
     }
     printf("{\"device_id\"=\"%lX\"",inst->device_id);
     printf(",\"PANID=\"%X\"",udev->pan_id);

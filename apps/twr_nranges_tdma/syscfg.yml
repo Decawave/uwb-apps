@@ -35,10 +35,10 @@ syscfg.vals:
     NRNG_DEVICE_TYPE: 1
     
     # Pan related parameters, lease in s, lease exp margin in ms
-    PAN_ENABLED: 1
-    PAN_RX_TIMEOUT: ((uint16_t){4000})
-    PAN_LEASE_TIME: 3600
-    PAN_LEASE_EXP_MARGIN: 60000
+    UWB_PAN_ENABLED: 1
+    UWB_PAN_RX_TIMEOUT: ((uint16_t){4000})
+    UWB_PAN_LEASE_TIME: 3600
+    UWB_PAN_LEASE_EXP_MARGIN: 60000
     
     ## Panmaster    
     PANMASTER_FCB: 1

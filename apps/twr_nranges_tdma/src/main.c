@@ -53,8 +53,8 @@
 #if MYNEWT_VAL(BLEPRPH_ENABLED)
 #include "bleprph/bleprph.h"
 #endif
-#if MYNEWT_VAL(PAN_ENABLED)
-#include <pan/pan.h>
+#if MYNEWT_VAL(UWB_PAN_ENABLED)
+#include <uwb_pan/uwb_pan.h>
 #include <panmaster/panmaster.h>
 
 #endif
@@ -209,7 +209,7 @@ pan_complete_cb(struct dpl_event * ev)
 {
     assert(ev != NULL);
     assert(dpl_event_get_arg(ev) != NULL);
-    dw1000_pan_instance_t *pan = (dw1000_pan_instance_t *) dpl_event_get_arg(ev);
+    struct uwb_pan_instance *pan = (struct uwb_pan_instance*) dpl_event_get_arg(ev);
     
     if (pan->dev_inst->slot_id != 0xffff) {
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
@@ -271,7 +271,7 @@ int main(int argc, char **argv){
 #endif
     struct uwb_ccp_instance *ccp = (struct uwb_ccp_instance*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_CCP);
     assert(ccp);
-    dw1000_pan_instance_t *pan = (dw1000_pan_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_PAN);
+    struct uwb_pan_instance *pan = (struct uwb_pan_instance*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_PAN);
     assert(pan);
     struct uwb_rng_instance* rng = (struct uwb_rng_instance*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_RNG);
     assert(rng);
@@ -296,12 +296,12 @@ int main(int argc, char **argv){
         /* Set short address and slot id */
         udev->uid = node->addr;
         udev->slot_id = node->slot_id;
-        dw1000_pan_start(pan, PAN_ROLE_MASTER, NETWORK_ROLE_ANCHOR);
+        uwb_pan_start(pan, UWB_PAN_ROLE_MASTER, NETWORK_ROLE_ANCHOR);
     } else {
-        dw1000_pan_set_postprocess(pan, pan_complete_cb);
+        uwb_pan_set_postprocess(pan, pan_complete_cb);
         network_role_t role = (udev->role&UWB_ROLE_ANCHOR)?
             NETWORK_ROLE_ANCHOR : NETWORK_ROLE_TAG;
-        dw1000_pan_start(pan, PAN_ROLE_RELAY, role);
+        uwb_pan_start(pan, UWB_PAN_ROLE_RELAY, role);
     }
     
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
@@ -319,8 +319,8 @@ int main(int argc, char **argv){
     /* Pan is slots 1&2 */
     tdma_instance_t * tdma = (tdma_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_TDMA);
     assert(tdma);
-    tdma_assign_slot(tdma, dw1000_pan_slot_timer_cb, 1, (void*)pan);
-    tdma_assign_slot(tdma, dw1000_pan_slot_timer_cb, 2, (void*)pan);
+    tdma_assign_slot(tdma, uwb_pan_slot_timer_cb, 1, (void*)pan);
+    tdma_assign_slot(tdma, uwb_pan_slot_timer_cb, 2, (void*)pan);
     
 #if MYNEWT_VAL(SURVEY_ENABLED)
     survey_instance_t *survey = (survey_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_SURVEY);
