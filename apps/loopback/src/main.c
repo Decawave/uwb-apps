@@ -33,8 +33,8 @@
 #include <uwb/uwb.h>
 #include <uwb/uwb_ftypes.h>
 
-#if MYNEWT_VAL(RNG_ENABLED)
-#include <rng/rng.h>
+#if MYNEWT_VAL(UWB_RNG_ENABLED)
+#include <uwb_rng/uwb_rng.h>
 #endif
 #if MYNEWT_VAL(TWR_DS_EXT_ENABLED)
 #include <twr_ds_ext/twr_ds_ext.h>
@@ -42,11 +42,11 @@
 #if MYNEWT_VAL(TDMA_ENABLED)
 #include <tdma/tdma.h>
 #endif
-#if MYNEWT_VAL(CCP_ENABLED)
-#include <ccp/ccp.h>
+#if MYNEWT_VAL(UWB_CCP_ENABLED)
+#include <uwb_ccp/uwb_ccp.h>
 #endif
-#if MYNEWT_VAL(WCS_ENABLED)
-#include <wcs/wcs.h>
+#if MYNEWT_VAL(UWB_WCS_ENABLED)
+#include <uwb_wcs/uwb_wcs.h>
 #endif
 #if MYNEWT_VAL(DW1000_LWIP)
 #include <lwip/lwip.h>
@@ -86,7 +86,7 @@ master_slot_ev_cb(struct dpl_event * ev){
 
     tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
     tdma_instance_t * tdma = slot->parent;
-    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)slot->arg;
+    struct uwb_rng_instance * rng = (struct uwb_rng_instance *)slot->arg;
     struct uwb_dev * inst = tdma->dev_inst;
     uint16_t idx = slot->idx;
 
@@ -95,7 +95,7 @@ master_slot_ev_cb(struct dpl_event * ev){
                             + rng->config.tx_holdoff_delay;  // Remote side turn around time.
                             
     uwb_set_rx_timeout(inst, timeout);
-    dw1000_rng_listen(rng, UWB_BLOCKING);
+    uwb_rng_listen(rng, UWB_BLOCKING);
 }
 
 
@@ -105,7 +105,7 @@ slave_slot_ev_cb(struct dpl_event *ev){
 
     tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
     tdma_instance_t * tdma = slot->parent;
-    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)slot->arg;
+    struct uwb_rng_instance * rng = (struct uwb_rng_instance *)slot->arg;
 
     uint16_t idx = slot->idx;
     
@@ -113,13 +113,13 @@ slave_slot_ev_cb(struct dpl_event *ev){
     dx_time = dx_time & 0xFFFFFFFFFE00UL;
   
     switch (idx%4){
-        case 0:dw1000_rng_request_delay_start(rng, 0x4321, dx_time, DWT_SS_TWR);
+        case 0:uwb_rng_request_delay_start(rng, 0x4321, dx_time, DWT_SS_TWR);
         break;
-        case 1:dw1000_rng_request_delay_start(rng, 0x4321, dx_time, DWT_SS_TWR_EXT);
+        case 1:uwb_rng_request_delay_start(rng, 0x4321, dx_time, DWT_SS_TWR_EXT);
         break;
-        case 2:dw1000_rng_request_delay_start(rng, 0x4321, dx_time, DWT_DS_TWR);
+        case 2:uwb_rng_request_delay_start(rng, 0x4321, dx_time, DWT_DS_TWR);
         break;
-        case 3:dw1000_rng_request_delay_start(rng, 0x4321, dx_time, DWT_DS_TWR_EXT);
+        case 3:uwb_rng_request_delay_start(rng, 0x4321, dx_time, DWT_DS_TWR_EXT);
         break;
         default:break;
     }
@@ -159,8 +159,8 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"response_duration = %d usec\"}\n",utime, uwb_phy_frame_duration(udev[0], sizeof(ieee_rng_response_frame_t) )); 
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime, uwb_phy_SHR_duration(udev[0])); 
 
-    dw1000_rng_instance_t * rng0 = (dw1000_rng_instance_t *) uwb_mac_find_cb_inst_ptr(udev[0], UWBEXT_RNG);
-    dw1000_rng_instance_t * rng1 = (dw1000_rng_instance_t *) uwb_mac_find_cb_inst_ptr(udev[1], UWBEXT_RNG);
+    struct uwb_rng_instance * rng0 = (struct uwb_rng_instance *) uwb_mac_find_cb_inst_ptr(udev[0], UWBEXT_RNG);
+    struct uwb_rng_instance * rng1 = (struct uwb_rng_instance *) uwb_mac_find_cb_inst_ptr(udev[1], UWBEXT_RNG);
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime, (uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng0->config.tx_holdoff_delay) ));
     
     uwb_ccp_start(uwb_mac_find_cb_inst_ptr(udev[0], UWBEXT_CCP), CCP_ROLE_MASTER);

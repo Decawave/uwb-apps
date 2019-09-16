@@ -53,8 +53,8 @@
 #include <uwb_ccp/uwb_ccp.h>
 #include <uwb_wcs/uwb_wcs.h>
 #include <timescale/timescale.h> 
-#if MYNEWT_VAL(RNG_ENABLED)
-#include <rng/rng.h>
+#if MYNEWT_VAL(UWB_RNG_ENABLED)
+#include <uwb_rng/uwb_rng.h>
 #endif
 #if MYNEWT_VAL(NRNG_ENABLED)
 #include <nrng/nrng.h>

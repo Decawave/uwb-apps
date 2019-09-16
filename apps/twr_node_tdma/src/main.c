@@ -37,7 +37,7 @@
 #include <uwb/uwb.h>
 #include <uwb/uwb_ftypes.h>
 #include <dw1000/dw1000_hal.h>
-#include <rng/rng.h>
+#include <uwb_rng/uwb_rng.h>
 #include <config/config.h>
 #include "uwbcfg/uwbcfg.h"
 
@@ -95,8 +95,8 @@ cir_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 /*! 
  * @fn complete_cb
  *
- * @brief This callback is part of the  dw1000_mac_interface_t extension interface and invoked of the completion of a range request. 
- * The dw1000_mac_interface_t is in the interrupt context and is used to schedule events an event queue. Processing should be kept 
+ * @brief This callback is part of the  struct uwb_mac_interface extension interface and invoked of the completion of a range request. 
+ * The struct uwb_mac_interface is in the interrupt context and is used to schedule events an event queue. Processing should be kept 
  * to a minimum giving the interrupt context. All algorithms activities should be deferred to a thread on an event queue. 
  * The callback should return true if and only if it can determine if it is the sole recipient of this event. 
  *
@@ -119,7 +119,7 @@ complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
         return false;
     }
 
-    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t*)cbs->inst_ptr;
+    struct uwb_rng_instance * rng = (struct uwb_rng_instance*)cbs->inst_ptr;
     twr_frame_t * frame = rng->frames[rng->idx_current];
     
     frame->spherical.azimuth = g_angle.azimuth;
@@ -211,7 +211,7 @@ slot_cb(struct dpl_event * ev)
     struct uwb_ccp_instance *ccp = tdma->ccp;
     struct uwb_dev *inst = tdma->dev_inst;
     uint16_t idx = slot->idx;
-    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t*)slot->arg;
+    struct uwb_rng_instance * rng = (struct uwb_rng_instance*)slot->arg;
     g_angle.azimuth = g_angle.zenith = NAN;
     //printf("idx%d\n", idx);
 
@@ -245,16 +245,16 @@ slot_cb(struct dpl_event * ev)
 }
 {   
     struct uwb_dev * inst = uwb_dev_idx_lookup(1);
-    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t*)uwb_mac_find_cb_inst_ptr(inst, UWBEXT_RNG);
+    struct uwb_rng_instance * rng = (struct uwb_rng_instance*)uwb_mac_find_cb_inst_ptr(inst, UWBEXT_RNG);
     uwb_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
     uwb_set_rx_timeout(inst, timeout);  
     cir_enable(hal_dw1000_inst(1)->cir, true);
-    dw1000_rng_listen(rng, UWB_BLOCKING);
+    uwb_rng_listen(rng, UWB_BLOCKING);
 }
 #else
     uwb_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
     uwb_set_rx_timeout(inst, timeout);
-    dw1000_rng_listen(rng, UWB_BLOCKING);
+    uwb_rng_listen(rng, UWB_BLOCKING);
 #endif
 
 }
@@ -285,13 +285,13 @@ int main(int argc, char **argv){
     struct uwb_dev * udev = uwb_dev_idx_lookup(1);
     dw1000_dev_instance_t * inst = hal_dw1000_inst(1);
     dw1000_set_dblrxbuff(inst, false);
-    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_RNG);
+    struct uwb_rng_instance * rng = (struct uwb_rng_instance *)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_RNG);
     assert(rng);
 #elif  MYNEWT_VAL(DW1000_DEVICE_0) && !MYNEWT_VAL(DW1000_DEVICE_1)
     struct uwb_dev * udev = uwb_dev_idx_lookup(0);
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     dw1000_set_dblrxbuff(inst, false);
-    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_RNG);
+    struct uwb_rng_instance * rng = (struct uwb_rng_instance *)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_RNG);
     assert(rng);
 #endif
 

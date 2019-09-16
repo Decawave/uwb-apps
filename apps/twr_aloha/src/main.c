@@ -36,10 +36,10 @@
 
 #include <uwb/uwb.h>
 #include <dw1000/dw1000_hal.h>
-#include <rng/rng.h>
+#include <uwb_rng/uwb_rng.h>
 #include <config/config.h>
 #include <uwbcfg/uwbcfg.h>
-#include <rng/rng_encode.h>
+#include <uwb_rng/rng_encode.h>
 //#define DIAGMSG(s,u) printf(s,u)
 #ifndef DIAGMSG
 #define DIAGMSG(s,u)
@@ -48,10 +48,10 @@
 static void slot_complete_cb(struct dpl_event *ev);
 
 /*! 
- * @fn complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
+ * @fn complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
  *
- * @brief This callback is part of the  dw1000_mac_interface_t extension interface and invoked of the completion of a range request. 
- * The dw1000_mac_interface_t is in the interrupt context and is used to schedule events an event queue. Processing should be kept 
+ * @brief This callback is part of the  struct uwb_mac_interface extension interface and invoked of the completion of a range request. 
+ * The struct uwb_mac_interface is in the interrupt context and is used to schedule events an event queue. Processing should be kept 
  * to a minimum giving the interrupt context. All algorithms activities should be deferred to a thread on an event queue. 
  * The callback should return true if and only if it can determine if it is the sole recipient of this event. 
  *
@@ -59,7 +59,7 @@ static void slot_complete_cb(struct dpl_event *ev);
  * event of returning true. 
  *
  * @param inst  - dw1000_dev_instance_t *
- * @param cbs   - dw1000_mac_interface_t *
+ * @param cbs   - struct uwb_mac_interface *
  *
  * output parameters
  *
@@ -77,7 +77,7 @@ complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
     }
-    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t*)cbs->inst_ptr;
+    struct uwb_rng_instance * rng = (struct uwb_rng_instance*)cbs->inst_ptr;
     g_idx_latest = (rng->idx)%rng->nframes; // Store valid frame pointer
     if (!dpl_event_is_queued(&slot_event)) {
         dpl_event_init(&slot_event, slot_complete_cb, rng);
@@ -89,11 +89,11 @@ complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 static bool
 rx_timeout_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 {
-    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t*)cbs->inst_ptr;
+    struct uwb_rng_instance * rng = (struct uwb_rng_instance*)cbs->inst_ptr;
     if (inst->role&UWB_ROLE_ANCHOR) {
         uwb_phy_forcetrxoff(inst);
         uwb_set_rx_timeout(inst, 0xFFFF);
-        dw1000_rng_listen(rng, UWB_NONBLOCKING);
+        uwb_rng_listen(rng, UWB_NONBLOCKING);
     } else {
         /* Do nothing */
     }
@@ -119,37 +119,37 @@ static void slot_complete_cb(struct dpl_event *ev)
   
     hal_gpio_toggle(LED_BLINK_PIN);
     
-    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)dpl_event_get_arg(ev);
+    struct uwb_rng_instance * rng = (struct uwb_rng_instance *)dpl_event_get_arg(ev);
     struct uwb_dev * inst = rng->dev_inst;
 
     if (inst->role&UWB_ROLE_ANCHOR) {
-        dw1000_rng_listen(rng, UWB_NONBLOCKING);
+        uwb_rng_listen(rng, UWB_NONBLOCKING);
     }
 }
 
 static void
 uwb_ev_cb(struct os_event *ev)
 {
-    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)ev->ev_arg;
+    struct uwb_rng_instance * rng = (struct uwb_rng_instance *)ev->ev_arg;
     struct uwb_dev * inst = rng->dev_inst;
     
     if (inst->role&UWB_ROLE_ANCHOR) {
         if(dpl_sem_get_count(&rng->sem) == 1){
             uwb_set_rx_timeout(inst, 0xFFFF);
-            dw1000_rng_listen(rng, UWB_NONBLOCKING);
+            uwb_rng_listen(rng, UWB_NONBLOCKING);
         }
     } else {
 #if MYNEWT_VAL(TWR_DS_ENABLED)
-        dw1000_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_DS_TWR);
+        uwb_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_DS_TWR);
 #endif
 #if MYNEWT_VAL(TWR_DS_EXT_ENABLED)
-        dw1000_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_DS_TWR_EXT);
+        uwb_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_DS_TWR_EXT);
 #endif
 #if MYNEWT_VAL(TWR_SS_ENABLED)
-        dw1000_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_SS_TWR);
+        uwb_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_SS_TWR);
 #endif
 #if MYNEWT_VAL(TWR_SS_EXT_ENABLED)
-        dw1000_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_SS_TWR_EXT);
+        uwb_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_SS_TWR_EXT);
 #endif
     }
     os_callout_reset(&tx_callout, OS_TICKS_PER_SEC/25);
@@ -191,7 +191,7 @@ int main(int argc, char **argv){
 
     struct uwb_dev *udev = uwb_dev_idx_lookup(0);
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_RNG);
+    struct uwb_rng_instance * rng = (struct uwb_rng_instance*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_RNG);
     assert(rng);
     struct uwb_mac_interface cbs = (struct uwb_mac_interface){
         .id = UWBEXT_APP0,
@@ -214,7 +214,7 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay))); 
 
     uwb_set_rx_timeout(udev, 0xFFFF);
-    dw1000_rng_listen(rng, UWB_NONBLOCKING);
+    uwb_rng_listen(rng, UWB_NONBLOCKING);
 
     os_callout_init(&tx_callout, os_eventq_dflt_get(), uwb_ev_cb, rng);
     os_callout_reset(&tx_callout, OS_TICKS_PER_SEC/25);

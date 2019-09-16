@@ -41,7 +41,7 @@
 #if MYNEWT_VAL(TIMESCALE)
 #include <timescale/timescale.h> 
 #endif
-#if MYNEWT_VAL(WCS_ENABLED)
+#if MYNEWT_VAL(UWB_WCS_ENABLED)
 #include <uwb_wcs/uwb_wcs.h>
 #endif
 #if MYNEWT_VAL(SURVEY_ENABLED)
@@ -232,9 +232,9 @@ tof_comp_cb(uint16_t short_addr)
     float dist_in_meters = sqrtf(x*x+y*y+z*z);
 #ifdef VERBOSE
     printf("d=%dm, %ld dwunits\n", (int)dist_in_meters,
-           (uint32_t)(dist_in_meters/dw1000_rng_tof_to_meters(1.0)));
+           (uint32_t)(dist_in_meters/uwb_rng_tof_to_meters(1.0)));
 #endif
-    return dist_in_meters/dw1000_rng_tof_to_meters(1.0);
+    return dist_in_meters/uwb_rng_tof_to_meters(1.0);
 }
 
 
@@ -273,7 +273,7 @@ int main(int argc, char **argv){
     assert(ccp);
     dw1000_pan_instance_t *pan = (dw1000_pan_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_PAN);
     assert(pan);
-    dw1000_rng_instance_t* rng = (dw1000_rng_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_RNG);
+    struct uwb_rng_instance* rng = (struct uwb_rng_instance*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_RNG);
     assert(rng);
     
     if (udev->role&UWB_ROLE_CCP_MASTER) {

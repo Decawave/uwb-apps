@@ -36,7 +36,7 @@
 #include <uwb/uwb.h>
 #include <uwb/uwb_ftypes.h>
 #include <nmgr_uwb/nmgr_uwb.h> 
-#include <rng/rng.h>
+#include <uwb_rng/uwb_rng.h>
 #include <mgmt/mgmt.h>
 #include <nmgr_os/nmgr_os.h>
 
@@ -90,8 +90,8 @@ int main(int argc, char **argv){
     os_callout_init(&uwb_callout, os_eventq_dflt_get(), uwb_ev_cb, nmgr);
     os_callout_reset(&uwb_callout, OS_TICKS_PER_SEC/25);
 
-    dw1000_set_rx_timeout(inst, 0);
-    dw1000_start_rx(inst);
+    uwb_set_rx_timeout(udev, 0);
+    uwb_start_rx(udev);
 
     while (1) {
         os_eventq_run(os_eventq_dflt_get());

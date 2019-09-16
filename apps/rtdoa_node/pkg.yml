@@ -40,7 +40,7 @@ pkg.deps:
     - "@mynewt-dw1000-core/lib/dsp"
     - "@mynewt-dw1000-core/lib/tdma"
     - "@mynewt-dw1000-core/lib/uwb_ccp"
-    - "@mynewt-dw1000-core/lib/rng"
+    - "@mynewt-dw1000-core/lib/uwb_rng"
     - "@mynewt-dw1000-core/lib/nrng"
     - "@mynewt-dw1000-core/lib/rtdoa_node"
     - "@mynewt-dw1000-core/lib/twr_ss_nrng"

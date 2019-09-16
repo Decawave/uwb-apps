@@ -34,7 +34,7 @@
 
 #include <uwb/uwb.h>
 #include <dw1000/dw1000_hal.h>
-#include <rng/rng.h>
+#include <uwb_rng/uwb_rng.h>
 #include <config/config.h>
 #include <uwbcfg/uwbcfg.h>
 
@@ -74,7 +74,7 @@ slot_cb(struct dpl_event *ev){
     tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
     tdma_instance_t * tdma = slot->parent;
     uint16_t idx = slot->idx;
-    dw1000_rng_instance_t *rng = (dw1000_rng_instance_t*)slot->arg;
+    struct uwb_rng_instance *rng = (struct uwb_rng_instance*)slot->arg;
 
     hal_gpio_toggle(LED_BLINK_PIN);  
     uint64_t dx_time = tdma_tx_slot_start(tdma, idx) & 0xFFFFFFFFFE00UL;
@@ -88,15 +88,15 @@ slot_cb(struct dpl_event *ev){
     //if (slot->idx%2==0) {
     //mode = DWT_SS_TWR_EXT;
         //}
-    dw1000_rng_request_delay_start(rng, node_address, dx_time, mode);
+    uwb_rng_request_delay_start(rng, node_address, dx_time, mode);
 }
 
 
 /*! 
- * @fn complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
+ * @fn complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
  *
- * @brief This callback is part of the  dw1000_mac_interface_t extension interface and invoked of the completion of a range request 
- * in the context of this example. The dw1000_mac_interface_t is in the interrupt context and is used to schedule events an event queue. 
+ * @brief This callback is part of the  struct uwb_mac_interface extension interface and invoked of the completion of a range request 
+ * in the context of this example. The struct uwb_mac_interface is in the interrupt context and is used to schedule events an event queue. 
  * Processing should be kept to a minimum giving the interrupt context. All algorithms activities should be deferred to a thread on an event queue. 
  * The callback should return true if and only if it can determine if it is the sole recipient of this event. 
  * 
@@ -104,7 +104,7 @@ slot_cb(struct dpl_event *ev){
  * event of returning true. 
  *
  * @param inst  - dw1000_dev_instance_t *
- * @param cbs   - dw1000_mac_interface_t *
+ * @param cbs   - struct uwb_mac_interface *
  *
  * output parameters
  *
@@ -120,7 +120,7 @@ complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
     }
-    dw1000_rng_instance_t* rng = (dw1000_rng_instance_t*)cbs->inst_ptr;
+    struct uwb_rng_instance* rng = (struct uwb_rng_instance*)cbs->inst_ptr;
     g_idx_latest = (rng->idx)%rng->nframes; // Store valid frame pointer
     if (!dpl_event_is_queued(&slot_event)) {
         dpl_event_init(&slot_event, slot_complete_cb, rng);
@@ -215,7 +215,7 @@ int main(int argc, char **argv){
     
     struct uwb_dev *udev = uwb_dev_idx_lookup(0);
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    dw1000_rng_instance_t* rng = (dw1000_rng_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_RNG);
+    struct uwb_rng_instance* rng = (struct uwb_rng_instance*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_RNG);
     assert(rng);
 
     struct uwb_mac_interface cbs = {
