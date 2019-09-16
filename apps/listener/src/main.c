@@ -592,13 +592,11 @@ int main(int argc, char **argv){
         udev[i]->config.cir_enable = (N_DW_INSTANCES>1) ? true : false;
         udev[i]->config.cir_enable = true;
 #endif
-        udev[i]->uid = inst[i]->part_id&0xffff;
-        udev[i]->euid = ((uint64_t) inst[i]->lot_id << 33) + inst[i]->part_id;
-        printf("{\"device_id\"=\"%lX\"",inst[i]->device_id);
+        printf("{\"device_id\"=\"%lX\"",udev[i]->device_id);
         printf(",\"PANID=\"%X\"",udev[i]->pan_id);
         printf(",\"addr\"=\"%X\"",udev[i]->uid);
-        printf(",\"partID\"=\"%lX\"",inst[i]->part_id);
-        printf(",\"lotID\"=\"%lX\"",inst[i]->lot_id);
+        printf(",\"partID\"=\"%lX\"",(uint32_t)(udev[i]->euid&0xffffffff));
+        printf(",\"lotID\"=\"%lX\"",(uint32_t)(udev[i]->euid>>32));
         printf(",\"xtal_trim\"=\"%X\"}\n",inst[i]->xtal_trim);
         uwb_mac_append_interface(udev[i], &g_cbs);
     }

@@ -214,7 +214,6 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_3, 1);
     
     struct uwb_dev *udev = uwb_dev_idx_lookup(0);
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     struct uwb_rng_instance* rng = (struct uwb_rng_instance*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_RNG);
     assert(rng);
 
@@ -233,20 +232,21 @@ int main(int argc, char **argv){
 
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
     printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 
-    printf("{\"utime\": %lu,\"msg\": \"device_id = 0x%lX\"}\n",utime,inst->device_id);
-    printf("{\"utime\": %lu,\"msg\": \"PANID = 0x%X\"}\n",utime,udev->pan_id);
-    printf("{\"utime\": %lu,\"msg\": \"DeviceID = 0x%X\"}\n",utime,udev->uid);
-    printf("{\"utime\": %lu,\"msg\": \"partID = 0x%lX\"}\n",utime,inst->part_id);
-    printf("{\"utime\": %lu,\"msg\": \"lotID = 0x%lX\"}\n",utime,inst->lot_id);
-    printf("{\"utime\": %lu,\"msg\": \"xtal_trim = 0x%X\"}\n",utime,inst->xtal_trim);  
+    printf("{\"device_id\"=\"%lX\"",udev->device_id);
+    printf(",\"panid=\"%X\"",udev->pan_id);
+    printf(",\"addr\"=\"%X\"",udev->uid);
+    printf(",\"part_id\"=\"%lX\"",(uint32_t)(udev->euid&0xffffffff));
+    printf(",\"lot_id\"=\"%lX\"}\n",(uint32_t)(udev->euid>>32));
     printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime, uwb_phy_frame_duration(udev, sizeof(twr_frame_final_t))); 
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime, uwb_phy_SHR_duration(udev)); 
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay))); 
 
-     // Using DW GPIO5 and GPIO6 to study timing.
+#if MYNEWT_VAL(DW1000_DEVICE_0)
+    // Using DW GPIO5 and GPIO6 to study timing.
+    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     dw1000_gpio5_config_ext_txe( inst);
     dw1000_gpio6_config_ext_rxe( inst);
-
+#endif
     /* Slot 0:ccp, 1+ twr */
     for (uint16_t i = 1; i < MYNEWT_VAL(TDMA_NSLOTS); i++)
         tdma_assign_slot(tdma, slot_cb,  i, (void*)rng);

@@ -347,13 +347,11 @@ main(int argc, char **argv)
         uwb_ccp_start(ccp, CCP_ROLE_RELAY);
         uwb_pan_start(pan, UWB_PAN_ROLE_RELAY, NETWORK_ROLE_ANCHOR);
     }
-    printf("{\"device_id\"=\"%lX\"",inst->device_id);
-    printf(",\"PANID=\"%X\"",udev->pan_id);
-    printf(",\"addr\"=\"%X\"",udev->my_short_address);
-    printf(",\"partID\"=\"%lX\"",inst->part_id);
-    printf(",\"lotID\"=\"%lX\"",inst->lot_id);
-    printf(",\"slot_id\"=\"%d\"",udev->slot_id);
-    printf(",\"xtal_trim\"=\"%X\"}\n",inst->xtal_trim);
+    printf("{\"device_id\"=\"%lX\"",udev->device_id);
+    printf(",\"panid=\"%X\"",udev->pan_id);
+    printf(",\"addr\"=\"%X\"",udev->uid);
+    printf(",\"part_id\"=\"%lX\"",(uint32_t)(udev->euid&0xffffffff));
+    printf(",\"lot_id\"=\"%lX\"}\n",(uint32_t)(udev->euid>>32));
 
     tdma_instance_t * tdma = (tdma_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_TDMA);
     assert(tdma);

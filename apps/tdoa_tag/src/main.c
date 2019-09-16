@@ -42,11 +42,9 @@
 #include <config/config.h>
 #include "uwbcfg/uwbcfg.h"
 
+#include <uwb/uwb.h>
 #include <uwb/uwb_ftypes.h>
-#include "dw1000/dw1000_dev.h"
 #include "dw1000/dw1000_hal.h"
-#include "dw1000/dw1000_phy.h"
-#include "dw1000/dw1000_mac.h"
 
 /* The timer callout */
 static struct dpl_callout tdoa_callout;
@@ -123,18 +121,18 @@ int
 uwb_sleep(void)
 {
 #if MYNEWT_VAL(DW1000_DEVICE_0)
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+    struct uwb_dev *udev = uwb_dev_idx_lookup(0);
 
     /* Enter sleep */
-    dw1000_phy_forcetrxoff(inst);
-    dw1000_phy_rx_reset(inst);
-    dw1000_dev_configure_sleep(inst);
+    uwb_phy_forcetrxoff(udev);
+    //uwb_phy_rx_reset(udev); // Needed???
+    uwb_sleep_config(udev);
     /* Clear all status flags that could prevent entering sleep */
-    dw1000_write_reg(inst, SYS_STATUS_ID,3,0xFFFF,sizeof(uint16_t));
-    dw1000_write_reg(inst, SYS_STATUS_ID,0,0xFFFFFFFF,sizeof(uint32_t));
-    dw1000_dev_configure_sleep(inst);
+    //dw1000_write_reg(inst, SYS_STATUS_ID,3,0xFFFF,sizeof(uint16_t));
+    //dw1000_write_reg(inst, SYS_STATUS_ID,0,0xFFFFFFFF,sizeof(uint32_t));
+    uwb_sleep_config(udev);
     /* Enter sleep */
-    dw1000_dev_enter_sleep(inst);
+    uwb_enter_sleep(udev);
 #endif
     return 0;
 }
@@ -155,9 +153,8 @@ void tdoa_timer_ev_cb(struct dpl_event *ev) {
     hal_gpio_write(LED_BLINK_PIN, 1);
 
     struct uwb_dev *udev = uwb_dev_idx_lookup(0);
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     if (udev->status.sleeping) {
-        dw1000_dev_wakeup(inst);
+        uwb_wakeup(udev);
     }
 
     if (config_changed) {
@@ -166,16 +163,16 @@ void tdoa_timer_ev_cb(struct dpl_event *ev) {
         config_changed = false;
     }
 
-    dw1000_dev_configure_sleep(inst);
-    dw1000_dev_enter_sleep_after_tx(inst, g_blink_rate < 10);
+    uwb_sleep_config(udev);
+    uwb_enter_sleep_after_tx(udev, g_blink_rate < 10);
 
     uwb_write_tx_fctrl(udev, sizeof(ieee_blink_frame_t), 0);
 
     /* Should not really need this section but due to sleeping the dw1000 post tx
      * it may be needed */
-    if(dpl_sem_get_count(&inst->tx_sem) == 0) {
+    if(dpl_sem_get_count(&hal_dw1000_inst(0)->tx_sem) == 0) {
         printf("sem rel\n");
-        dpl_sem_release(&inst->tx_sem);
+        dpl_sem_release(&hal_dw1000_inst(0)->tx_sem);
     }
 
     if (uwb_start_tx(udev).start_tx_error){
@@ -229,7 +226,6 @@ int main(int argc, char **argv){
     conf_load();
 
     struct uwb_dev *udev = uwb_dev_idx_lookup(0);
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     udev->config.dblbuffon_enabled = 0;
     udev->config.framefilter_enabled = 0;
     udev->config.bias_correction_enable = 0;
@@ -241,11 +237,11 @@ int main(int argc, char **argv){
 
     uwb_sleep();
     
-    printf("{\"device_id\"=\"%lX\"",inst->device_id);
+    printf("{\"device_id\"=\"%lX\"",udev->device_id);
     printf(",\"panid=\"%X\"",udev->pan_id);
     printf(",\"addr\"=\"%X\"",udev->uid);
-    printf(",\"part_id\"=\"%lX\"",inst->part_id);
-    printf(",\"lot_id\"=\"%lX\"}\n",inst->lot_id);
+    printf(",\"part_id\"=\"%lX\"",(uint32_t)(udev->euid&0xffffffff));
+    printf(",\"lot_id\"=\"%lX\"}\n",(uint32_t)(udev->euid>>32));
 
     tdoa_blink_frame.long_address = udev->my_long_address;
 #if MYNEWT_VAL(BLE_ENABLED)

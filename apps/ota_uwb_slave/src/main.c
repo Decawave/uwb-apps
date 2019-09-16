@@ -32,7 +32,6 @@
 #include "mcu/mcu_sim.h"
 #endif
 
-#include <dw1000/dw1000_hal.h>
 #include <uwb/uwb.h>
 #include <uwb/uwb_ftypes.h>
 #include <nmgr_uwb/nmgr_uwb.h> 
@@ -73,18 +72,17 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_3, 1);
     
     struct uwb_dev *udev = uwb_dev_idx_lookup(0);
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
     printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 
-    printf("{\"utime\": %lu,\"msg\": \"device_id = 0x%lX\"}\n",utime,inst->device_id);
+    printf("{\"utime\": %lu,\"msg\": \"device_id = 0x%lX\"}\n",utime,udev->device_id);
     printf("{\"utime\": %lu,\"msg\": \"PANID = 0x%X\"}\n",utime,udev->pan_id);
-    printf("{\"utime\": %lu,\"msg\": \"DeviceID = 0x%X\"}\n",utime,udev->my_short_address);
-    printf("{\"utime\": %lu,\"msg\": \"partID = 0x%lX\"}\n",utime,inst->part_id);
-    printf("{\"utime\": %lu,\"msg\": \"lotID = 0x%lX\"}\n",utime,inst->lot_id);
-    printf("{\"utime\": %lu,\"msg\": \"xtal_trim = 0x%X\"}\n",utime,inst->xtal_trim);  
+    printf("{\"utime\": %lu,\"msg\": \"DeviceID = 0x%X\"}\n",utime,udev->uid);
+    printf("{\"utime\": %lu,\"msg\": \"partID = 0x%lX\"}\n",
+           utime,(uint32_t)(udev->euid&0xffffffff));
+    printf("{\"utime\": %lu,\"msg\": \"lotID = 0x%lX\"}\n",
+           utime,(uint32_t)(udev->euid>>32));
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime, uwb_phy_SHR_duration(udev)); 
-    printf("{\"utime\":,\"msg\": \"DeviceID = 0x%X\"}\n",udev->my_short_address);
 
     struct _nmgr_uwb_instance_t *nmgr = (struct _nmgr_uwb_instance_t *) uwb_mac_find_cb_inst_ptr(udev, UWBEXT_NMGR_UWB);
     os_callout_init(&uwb_callout, os_eventq_dflt_get(), uwb_ev_cb, nmgr);

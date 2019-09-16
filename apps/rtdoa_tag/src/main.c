@@ -375,13 +375,11 @@ main(int argc, char **argv)
 
     ble_init(udev->my_long_address);
 
-    printf("{\"device_id\"=\"%lX\"",inst->device_id);
-    printf(",\"PANID=\"%X\"",udev->pan_id);
-    printf(",\"addr\"=\"%X\"",udev->my_short_address);
-    printf(",\"partID\"=\"%lX\"",inst->part_id);
-    printf(",\"lotID\"=\"%lX\"",inst->lot_id);
-    printf(",\"slot_id\"=\"%d\"",udev->slot_id);
-    printf(",\"xtal_trim\"=\"%X\"}\n",inst->xtal_trim);
+    printf("{\"device_id\"=\"%lX\"",udev->device_id);
+    printf(",\"panid=\"%X\"",udev->pan_id);
+    printf(",\"addr\"=\"%X\"",udev->uid);
+    printf(",\"part_id\"=\"%lX\"",(uint32_t)(udev->euid&0xffffffff));
+    printf(",\"lot_id\"=\"%lX\"}\n",(uint32_t)(udev->euid>>32));
 
     struct uwb_ccp_instance * ccp = (struct uwb_ccp_instance*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_CCP);
     assert(ccp);
