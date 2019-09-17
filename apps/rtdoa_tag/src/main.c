@@ -38,9 +38,8 @@
 #include "bleprph/bleprph.h"
 #endif
 
-#include "uwb/uwb.h"
+#include <uwb/uwb.h>
 #include "uwb/uwb_ftypes.h"
-#include "dw1000/dw1000_dev.h"
 #include "dw1000/dw1000_hal.h"
 #include "uwbcfg/uwbcfg.h"
 #include <config/config.h>
@@ -93,7 +92,7 @@ sensor_timer_ev_cb(struct dpl_event *ev)
                                     SENSOR_TYPE_MAGNETIC_FIELD,
                                     SENSOR_TYPE_PRESSURE,
                                     SENSOR_TYPE_NONE};
-    uint64_t local_ts = dw1000_read_systime(hal_dw1000_inst(0));
+    uint64_t local_ts = uwb_read_systime(uwb_dev_idx_lookup(0));
 
     /* Only include pressure and compass at max 20hz */
     if (os_cputime_get32() - last_mp_update > os_cputime_usecs_to_ticks(50000)) {
@@ -312,8 +311,8 @@ low_battery_mode()
     uwb_phy_forcetrxoff(inst);
 
     dpl_time_delay(DPL_TICKS_PER_SEC/10);
-    dw1000_dev_configure_sleep(hal_dw1000_inst(0));
-    dw1000_dev_enter_sleep(hal_dw1000_inst(0));
+    uwb_sleep_config(inst);
+    uwb_enter_sleep(inst);
 
 #if defined(BATT_V_PIN)
     int16_t batt_mv = hal_bsp_read_battery_voltage();
@@ -362,14 +361,13 @@ main(int argc, char **argv)
     conf_load();
 
     struct uwb_dev *udev = uwb_dev_idx_lookup(0);
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
 
     udev->config.rxauto_enable = 1;
     udev->config.trxoff_enable = 1;
     udev->config.rxdiag_enable = 1;
     udev->config.sleep_enable = 1;
     udev->config.dblbuffon_enabled = 0;
-    dw1000_set_dblrxbuff(inst, false);
+    uwb_set_dblrxbuff(udev, false);
 
     udev->slot_id = 0;
 

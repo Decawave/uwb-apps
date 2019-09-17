@@ -308,7 +308,6 @@ main(int argc, char **argv)
     };
     
     struct uwb_dev *udev = uwb_dev_idx_lookup(0);
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     uwb_mac_append_interface(udev, &cbs);
     struct nrng_instance * nrng = (struct nrng_instance *)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_NRNG);
     assert(nrng);
@@ -319,7 +318,7 @@ main(int argc, char **argv)
     udev->config.rxdiag_enable = 1;
     udev->config.sleep_enable = 1;
     udev->config.dblbuffon_enabled = 0;
-    dw1000_set_dblrxbuff(inst, false);
+    uwb_set_dblrxbuff(udev, false);
 
     udev->slot_id = 0xffff;
 

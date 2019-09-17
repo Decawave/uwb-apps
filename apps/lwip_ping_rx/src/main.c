@@ -111,14 +111,13 @@ main(int argc, char **argv){
     hal_gpio_init_out(LED_BLINK_PIN, 1);
 
     struct uwb_dev *udev = uwb_dev_idx_lookup(0);
-	dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
 
 	udev->pan_id = MYNEWT_VAL(PANID);
 	udev->my_short_address = MYNEWT_VAL(DW_DEVICE_ID_0);
 	udev->fctrl_array[0] = 'L';
 	udev->fctrl_array[1] = 'W';
 
-	dw1000_set_panid(inst,udev->pan_id);
+	uwb_set_panid(udev,udev->pan_id);
 
 	dw1000_lwip_instance_t *lwip = dw1000_lwip_init(udev, &lwip_config, MYNEWT_VAL(NUM_FRAMES),
                                                     MYNEWT_VAL(BUFFER_SIZE));

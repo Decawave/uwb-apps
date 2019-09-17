@@ -259,7 +259,7 @@ process_rx_data_queue(struct os_event *ev)
             console_out(']');
         }
         if (hdr->carrier_integrator && (local_conf.verbose&VERBOSE_CARRIER_INTEGRATOR)) {
-            float ccor = dw1000_calc_clock_offset_ratio(hal_dw1000_inst(0), hdr->carrier_integrator);
+            float ccor = uwb_calc_clock_offset_ratio(uwb_dev_idx_lookup(0), hdr->carrier_integrator);
             int ppm = (int)(ccor*1000000.0f);
             printf(",\"ccor\":%d.%03de-6",
                    ppm,
@@ -497,11 +497,11 @@ void
 uwb_config_update(struct os_event * ev)
 {
     for(int i=0;i<N_DW_INSTANCES;i++) {
-        struct uwb_dev *inst = uwb_dev_idx_lookup(0);
+        struct uwb_dev *inst = uwb_dev_idx_lookup(i);
         uwb_mac_config(inst, NULL);
         uwb_txrf_config(inst, &inst->config.txrf);
 #if MYNEWT_VAL(USE_DBLBUFFER)
-        dw1000_set_dblrxbuff((dw1000_dev_instance_t*)inst, true);
+        uwb_set_dblrxbuff(inst, true);
 #endif
         uwb_set_rx_timeout(inst, 0);
 #if N_DW_INSTANCES > 1
@@ -551,16 +551,8 @@ static struct uwb_mac_interface g_cbs = {
     .reset_cb = reset_cb
 };
 
-bool dw1000_post_sync_cb(struct _dw1000_dev_instance_t *inst)
-{
-    dw1000_set_rx_timeout(inst, 0);
-    dw1000_start_rx(inst);
-    return true;
-}
-
 int main(int argc, char **argv){
     int rc;
-    dw1000_dev_instance_t * inst[N_DW_INSTANCES];
     struct uwb_dev *udev[N_DW_INSTANCES];
 
     sysinit();
@@ -568,7 +560,6 @@ int main(int argc, char **argv){
 
     for(int i=0;i<N_DW_INSTANCES;i++) {
         udev[i] = uwb_dev_idx_lookup(i);
-        inst[i] = hal_dw1000_inst(i);
         udev[i]->config.rxdiag_enable = (local_conf.verbose&VERBOSE_RX_DIAG) != 0;
         udev[i]->config.framefilter_enabled = 0;
         udev[i]->config.bias_correction_enable = 0;
@@ -582,11 +573,11 @@ int main(int argc, char **argv){
         /* Make sure to enable double buffring */
         udev[i]->config.dblbuffon_enabled = 1;
         udev[i]->config.rxauto_enable = 0;
-        dw1000_set_dblrxbuff(inst[i], true);
+        uwb_set_dblrxbuff(udev[i], true);
 #else
         udev[i]->config.dblbuffon_enabled = 0;
         udev[i]->config.rxauto_enable = 1;
-        dw1000_set_dblrxbuff(inst[i], false);
+        uwb_set_dblrxbuff(udev[i], false);
 #endif
 #if MYNEWT_VAL(CIR_ENABLED)
         udev[i]->config.cir_enable = (N_DW_INSTANCES>1) ? true : false;
@@ -596,8 +587,7 @@ int main(int argc, char **argv){
         printf(",\"PANID=\"%X\"",udev[i]->pan_id);
         printf(",\"addr\"=\"%X\"",udev[i]->uid);
         printf(",\"partID\"=\"%lX\"",(uint32_t)(udev[i]->euid&0xffffffff));
-        printf(",\"lotID\"=\"%lX\"",(uint32_t)(udev[i]->euid>>32));
-        printf(",\"xtal_trim\"=\"%X\"}\n",inst[i]->xtal_trim);
+        printf(",\"lotID\"=\"%lX\"}\n",(uint32_t)(udev[i]->euid>>32));
         uwb_mac_append_interface(udev[i], &g_cbs);
     }
 
@@ -606,11 +596,14 @@ int main(int argc, char **argv){
     conf_register(&lstnr_handler);
     conf_load();
 
-#ifdef MYNEWT_VAL_DW1000_PDOA_SYNC
-    /* TODO: For master add this as an event that can be re-run */
-    hal_bsp_dw_clk_sync(inst, N_DW_INSTANCES);
-    hal_bsp_dw_sync_set_cb(dw1000_post_sync_cb);
-#endif
+    /* Sync clocks if available */
+    if (uwb_sync_to_ext_clock(udev[0]).ext_sync || 1) {
+        printf("{\"ext_sync\"=\"");
+        for(int i=0;i<N_DW_INSTANCES;i++) {
+            printf("%d", udev[i]->status.ext_sync);
+        }
+        printf("\"}\n");
+    }
     
     ble_init(udev[0]->euid);
 

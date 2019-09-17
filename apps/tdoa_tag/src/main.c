@@ -125,7 +125,7 @@ uwb_sleep(void)
 
     /* Enter sleep */
     uwb_phy_forcetrxoff(udev);
-    //uwb_phy_rx_reset(udev); // Needed???
+    uwb_phy_rx_reset(udev);
     uwb_sleep_config(udev);
     /* Clear all status flags that could prevent entering sleep */
     //dw1000_write_reg(inst, SYS_STATUS_ID,3,0xFFFF,sizeof(uint16_t));
@@ -167,13 +167,6 @@ void tdoa_timer_ev_cb(struct dpl_event *ev) {
     uwb_enter_sleep_after_tx(udev, g_blink_rate < 10);
 
     uwb_write_tx_fctrl(udev, sizeof(ieee_blink_frame_t), 0);
-
-    /* Should not really need this section but due to sleeping the dw1000 post tx
-     * it may be needed */
-    if(dpl_sem_get_count(&hal_dw1000_inst(0)->tx_sem) == 0) {
-        printf("sem rel\n");
-        dpl_sem_release(&hal_dw1000_inst(0)->tx_sem);
-    }
 
     if (uwb_start_tx(udev).start_tx_error){
         printf("start tx err\n");

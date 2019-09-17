@@ -315,13 +315,10 @@ int main(int argc, char **argv){
     }
 
 #if MYNEWT_VAL(DW1000_DEVICE_0) && MYNEWT_VAL(DW1000_DEVICE_1)
-{
-    dw1000_dev_instance_t * inst[] = {
-                hal_dw1000_inst(0),
-                hal_dw1000_inst(1)
-            };
-    hal_bsp_dw_clk_sync(inst, 2);
-}
+    /* Sync clocks if available */
+    if (uwb_sync_to_ext_clock(udev).ext_sync == 1) {
+        printf("{\"ext_sync\"=\"%d\"}\n", udev->status.ext_sync);
+    }
 #endif
 
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());

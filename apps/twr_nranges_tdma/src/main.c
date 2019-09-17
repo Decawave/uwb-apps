@@ -30,8 +30,8 @@
 #include "hal/hal_gpio.h"
 #include "hal/hal_bsp.h"
 #include "imgmgr/imgmgr.h"
+
 #include <uwb/uwb.h>
-#include <dw1000/dw1000_hal.h>
 #include "uwbcfg/uwbcfg.h"
 #include <config/config.h>
 #include <tdma/tdma.h>
@@ -160,6 +160,16 @@ slot_cb(struct dpl_event * ev){
     if (dpl_sem_get_count(&ccp->sem) == 0) {
         return;
     }
+
+    /* Update config if needed */
+    if (dw1000_config_updated) {
+        dw1000_config_updated = true;
+        uwb_phy_forcetrxoff(udev);
+        uwb_mac_config(udev, NULL);
+        uwb_txrf_config(udev, &udev->config.txrf);
+        return;
+    }
+
     if (ccp->local_epoch==0 || udev->slot_id == 0xffff) return;
 
     /* Process any newtmgr packages queued up */
@@ -250,10 +260,9 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_3, 1);
 
     struct uwb_dev * udev = uwb_dev_idx_lookup(0);
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     udev->config.rxauto_enable = false;
     udev->config.dblbuffon_enabled = false;
-    dw1000_set_dblrxbuff(inst, udev->config.dblbuffon_enabled);  
+    uwb_set_dblrxbuff(udev, udev->config.dblbuffon_enabled);
 
     struct nrng_instance* nrng = (struct nrng_instance*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_NRNG);
     assert(nrng);

@@ -657,7 +657,7 @@ rtdoa_backhaul_send(struct uwb_dev * inst, struct rtdoa_instance *rtdoa,
 #endif
         g_result_pkg.ranges[g_result_pkg.num_ranges].anchor_addr = rtdoa->frames[i]->src_address;
         g_result_pkg.ranges[g_result_pkg.num_ranges].rssi = rssi*10;
-        g_result_pkg.ranges[g_result_pkg.num_ranges].quality = (int)uwb_rng_is_los(rssi,fppl);
+        g_result_pkg.ranges[g_result_pkg.num_ranges].quality = (int)uwb_estimate_los(inst, rssi,fppl);
         g_result_pkg.num_ranges++;
     }
 
