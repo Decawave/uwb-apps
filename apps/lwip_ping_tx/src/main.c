@@ -34,7 +34,7 @@
 #include <uwb/uwb.h>
 #include <uwb/uwb_ftypes.h>
 
-#include <lwip/lwip.h>
+#include <uwb_lwip/uwb_lwip.h>
 #include <lwip/init.h>
 #include <lwip/ethip6.h>
 #include <netif/lowpan6.h>
@@ -43,7 +43,7 @@
 #define RX_STATUS false
 
 static
-dw1000_lwip_config_t lwip_config = {
+uwb_lwip_config_t lwip_config = {
 	.poll_resp_delay = 0x4800,
 	.resp_timeout = 0xF000,
 	.uwbtime_to_systime = 0
@@ -82,7 +82,7 @@ static void timer_ev_cb(struct os_event *ev) {
 
     hal_gpio_toggle(LED_BLINK_PIN);
     
-    dw1000_lwip_instance_t* lwip = (dw1000_lwip_instance_t *)ev->ev_arg;
+    uwb_lwip_instance_t* lwip = (uwb_lwip_instance_t *)ev->ev_arg;
     struct uwb_dev *inst = lwip->dev_inst;
 	uint16_t payload_size = (uint16_t)sizeof(struct ping_payload);
 
@@ -94,7 +94,7 @@ static void timer_ev_cb(struct os_event *ev) {
 	ping_pl->ping_id = PING_ID;
 	ping_pl->seq_no  = seq_no++;
 
-	dw1000_lwip_send(lwip, payload_size, payload, ip6_tgt_addr);
+	uwb_lwip_send(lwip, payload_size, payload, ip6_tgt_addr);
     printf("err:%d\n", lwip->status.start_tx_error);
 	printf("\n\tSeq # - %d\n\n", seq_no);
 
@@ -123,7 +123,7 @@ static void timer_ev_cb(struct os_event *ev) {
 	print_error(error);
 }
 
-static void init_timer(dw1000_lwip_instance_t *lwip) {
+static void init_timer(uwb_lwip_instance_t *lwip) {
     os_callout_init(&blinky_callout, os_eventq_dflt_get(), timer_ev_cb, lwip);
     os_callout_reset(&blinky_callout, OS_TICKS_PER_SEC);
 }
@@ -141,16 +141,16 @@ int main(int argc, char **argv){
 
 	uwb_set_panid(udev,udev->pan_id);
 
-	dw1000_lwip_instance_t *lwip = dw1000_lwip_init(udev, &lwip_config, MYNEWT_VAL(NUM_FRAMES),
+	uwb_lwip_instance_t *lwip = uwb_lwip_init(udev, &lwip_config, MYNEWT_VAL(NUM_FRAMES),
                                                     MYNEWT_VAL(BUFFER_SIZE));
-    dw1000_netif_config(lwip, &lwip->lwip_netif, &my_ip_addr, RX_STATUS);
+    uwb_netif_config(lwip, &lwip->lwip_netif, &my_ip_addr, RX_STATUS);
 	lwip_init();
     lowpan6_if_init(&lwip->lwip_netif);
 
     lwip->lwip_netif.flags |= NETIF_FLAG_UP | NETIF_FLAG_LINK_UP;
 	lowpan6_set_pan_id(MYNEWT_VAL(PANID));
 
-    dw1000_pcb_init(lwip);
+    uwb_pcb_init(lwip);
 
     lwip->dst_addr = 0x4321;
 

@@ -34,7 +34,7 @@
 #include <uwb/uwb.h>
 #include <uwb/uwb_ftypes.h>
 #include <dw1000/dw1000_hal.h>
-#include <lwip/lwip.h>
+#include <uwb_lwip/uwb_lwip.h>
 
 #include <lwip/init.h>
 #include <lwip/ethip6.h>
@@ -46,7 +46,7 @@
 static struct os_callout rx_callout;
 
 static
-dw1000_lwip_config_t lwip_config = {
+uwb_lwip_config_t lwip_config = {
 	.poll_resp_delay = 0x4800,
 	.resp_timeout = 0xF000,
 	.uwbtime_to_systime = 0
@@ -75,7 +75,7 @@ struct ping_payload *ping_pl;
 static void
 uwb_ev_cb(struct os_event *ev)
 {
-    dw1000_lwip_instance_t *lwip = (dw1000_lwip_instance_t *)ev->ev_arg;
+    uwb_lwip_instance_t *lwip = (uwb_lwip_instance_t *)ev->ev_arg;
     
     if (lwip->status.start_rx_error)
         printf("timer_ev_cb:[start_rx_error]\n");
@@ -92,8 +92,8 @@ uwb_ev_cb(struct os_event *ev)
         lwip->status.start_tx_error = lwip->status.rx_error = lwip->status.request_timeout = lwip->status.rx_timeout_error = 0;
     }
     
-	dw1000_lwip_context_t *cntxt;
-	cntxt = (dw1000_lwip_context_t*)lwip->lwip_netif.state;
+	uwb_lwip_context_t *cntxt;
+	cntxt = (uwb_lwip_context_t*)lwip->lwip_netif.state;
     cntxt->rx_cb.recv(lwip, 0xffff);
     os_callout_reset(&rx_callout, OS_TICKS_PER_SEC);
 }
@@ -119,9 +119,9 @@ main(int argc, char **argv){
 
 	uwb_set_panid(udev,udev->pan_id);
 
-	dw1000_lwip_instance_t *lwip = dw1000_lwip_init(udev, &lwip_config, MYNEWT_VAL(NUM_FRAMES),
+	uwb_lwip_instance_t *lwip = uwb_lwip_init(udev, &lwip_config, MYNEWT_VAL(NUM_FRAMES),
                                                     MYNEWT_VAL(BUFFER_SIZE));
-    dw1000_netif_config(lwip, &lwip->lwip_netif, &my_ip_addr, RX_STATUS);
+    uwb_netif_config(lwip, &lwip->lwip_netif, &my_ip_addr, RX_STATUS);
 	lwip_init();
     lowpan6_if_init(&lwip->lwip_netif);
 
@@ -130,7 +130,7 @@ main(int argc, char **argv){
    	IP_ADDR6(ip6_tgt_addr, MYNEWT_VAL(TGT_IP6_ADDR_1), MYNEWT_VAL(TGT_IP6_ADDR_2), 
                             MYNEWT_VAL(TGT_IP6_ADDR_3), MYNEWT_VAL(TGT_IP6_ADDR_4));
 
-    dw1000_pcb_init(lwip);
+    uwb_pcb_init(lwip);
     raw_recv(lwip->pcb, ping_recv, lwip);
 
     os_callout_init(&rx_callout, os_eventq_dflt_get(), uwb_ev_cb, lwip);
@@ -152,7 +152,7 @@ ping_recv(void *arg, struct raw_pcb *pcb, struct pbuf *p, const ip_addr_t *addr)
 	LWIP_UNUSED_ARG(pcb);
 	LWIP_UNUSED_ARG(addr);
 	LWIP_ASSERT("p != NULL", p != NULL);
-	dw1000_lwip_instance_t *lwip = (dw1000_lwip_instance_t *)arg;
+	uwb_lwip_instance_t *lwip = (uwb_lwip_instance_t *)arg;
 	assert(lwip->lwip_netif.state);
 
 	if (pbuf_header(p, -PBUF_IP_HLEN)==0) {
