@@ -32,6 +32,7 @@
 #include "imgmgr/imgmgr.h"
 
 #include <uwb/uwb.h>
+#include <uwb/uwb_mac.h>
 #include "uwbcfg/uwbcfg.h"
 #include <config/config.h>
 #include <tdma/tdma.h>
@@ -59,9 +60,9 @@
 
 #endif
 
-static bool dw1000_config_updated = false;
+static bool uwb_config_updated = false;
 int
-uwb_config_updated()
+uwb_config_updated_cb()
 {
     /* Workaround in case we're stuck waiting for ccp with the 
      * wrong radio settings */
@@ -75,11 +76,11 @@ uwb_config_updated()
         return 0;
     }
 
-    dw1000_config_updated = true;
+    uwb_config_updated = true;
     return 0;
 }
 struct uwbcfg_cbs uwb_cb = {
-    .uc_update = uwb_config_updated
+    .uc_update = uwb_config_updated_cb
 };
 
 
@@ -105,29 +106,14 @@ static void nrng_complete_cb(struct dpl_event *ev) {
         frame->code = DWT_DS_TWR_NRNG_END;
     }
 }
-/*! 
- * @fn complete_cb(dw1000_dev_instance_t * inst)
- *
- * @brief This callback is in the interrupt context and is uses to schedule an pdoa_complete event on the default event queue.  
- * Processing should be kept to a minimum giving the context. All algorithms should be deferred to a thread on an event queue. 
- * In this example all postprocessing is performed in the pdoa_ev_cb.
- * input parameters
- * @param inst - dw1000_dev_instance_t * 
- *
- * output parameters
- *
- * returns none 
- */
-/* The timer callout */
-static struct dpl_callout slot_callout;
+
+static struct dpl_event nrng_complete_event;
 static bool complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 {
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
     }
-    struct nrng_instance* nrng = (struct nrng_instance*)cbs->inst_ptr;
-    dpl_callout_init(&slot_callout, dpl_eventq_dflt_get(), nrng_complete_cb, nrng);
-    dpl_eventq_put(dpl_eventq_dflt_get(), (struct dpl_event *) &slot_callout.co.c_ev);
+    dpl_eventq_put(dpl_eventq_dflt_get(), &nrng_complete_event);
     return true;
 }
 
@@ -162,8 +148,8 @@ slot_cb(struct dpl_event * ev){
     }
 
     /* Update config if needed */
-    if (dw1000_config_updated) {
-        dw1000_config_updated = true;
+    if (uwb_config_updated) {
+        uwb_config_updated = false;
         uwb_phy_forcetrxoff(udev);
         uwb_mac_config(udev, NULL);
         uwb_txrf_config(udev, &udev->config.txrf);
@@ -205,7 +191,7 @@ slot_cb(struct dpl_event * ev){
         }
 
         if(nrng_request_delay_start(
-               nrng, BROADCAST_ADDRESS, dx_time,
+               nrng, UWB_BROADCAST_ADDRESS, dx_time,
                DWT_SS_TWR_NRNG, slot_mask, 0).start_tx_error) {
             uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
             printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\"}\n",
@@ -266,6 +252,8 @@ int main(int argc, char **argv){
 
     struct nrng_instance* nrng = (struct nrng_instance*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_NRNG);
     assert(nrng);
+
+    dpl_event_init(&nrng_complete_event, nrng_complete_cb, nrng);
 
     struct uwb_mac_interface cbs = (struct uwb_mac_interface){
         .id = UWBEXT_APP0,

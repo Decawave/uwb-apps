@@ -35,9 +35,8 @@
 #include "sensor/mag.h"
 #include "sensor/pressure.h"
 
-#include <dw1000/dw1000_mac.h>
-#include <dw1000/dw1000_hal.h>
 #include <uwb/uwb.h>
+#include <uwb/uwb_mac.h>
 #include <uwb/uwb_ftypes.h>
 #include <uwb_rng/uwb_rng.h>
 
@@ -438,7 +437,7 @@ rx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     }
 
     if ((frame->dst_address != inst->my_short_address &&
-        frame->dst_address != BROADCAST_ADDRESS) ||
+        frame->dst_address != UWB_BROADCAST_ADDRESS) ||
         g_role == RTDOABH_ROLE_INVALID || g_role == RTDOABH_ROLE_PRODUCER) { 
 
         if(os_sem_get_count(&g_sem) == 0) {

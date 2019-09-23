@@ -38,8 +38,9 @@
 #include "bleprph/bleprph.h"
 #endif
 
-#include "uwb/uwb.h"
-#include "uwb/uwb_ftypes.h"
+#include <uwb/uwb.h>
+#include <uwb/uwb_mac.h>
+#include <uwb/uwb_ftypes.h>
 #include "dw1000/dw1000_dev.h"
 #include "dw1000/dw1000_hal.h"
 #include "uwbcfg/uwbcfg.h"
@@ -131,7 +132,7 @@ nrng_slot_timer_cb(struct dpl_event *ev)
         uint64_t dx_time = tdma_tx_slot_start(tdma, idx) & 0xFFFFFFFFFE00UL;
         uint32_t slot_mask = 0xFFFF;
 
-        if(nrng_request_delay_start(nrng, BROADCAST_ADDRESS, dx_time,
+        if(nrng_request_delay_start(nrng, UWB_BROADCAST_ADDRESS, dx_time,
                                     DWT_SS_TWR_NRNG, slot_mask, 0).start_tx_error){
             /* Do nothing */
         }
