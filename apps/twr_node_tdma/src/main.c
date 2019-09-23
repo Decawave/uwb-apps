@@ -73,18 +73,21 @@ cir_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     }
     
 #if MYNEWT_VAL(DW1000_DEVICE_0) && MYNEWT_VAL(DW1000_DEVICE_1)
-    cir_instance_t * cir[] = {
-        hal_dw1000_inst(0)->cir,
-        hal_dw1000_inst(1)->cir
+    struct uwb_dev * udev[] = {
+        uwb_dev_idx_lookup(0),
+        uwb_dev_idx_lookup(1)
+    };
+    struct cir_instance * cir[] = {
+        udev[0]->cir,
+        udev[1]->cir
     };
  
-    twr_frame_t * frame0 = (twr_frame_t *) uwb_dev_idx_lookup(0)->rxbuf;
-    twr_frame_t * frame1 = (twr_frame_t *) uwb_dev_idx_lookup(1)->rxbuf;
+    twr_frame_t * frame0 = (twr_frame_t *) udev[0]->rxbuf;
+    twr_frame_t * frame1 = (twr_frame_t *) udev[1]->rxbuf;
 
     if ((cir[0]->status.valid && cir[1]->status.valid) && (frame0->seq_num == frame1->seq_num)){ 
-        float pd = fmodf((cir[0]->angle - cir[0]->rcphase) - (cir[1]->angle - cir[1]->rcphase) + 3*M_PI, 2*M_PI) - M_PI;
-        float pd_dist = pd / (2*M_PI) * WAVELENGTH;
-        g_angle.azimuth = asinf(pd_dist/ANTENNA_SEPERATION);
+        float pd = cir_get_pdoa(cir[1], cir[0]);
+        g_angle.azimuth = cir_calc_aoa(pd, WAVELENGTH, ANTENNA_SEPERATION);
    }
 
    
@@ -125,10 +128,7 @@ complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     frame->spherical.azimuth = g_angle.azimuth;
     frame->spherical.zenith = g_angle.zenith;
 
-    if (!dpl_event_is_queued(&slot_event)) {
-        dpl_event_init(&slot_event, slot_complete_cb, rng);
-        dpl_eventq_put(dpl_eventq_dflt_get(), &slot_event);
-    }
+    dpl_eventq_put(dpl_eventq_dflt_get(), &slot_event);
     return true;
 }
 
@@ -204,6 +204,7 @@ uwb_config_updated_func()
 static void 
 slot_cb(struct dpl_event * ev)
 {
+    static uint16_t timeout = 0;
     assert(ev);
 
     tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
@@ -228,18 +229,22 @@ slot_cb(struct dpl_event * ev)
         uwb_txrf_config(uwb_dev_idx_lookup(1), &uwb_dev_idx_lookup(1)->config.txrf);
 #endif
         uwb_config_updated = false;
+        timeout = 0;
+        return;
     }
 
-
-    uint16_t timeout = uwb_phy_frame_duration(inst, sizeof(ieee_rng_response_frame_t))                 
-                        + rng->config.rx_timeout_delay;
+    /* Only recalculate timeout if needed */
+    if (!timeout) {
+        timeout = uwb_phy_frame_duration(inst, sizeof(ieee_rng_response_frame_t))
+            + rng->config.rx_timeout_delay;
+    }
 
 #if MYNEWT_VAL(DW1000_DEVICE_0) && MYNEWT_VAL(DW1000_DEVICE_1)   
 {   
     struct uwb_dev * inst = uwb_dev_idx_lookup(0);
     uwb_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
-    uwb_set_rx_timeout(inst, timeout);   
-    cir_enable(hal_dw1000_inst(0)->cir, true);  
+    uwb_set_rx_timeout(inst, timeout);
+    cir_enable(uwb_dev_idx_lookup(0)->cir, true);
     uwb_set_rxauto_disable(inst, true);
     uwb_start_rx(inst);  // RX enabled but frames handled as unsolicited inbound          
 }
@@ -248,7 +253,7 @@ slot_cb(struct dpl_event * ev)
     struct uwb_rng_instance * rng = (struct uwb_rng_instance*)uwb_mac_find_cb_inst_ptr(inst, UWBEXT_RNG);
     uwb_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
     uwb_set_rx_timeout(inst, timeout);  
-    cir_enable(hal_dw1000_inst(1)->cir, true);
+    cir_enable(uwb_dev_idx_lookup(1)->cir, true);
     uwb_rng_listen(rng, UWB_BLOCKING);
 }
 #else
@@ -342,6 +347,8 @@ int main(int argc, char **argv){
     dw1000_gpio6_config_ext_rxe( hal_dw1000_inst(0));
     dw1000_gpio6_config_ext_rxe( hal_dw1000_inst(1));
 #endif
+
+    dpl_event_init(&slot_event, slot_complete_cb, rng);
 
     /* Slot 0:ccp, 1+ twr */
     for (uint16_t i = 1; i < MYNEWT_VAL(TDMA_NSLOTS); i++)

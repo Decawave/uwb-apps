@@ -42,6 +42,7 @@
 #include "dw1000/dw1000_hal.h"
 #if MYNEWT_VAL(CIR_ENABLED)
 #include <cir/cir.h>
+#include <cir_dw1000/cir_dw1000.h>
 #endif
 
 #if MYNEWT_VAL(DW1000_DEVICE_0) && MYNEWT_VAL(DW1000_DEVICE_1)
@@ -193,7 +194,7 @@ create_mbuf_pool(void)
 }
 
 #if MYNEWT_VAL(CIR_ENABLED)
-static struct _cir_instance_t tmp_cir;
+static struct cir_dw1000_instance tmp_cir;
 #endif
 static uint8_t print_buffer[1024];
 static void
@@ -259,7 +260,7 @@ process_rx_data_queue(struct os_event *ev)
             console_out(']');
         }
         if (hdr->carrier_integrator && (local_conf.verbose&VERBOSE_CARRIER_INTEGRATOR)) {
-            float ccor = uwb_calc_clock_offset_ratio(uwb_dev_idx_lookup(0), hdr->carrier_integrator);
+            float ccor = uwb_calc_clock_offset_ratio(uwb_dev_idx_lookup(0), hdr->carrier_integrator, 0);
             int ppm = (int)(ccor*1000000.0f);
             printf(",\"ccor\":%d.%03de-6",
                    ppm,
@@ -292,9 +293,9 @@ process_rx_data_queue(struct os_event *ev)
         if (local_conf.verbose&VERBOSE_CIR) {
             printf(",\"cir\":[");
             for(int j=0;j<n_instances;j++) {
-                rc = os_mbuf_copydata(om, hdr->dlen + j*sizeof(struct _cir_instance_t), sizeof(struct _cir_instance_t), &tmp_cir);
-                struct _cir_instance_t* cirp = &tmp_cir;
-                if (cirp->status.valid > 0 || 1) {
+                rc = os_mbuf_copydata(om, hdr->dlen + j*sizeof(struct cir_dw1000_instance), sizeof(struct cir_dw1000_instance), &tmp_cir);
+                struct cir_dw1000_instance* cirp = &tmp_cir;
+                if (cirp->cir_inst.status.valid > 0 || 1) {
                     //float idx = ((float) hdr->diag[j].fp_idx)/64.0f;
                     float idx = cirp->fp_idx;
                     float ph = cirp->rcphase;
@@ -340,10 +341,10 @@ rx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     struct os_mbuf *om;
 
 #if MYNEWT_VAL(CIR_ENABLED)
-    cir_instance_t * cir[] = {
-        hal_dw1000_inst(0)->cir
+    struct cir_instance * cir[] = {
+        uwb_dev_idx_lookup(0)->cir
 #if N_DW_INSTANCES > 1
-        , hal_dw1000_inst(1)->cir
+        , uwb_dev_idx_lookup(1)->cir
 #endif
     };
 #endif
@@ -434,7 +435,7 @@ rx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 
         /* Do we need to load accumulator data */
         if (local_conf.acc_samples_to_load) {
-            struct _cir_instance_t *src;
+            struct cir_dw1000_instance *src;
 #ifdef MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
             for(int i=0;i<MYNEWT_VAL(PDOA_SPI_NUM_INSTANCES);i++) {
                 if (i==0) {
@@ -447,8 +448,8 @@ rx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
             for(int i=0;i<N_DW_INSTANCES;i++) {
                 src = hal_dw1000_inst(i)->cir;
 #endif
-                rc = os_mbuf_copyinto(om, hdr->dlen + i*sizeof(struct _cir_instance_t),
-                                      src, sizeof(struct _cir_instance_t));
+                rc = os_mbuf_copyinto(om, hdr->dlen + i*sizeof(struct cir_dw1000_instance),
+                                      src, sizeof(struct cir_dw1000_instance));
             }
         }
 #endif // CIR_ENABLED
