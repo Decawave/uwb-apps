@@ -44,7 +44,6 @@
 
 #include <uwb/uwb.h>
 #include <uwb/uwb_ftypes.h>
-#include "dw1000/dw1000_hal.h"
 
 /* The timer callout */
 static struct dpl_callout tdoa_callout;
@@ -120,7 +119,7 @@ uwb_conf_export(void (*export_func)(char *name, char *val),
 int
 uwb_sleep(void)
 {
-#if MYNEWT_VAL(DW1000_DEVICE_0)
+#if MYNEWT_VAL(UWB_DEVICE_0)
     struct uwb_dev *udev = uwb_dev_idx_lookup(0);
 
     /* Enter sleep */

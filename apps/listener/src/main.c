@@ -45,7 +45,7 @@
 #include <cir_dw1000/cir_dw1000.h>
 #endif
 
-#if MYNEWT_VAL(DW1000_DEVICE_0) && MYNEWT_VAL(DW1000_DEVICE_1)
+#if MYNEWT_VAL(UWB_DEVICE_0) && MYNEWT_VAL(UWB_DEVICE_1)
 #define N_DW_INSTANCES 2
 #else
 #define N_DW_INSTANCES 1

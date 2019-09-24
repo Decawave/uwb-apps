@@ -48,9 +48,6 @@
 #if MYNEWT_VAL(UWB_WCS_ENABLED)
 #include <uwb_wcs/uwb_wcs.h>
 #endif
-#if MYNEWT_VAL(DW1000_LWIP)
-#include <lwip/lwip.h>
-#endif
 #if MYNEWT_VAL(TIMESCALE)
 #include <timescale/timescale.h> 
 #endif

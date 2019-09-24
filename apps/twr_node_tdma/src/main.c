@@ -72,7 +72,7 @@ cir_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
         return false;
     }
     
-#if MYNEWT_VAL(DW1000_DEVICE_0) && MYNEWT_VAL(DW1000_DEVICE_1)
+#if MYNEWT_VAL(UWB_DEVICE_0) && MYNEWT_VAL(UWB_DEVICE_1)
     struct uwb_dev * udev[] = {
         uwb_dev_idx_lookup(0),
         uwb_dev_idx_lookup(1)
@@ -171,7 +171,7 @@ uwb_config_updated_func()
         uwb_phy_forcetrxoff(udev);
         uwb_mac_config(udev, NULL);
         uwb_txrf_config(udev, &udev->config.txrf);
-#if MYNEWT_VAL(DW1000_DEVICE_1)
+#if MYNEWT_VAL(UWB_DEVICE_1)
         uwb_mac_config(uwb_dev_idx_lookup(1), NULL);
         uwb_txrf_config(uwb_dev_idx_lookup(1), &uwb_dev_idx_lookup(1)->config.txrf);
 #endif
@@ -224,7 +224,7 @@ slot_cb(struct dpl_event * ev)
     if (uwb_config_updated) {
         uwb_mac_config(inst, NULL);
         uwb_txrf_config(inst, &inst->config.txrf);
-#if MYNEWT_VAL(DW1000_DEVICE_1)
+#if MYNEWT_VAL(UWB_DEVICE_1)
         uwb_mac_config(uwb_dev_idx_lookup(1), NULL);
         uwb_txrf_config(uwb_dev_idx_lookup(1), &uwb_dev_idx_lookup(1)->config.txrf);
 #endif
@@ -239,7 +239,7 @@ slot_cb(struct dpl_event * ev)
             + rng->config.rx_timeout_delay;
     }
 
-#if MYNEWT_VAL(DW1000_DEVICE_0) && MYNEWT_VAL(DW1000_DEVICE_1)   
+#if MYNEWT_VAL(UWB_DEVICE_0) && MYNEWT_VAL(UWB_DEVICE_1)
 {   
     struct uwb_dev * inst = uwb_dev_idx_lookup(0);
     uwb_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
@@ -282,7 +282,7 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
 
-#if MYNEWT_VAL(DW1000_DEVICE_0) && MYNEWT_VAL(DW1000_DEVICE_1)
+#if MYNEWT_VAL(UWB_DEVICE_0) && MYNEWT_VAL(UWB_DEVICE_1)
 {   
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     dw1000_set_dblrxbuff(inst, false);
@@ -292,7 +292,7 @@ int main(int argc, char **argv){
     dw1000_set_dblrxbuff(inst, false);
     struct uwb_rng_instance * rng = (struct uwb_rng_instance *)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_RNG);
     assert(rng);
-#elif  MYNEWT_VAL(DW1000_DEVICE_0) && !MYNEWT_VAL(DW1000_DEVICE_1)
+#elif  MYNEWT_VAL(UWB_DEVICE_0) && !MYNEWT_VAL(UWB_DEVICE_1)
     struct uwb_dev * udev = uwb_dev_idx_lookup(0);
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     dw1000_set_dblrxbuff(inst, false);
@@ -319,7 +319,7 @@ int main(int argc, char **argv){
         uwb_ccp_start(ccp, CCP_ROLE_SLAVE);        
     }
 
-#if MYNEWT_VAL(DW1000_DEVICE_0) && MYNEWT_VAL(DW1000_DEVICE_1)
+#if MYNEWT_VAL(UWB_DEVICE_0) && MYNEWT_VAL(UWB_DEVICE_1)
     /* Sync clocks if available */
     if (uwb_sync_to_ext_clock(udev).ext_sync == 1) {
         printf("{\"ext_sync\"=\"%d\"}\n", udev->status.ext_sync);
@@ -340,7 +340,7 @@ int main(int argc, char **argv){
     tdma_instance_t * tdma = (tdma_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_TDMA);
     assert(tdma);
 
-#if  MYNEWT_VAL(DW1000_DEVICE_0) && MYNEWT_VAL(DW1000_DEVICE_1)
+#if  MYNEWT_VAL(UWB_DEVICE_0) && MYNEWT_VAL(UWB_DEVICE_1)
     // Using GPIO5 and GPIO6 to study timing.
     dw1000_gpio5_config_ext_txe( hal_dw1000_inst(0));
     dw1000_gpio5_config_ext_txe( hal_dw1000_inst(1));

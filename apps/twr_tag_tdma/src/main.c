@@ -241,7 +241,7 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime, uwb_phy_SHR_duration(udev)); 
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay))); 
 
-#if MYNEWT_VAL(DW1000_DEVICE_0)
+#if MYNEWT_VAL(UWB_DEVICE_0)
     // Using DW GPIO5 and GPIO6 to study timing.
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     dw1000_gpio5_config_ext_txe( inst);
