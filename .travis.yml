@@ -91,7 +91,7 @@ before_script:
   - if [ "${TEST}" != "TEST_ALL" ]; then arm-none-eabi-gcc --version; fi
   - cp -R $HOME/ci/uwb-apps-project.yml project.yml
   - cp -R $HOME/ci/uwb-apps-targets targets
-  - newt install
+  - newt upgrade
     # Try to sync branches between core and apps
   - $HOME/ci/uwb-apps-setup.sh
     # pass in the number of target sets
