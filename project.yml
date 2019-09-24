@@ -17,11 +17,11 @@
 # under the License.
 #
 
-project.name: "mynewt-dw1000-apps"
+project.name: "decawave-uwb-apps"
 
 project.repositories:
     - apache-mynewt-core
-    - mynewt-dw1000-core
+    - decawave-uwb-core
 
 # Use github's distribution mechanism for core ASF libraries.
 # This provides mirroring automatically for us.
@@ -32,9 +32,9 @@ repository.apache-mynewt-core:
     user: apache
     repo: mynewt-core
 
-repository.mynewt-dw1000-core:
-    type: github
+repository.decawave-uwb-core:
+    type: git
     vers: 0-dev
     user: decawave
-    repo: mynewt-dw1000-core
-    url: 'git@github.com:Decawave/mynewt-dw1000-core.git'
+    repo: uwb-core
+    url: 'git@github.com:Decawave/uwb-core.git'

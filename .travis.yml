@@ -89,11 +89,11 @@ before_script:
   - newt version
   - gcc --version
   - if [ "${TEST}" != "TEST_ALL" ]; then arm-none-eabi-gcc --version; fi
-  - cp -R $HOME/ci/mynewt-dw1000-apps-project.yml project.yml
-  - cp -R $HOME/ci/mynewt-dw1000-apps-targets targets
+  - cp -R $HOME/ci/uwb-apps-project.yml project.yml
+  - cp -R $HOME/ci/uwb-apps-targets targets
   - newt install
     # Try to sync branches between core and apps
-  - $HOME/ci/mynewt-dw1000-apps-setup.sh
+  - $HOME/ci/uwb-apps-setup.sh
     # pass in the number of target sets
   - $HOME/ci/prepare_test.sh $VM_AMOUNT
 
