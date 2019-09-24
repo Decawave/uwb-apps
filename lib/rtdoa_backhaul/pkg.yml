@@ -24,8 +24,8 @@ pkg.homepage: "http://decawave.com/"
 pkg.keywords:
 
 pkg.deps:
-    - "@mynewt-dw1000-core/lib/rtdoa"
-    - "@mynewt-dw1000-core/lib/rtdoa_tag"
+    - "@decawave-uwb-core/lib/rtdoa"
+    - "@decawave-uwb-core/lib/rtdoa_tag"
     - "@apache-mynewt-core/hw/sensor"
 
 pkg.init:
