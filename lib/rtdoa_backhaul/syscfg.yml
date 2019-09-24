@@ -1,0 +1,14 @@
+syscfg.defs:
+    RTDOABH_NUM_MBUFS:
+        description: 'Number of message buffers'
+        value: 64
+    RTDOABH_MBUF_SIZE:
+        description: 'Size of each message buffer'
+        value: 136
+    RTDOABH_STATS:
+        description: 'Collect statistics'
+        value: 1
+    RTDOABH_MAXNUM_RANGES:
+        value: 16
+    RTDOABH_COMPACT_MEAS:
+        value: 1

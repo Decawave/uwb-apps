@@ -1,0 +1,22 @@
+syscfg.defs:
+    BLEPRPH_ENABLED:
+        description: 'Have BLEPRPH'
+        value: 1
+        restrictions:
+          - BLE_ROLE_BROADCASTER
+#          - !BLE_ROLE_CENTRAL
+#          - !BLE_ROLE_OBSERVER
+          - BLE_ROLE_PERIPHERAL
+          - MSYS_1_BLOCK_SIZE > 127
+    BLEPRPH_LOG_ENABLE:
+        description: 'Log bleprph activity'
+        value: 1
+    BLE_PREFIX:
+        description: 'Bluetooth name prefix'
+        value: '"bleprph"'
+
+#syscfg.vals:
+#      BLE_ROLE_BROADCASTER: 1
+#      BLE_ROLE_CENTRAL: 0
+#      BLE_ROLE_OBSERVER: 0
+#      BLE_ROLE_PERIPHERAL: 1

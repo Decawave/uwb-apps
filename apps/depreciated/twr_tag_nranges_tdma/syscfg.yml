@@ -1,0 +1,48 @@
+syscfg.vals:
+    # Route console to RTT
+    CONSOLE_UART: 0
+    CONSOLE_UART_BAUD: '1000000'
+    CONSOLE_UART_TX_BUF_SIZE: '1024'
+    CONSOLE_RTT: 1
+    CONSOLE_HISTORY_SIZE: 8
+
+    DW1000_DEVICE_0: 1
+    FS_XTALT_AUTOTUNE_ENABLED: 0
+    DW1000_BIAS_CORRECTION_ENABLED: 0
+    HARDFLOAT: 1
+    TDMA_NSLOTS: 160
+    NRNG_NNODES: 4
+    NRNG_NTAGS: 2
+    #N-frames should be atleast nnodes*2
+    NRNG_NFRAMES: 8
+    #Device_type (0 -> tag, 1 -> node)
+    NRNG_DEVICE_TYPE: 0
+    STATS_NAMES: 1
+    STATS_CLI: 1
+    IMGMGR_CLI: 1
+    CONFIG_CLI: 1
+    DW1000_CLI: 1
+    SHELL_TASK: 1
+    CIR_VERBOSE: 0    
+    CIR_SIZE: 8
+    CIR_OFFSET: 2 
+    WCS_VERBOSE: 1
+    NRNG_VERBOSE: 1
+    TDMA_SANITY_INTERVAL: 0
+
+    # Pan related paramters, lease in s, lease exp margin in ms
+    PAN_ENABLED: 1
+    PAN_RX_TIMEOUT: ((uint16_t){4000})
+    PAN_LEASE_TIME: 3600
+    PAN_LEASE_EXP_MARGIN: 60000
+    
+syscfg.defs:
+    NODE_START_SLOT_ID:
+        description: >
+            Slot ID from which the nodes should respond
+        value: 1
+    NODE_END_SLOT_ID:
+        description: >
+            Slot ID till which the nodes should respond
+        value: 4
+    

@@ -1,0 +1,22 @@
+syscfg.vals:
+    # Route console to RTT
+    CONSOLE_UART: 0
+    CONSOLE_RTT: 1
+    # Enable DW1000
+    DW1000_DEVICE_0: 1
+    SHELL_TASK: 0
+    PROVISION_ENABLED: 1
+    INCLUDE_PAN_LIB: 0
+    DW_DEVICE_ID_0: ((uint16_t){0x4321})
+
+syscfg.defs:
+    SLOT_ID:
+        value: 0
+    DEVICE_TYPE:
+        value: 2
+    UUID_CCP_MASTER:
+        description: Clock Master UUID
+        value: ((uint64_t){0x8000})
+    INCLUDE_PAN_LIB:
+        description: Enable to add the pan library to the app.
+        value: 1

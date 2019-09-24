@@ -1,0 +1,64 @@
+syscfg.defs:
+    BLE_ENABLED:
+        description: 'Activate BLE'
+        value: 1
+    UWB_NUM_MBUFS:
+        description: 'Number of message buffers'
+        value: 64
+    UWB_MBUF_SIZE:
+        description: 'Size of each message buffer'
+        value: 136
+    CIR_NUM_SAMPLES:
+        description: 'Default number of of CIR accumulator samples to show, 0=none. Change in console with config command.'
+        value: '"0"'
+    USE_DBLBUFFER:
+        description: 'Enable doublebuffer or not'
+        value: 1
+        restrictions:
+          - '!CIR_ENABLED'
+        
+syscfg.vals:
+    LOG_LEVEL: 2
+
+    # Route console to UART
+    CONSOLE_RTT: 0
+    CONSOLE_UART: 1
+    #CONSOLE_UART_BAUD: 460800  # Max baudrate if using ACM through jlink (/dev/ttyACMx)
+    CONSOLE_UART_BAUD: 1000000
+    CONSOLE_UART_TX_BUF_SIZE: 1024
+    CONSOLE_UART_RX_BUF_SIZE: 256
+    CONSOLE_HISTORY_SIZE: 8
+    
+    # Shell
+    SHELL_TASK: 1
+    SHELL_PROMPT_MODULE: 1
+    SHELL_NEWTMGR: 1
+    CONFIG_CLI: 1
+    CONFIG_CLI_DEBUG: 1
+    DW1000_CLI: 1
+    STATS_NAMES: 1
+    STATS_CLI: 1
+    
+    # Enable DW1000
+    DW1000_DEVICE_0: 1
+    DW1000_DEVICE_1: 0
+    DW1000_SS_TWR_ENABLED: 0
+    DW1000_DS_TWR_ENABLED: 1
+    DW1000_DS_TWR_EXT_ENABLED: 0
+    UWBCFG_APPLY_AT_INIT: 1
+    CIR_ENABLED: 0
+    CIR_VERBOSE: 0
+    CIR_OFFSET:  4
+    CIR_SIZE:    8
+
+    ## Where to store config 
+    CONFIG_FCB: 1
+    CONFIG_NEWTMGR: 1
+    CONFIG_FCB_FLASH_AREA: FLASH_AREA_NFFS
+    
+    # BLE Disable central and observer roles.
+    BLE_ROLE_BROADCASTER: 1
+    BLE_ROLE_CENTRAL: 0
+    BLE_ROLE_OBSERVER: 0
+    BLE_ROLE_PERIPHERAL: 1
+    

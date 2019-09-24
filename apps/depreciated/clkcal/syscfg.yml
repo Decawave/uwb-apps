@@ -1,0 +1,21 @@
+syscfg.vals:
+    # Route console to RTT
+    CONSOLE_UART: 0
+    CONSOLE_RTT: 1
+    DW1000_DEVICE_0: 1
+    DW1000_SS_TWR_ENABLED: 0
+    DW1000_DS_TWR_ENABLED: 1
+    DW1000_DS_TWR_EXT_ENABLED: 0
+    DW1000_CCP_ENABLED: 1
+    CLOCK_CALIBRATION_ENABLED: 1
+    TIMESCALE_PROCESSING_ENABLED: 1
+    ADAPTIVE_TIMESCALE_ENABLED: 1
+    FS_XTALT_AUTOTUNE_ENABLED: 1
+   
+syscfg.defs:
+    DEVICE_UUID:
+        description: >
+            UUID
+        value: ((uint64_t){0x8000}) 
+        
+           

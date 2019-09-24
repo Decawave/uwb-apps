@@ -1,0 +1,21 @@
+syscfg.vals:
+    # Route console to RTT
+    CONSOLE_UART: 0
+    CONSOLE_RTT: 1
+    DW1000_DEVICE_0: 1
+    DW1000_SS_TWR_ENABLED: 0
+    DW1000_DS_TWR_ENABLED: 1
+    DW1000_DS_TWR_EXT_ENABLED: 0
+    DW1000_CCP_ENABLED: 1
+    DW1000_PAN: 0
+    TDMA_ENABLED: 1
+   
+    DW_DEVICE_ID_0: ((uint16_t){0x8000})
+    
+syscfg.defs:
+    DEVICE_UUID:
+        description: >
+            UUID
+        value: ((uint64_t){0x8000}) 
+        
+           

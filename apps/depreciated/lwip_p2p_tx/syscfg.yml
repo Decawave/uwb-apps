@@ -1,0 +1,49 @@
+syscfg.vals:
+    # Route console to RTT
+    CONSOLE_UART: 0
+    CONSOLE_RTT: 1
+    DW1000_DEVICE_0: 1
+    DW1000_SS_TWR_ENABLED: 1
+    DW1000_DS_TWR_ENABLED: 1
+    DW1000_DS_TWR_EXT_ENABLED: 0
+    DW1000_CLOCK_CALIBRATION: 0
+    DW1000_PAN: 0
+    DW1000_LWIP: 1
+#    DW1000_DEV_TASK_STACK_SZ: 512
+
+syscfg.defs:
+    DW1000_LWIP_P2P:
+        value: 1
+    DEVICE_PAN_ID:
+        value: 0xDECA
+    DEV_IP6_ADDR_1:
+        value: 0x1020304
+    DEV_IP6_ADDR_2:
+        value: 0x5060708
+    DEV_IP6_ADDR_3:
+        value: 0x90A0B0C
+    DEV_IP6_ADDR_4:
+        value: 0xD0E0F0F
+    TGT_IP6_ADDR_1:
+        value: 0x2030405
+    TGT_IP6_ADDR_2:
+        value: 0x6070809
+    TGT_IP6_ADDR_3:
+        value: 0xA0B0C0D
+    TGT_IP6_ADDR_4:
+        value: 0xE0F0F0F
+    MAX_NUM_NODES:
+        value: 2
+    PAYLOAD_STRING_LEN:
+        value: 10
+    PAYLOAD_STRING:
+        value: 'Lucky'
+
+    UUID_CCP_MASTER:
+        description: >
+            Clock Master UUID
+        value: ((uint16_t){0x8000})         
+    NUM_FRAMES:
+        value: 1
+    BUFFER_SIZE:
+        value: 100

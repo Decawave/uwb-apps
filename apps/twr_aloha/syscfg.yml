@@ -1,0 +1,36 @@
+syscfg.vals:
+    # Route console to RTT
+    CONSOLE_UART: 1
+    CONSOLE_UART_BAUD: '115200'
+    CONSOLE_UART_TX_BUF_SIZE: '1024'
+    CONSOLE_RTT: 0
+    CONSOLE_HISTORY_SIZE: 8
+
+    CONFIG_FCB: 1
+    
+    DW1000_DEVICE_0: 1
+    FS_XTALT_AUTOTUNE_ENABLED: 0
+    DW1000_BIAS_CORRECTION_ENABLED: 0
+    HARDFLOAT: 1
+    FLOAT_USER: 1
+    RNG_VERBOSE: 2
+    UWB_CCP_VERBOSE: 0
+    STATS_NAMES: 1
+    STATS_CLI: 1
+    CONFIG_CLI: 1
+    DW1000_CLI: 1
+    SHELL_TASK: 1
+
+    # Enable newtmgr commands.
+    STATS_NEWTMGR: 1
+    LOG_NEWTMGR: 1
+    CONFIG_NEWTMGR: 1
+    
+syscfg.defs:
+    UUID_CCP_MASTER:
+        description: >
+            Clock Master UUID
+        value: ((uint64_t){0x8000})  
+    ANCHOR_ADDRESS:
+        description: 'Address of anchor'
+        value: 0x1234

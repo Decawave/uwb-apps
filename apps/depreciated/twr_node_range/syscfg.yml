@@ -1,0 +1,20 @@
+syscfg.vals:
+    # Route console to RTT
+    CONSOLE_UART: 0
+    CONSOLE_RTT: 1
+    DW1000_DEVICE_0: 1
+    DW1000_SS_TWR_ENABLED: 1
+    DW1000_DS_TWR_ENABLED: 1
+    DW1000_DS_TWR_EXT_ENABLED: 0
+    DW1000_CCP_ENABLED: 0
+    DW1000_PAN: 0
+    DW1000_RANGE: 1
+    DW_DEVICE_ID_0: ((uint16_t){0xDEC0})
+
+syscfg.defs:
+    UUID_CCP_MASTER:
+        description: >
+            Clock Master UUID
+        value: ((uint16_t){0x8000})         
+    DW1000_RANGE_NODE_JSON:
+        value: 0

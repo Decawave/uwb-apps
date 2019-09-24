@@ -1,0 +1,44 @@
+syscfg.vals:
+    # Route console to RTT
+    CONSOLE_UART: 0
+    CONSOLE_UART_BAUD: '1000000' 
+    CONSOLE_UART_TX_BUF_SIZE: '1024'
+    CONSOLE_RTT: 1
+    DW1000_DEVICE_0: 1
+    FS_XTALT_AUTOTUNE_ENABLED: 0
+    DW1000_BIAS_CORRECTION_ENABLED: 0
+    HARDFLOAT: 1
+    TDMA_NSLOTS: 160
+    WCS_VERBOSE: 1
+    RNG_VERBOSE: 0
+    STATS_NAMES: 0
+    STATS_CLI: 0
+    DW_DEVICE_ID_0: 0x1234
+
+    # Enable the shell task.
+    SHELL_TASK: 1
+
+    # Set log level to info (disable debug logging).
+    LOG_LEVEL: 1
+
+    # Default task settings
+    OS_MAIN_STACK_SIZE: 768
+
+    # Newtmgr is not supported in this app, so disable newtmgr-over-shell.
+    SHELL_NEWTMGR: 0
+
+    BLE_MESH: 1
+    MSYS_1_BLOCK_COUNT: 48
+
+    BLE_MESH_DEBUG: 1
+    BLE_MESH_DEBUG_NET: 1
+    BLE_MESH_DEBUG_TRANS: 1
+    BLE_MESH_DEBUG_BEACON: 1
+    BLE_MESH_DEBUG_CRYPTO: 1
+    BLE_MESH_DEBUG_PROV: 1
+    BLE_MESH_DEBUG_ACCESS: 1
+    BLE_MESH_DEBUG_MODEL: 1
+    BLE_MESH_DEBUG_ADV: 1
+    BLE_MESH_DEBUG_LOW_POWER: 1
+    BLE_MESH_DEBUG_FRIEND: 1
+    BLE_MESH_DEBUG_PROXY: 1

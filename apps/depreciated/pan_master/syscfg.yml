@@ -1,0 +1,16 @@
+syscfg.vals:
+    # Route console to RTT
+    CONSOLE_UART: 0
+    CONSOLE_RTT: 1
+    DW1000_DEVICE_0: 1
+    PAN_ENABLED: 1
+    PROVISION_ENABLED: 0
+    DEVICE_ID: ((uint16_t){0x8000})
+
+syscfg.defs:
+    UUID_CCP_MASTER:
+        description: Clock Master UUID
+        value: ((uint64_t){0x8000})
+
+
+

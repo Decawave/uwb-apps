@@ -1,0 +1,22 @@
+syscfg.vals:
+    # Route console to RTT
+    CONSOLE_UART: 0
+    CONSOLE_RTT: 1
+    # Enable DW1000
+    DW1000_DEVICE_0: 1
+    DW1000_SS_TWR_ENABLED: 0
+    DW1000_DS_TWR_ENABLED: 1
+    DW1000_DS_TWR_EXT_ENABLED: 0
+
+    # To use SPI for dwm1002 change to the following:
+    # I2C_1: 0
+    # MEMS_ON_SPI: 1
+
+    I2C_1: 1
+    # ST Mems
+    LSM6DSL_ONB: 1
+    LIS2MDL_ONB: 1
+    LPS22HB_ONB: 1
+    # Inversense
+    MPU6500_ONB: 1
+    SENSOR_OIC: 0

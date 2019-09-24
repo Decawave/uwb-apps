@@ -1,0 +1,35 @@
+syscfg.vals:
+    # Route console to RTT
+    CONSOLE_UART: 0
+    CONSOLE_RTT: 1
+    CONSOLE_HISTORY_SIZE: 8
+    DW1000_DEVICE_0: 1
+    SPI_0_MASTER: 1
+    DW_DEVICE_ID_0: 0x4321
+
+    STATS_CLI: 1
+    STATS_NAMES: 1
+    SHELL_TASK: 1
+
+syscfg.defs:
+    DEV_IP6_ADDR_1:
+        value: 0x5040302
+    DEV_IP6_ADDR_2:
+        value: 0x9080706
+    DEV_IP6_ADDR_3:
+        value: 0xD0C0B0A
+    DEV_IP6_ADDR_4:
+        value: 0xF0F0F0E
+
+    TGT_IP6_ADDR_1:
+        value: 0x4030201
+    TGT_IP6_ADDR_2:
+        value: 0x8070605
+    TGT_IP6_ADDR_3:
+        value: 0xC0B0A09
+    TGT_IP6_ADDR_4:
+        value: 0xF0F0E0D
+    BUFFER_SIZE:
+        value: 100
+    NUM_FRAMES:
+        value: 1

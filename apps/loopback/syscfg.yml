@@ -1,0 +1,40 @@
+syscfg.vals:
+    # Route console to RTT
+    CONSOLE_UART: 0
+    CONSOLE_RTT: 1
+    DW1000_DEVICE_0: 1
+    DW1000_DEVICE_1: 1
+    FS_XTALT_AUTOTUNE_ENABLED: 0
+    DW1000_BIAS_CORRECTION_ENABLED: 0
+    HARDFLOAT: 1
+    STATS_CLI: 1
+    SHELL_TASK: 1
+    STATS_NAMES: 1
+    DW1000_CLI: 1
+    WCS_VERBOSE: 0
+    CIR_VERBOSE: 1     
+    CIR_SIZE: 64
+
+    #Need to supersize to allow for CIR read
+    TWR_DS_TX_HOLDOFF: (0x0600UL)
+    TWR_SS_TX_HOLDOFF: (0x0600UL)
+    TWR_DS_EXT_TX_HOLDOFF: (0x0600UL)
+    TWR_SS_EXT_TX_HOLDOFF: (0x0600UL)
+
+    # Enable newtmgr commands.
+    STATS_NEWTMGR: 1
+    LOG_NEWTMGR: 1
+    CONFIG_NEWTMGR: 1
+
+    DW1000_DEVICE_1_TX_ANT_DLY: 0x4051
+    DW1000_DEVICE_1_RX_ANT_DLY: 0x401A
+    DW1000_DEVICE_0_TX_ANT_DLY: 0x4053
+    DW1000_DEVICE_0_RX_ANT_DLY: 0x4012
+
+    DW_DEVICE_ID_0: (0x4321U)
+    DW_DEVICE_ID_1: (0x1234U)
+    
+syscfg.defs:
+    UUID_CCP_MASTER:
+        description: Clock Master UUID
+        value: ((uint64_t){0x8000}) 
