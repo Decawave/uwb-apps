@@ -93,7 +93,7 @@ int main(int argc, char **argv)
     otDiagInit(sInstance);
 	
     while (1) {
-        os_eventq_run(os_eventq_dflt_get());
+        dpl_eventq_run(dpl_eventq_dflt_get());
 	}
 
 	assert(0);
