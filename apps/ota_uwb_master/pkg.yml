@@ -49,8 +49,8 @@ pkg.deps:
     - "@apache-mynewt-nimble/nimble/host/util"
     - "@apache-mynewt-nimble/nimble/transport"
     - "@apache-mynewt-nimble/nimble/host"
-#dw1000 related
-    - "@mynewt-dw1000-core/hw/drivers/dw1000"
+#uwb related
+    - "@mynewt-dw1000-core/hw/drivers/uwb"
     - "@mynewt-dw1000-core/lib/twr_ds_ext"
     - "@mynewt-dw1000-core/lib/nmgr_cmds"
     - "@mynewt-dw1000-core/lib/nmgr_uwb"
@@ -59,7 +59,7 @@ pkg.deps:
     - "@mynewt-dw1000-core/sys/uwbcfg"   
     - "@mynewt-dw1000-core/lib/tdma"
     - "@mynewt-dw1000-core/lib/dsp"
-    - "@mynewt-dw1000-core/lib/ccp"
+    - "@mynewt-dw1000-core/lib/uwb_ccp"
 
 pkg.cflags:
     - "-std=gnu99"

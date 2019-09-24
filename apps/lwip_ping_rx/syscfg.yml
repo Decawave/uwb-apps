@@ -2,9 +2,14 @@ syscfg.vals:
     # Route console to RTT
     CONSOLE_UART: 0
     CONSOLE_RTT: 1
+    CONSOLE_HISTORY_SIZE: 8
     DW1000_DEVICE_0: 1
     SPI_0_MASTER: 1
     DW_DEVICE_ID_0: 0x4321
+
+    STATS_CLI: 1
+    STATS_NAMES: 1
+    SHELL_TASK: 1
 
 syscfg.defs:
     DEV_IP6_ADDR_1:

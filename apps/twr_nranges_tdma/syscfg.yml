@@ -3,7 +3,7 @@ syscfg.vals:
     CONSOLE_UART: 0
     CONSOLE_RTT: 1
     CONSOLE_BLE_MONITOR: 0
-    CONSOLE_UART_BAUD: 1000000
+    CONSOLE_UART_BAUD: 460800
     CONSOLE_UART_TX_BUF_SIZE: 1024
     CONSOLE_HISTORY_SIZE: 8
 
@@ -35,10 +35,10 @@ syscfg.vals:
     NRNG_DEVICE_TYPE: 1
     
     # Pan related parameters, lease in s, lease exp margin in ms
-    PAN_ENABLED: 1
-    PAN_RX_TIMEOUT: ((uint16_t){4000})
-    PAN_LEASE_TIME: 3600
-    PAN_LEASE_EXP_MARGIN: 60000
+    UWB_PAN_ENABLED: 1
+    UWB_PAN_RX_TIMEOUT: ((uint16_t){4000})
+    UWB_PAN_LEASE_TIME: 3600
+    UWB_PAN_LEASE_EXP_MARGIN: 60000
     
     ## Panmaster    
     PANMASTER_FCB: 1
@@ -81,13 +81,13 @@ syscfg.defs:
             Slot ID till which the nodes should respond
         value: 7
 
-    CCP_TOF_COMP_LOCATION_X:
+    UWB_CCP_TOF_COMP_LOCATION_X:
         description: 'x-location of this node in relation to the ccp master'
         value: ((float){2.0})
-    CCP_TOF_COMP_LOCATION_Y:
+    UWB_CCP_TOF_COMP_LOCATION_Y:
         description: 'y-location of this node in relation to the ccp master'
         value: ((float){0.0})
-    CCP_TOF_COMP_LOCATION_Z:
+    UWB_CCP_TOF_COMP_LOCATION_Z:
         description: 'z-location of this node in relation to the ccp master'
         value: ((float){0.0})
 

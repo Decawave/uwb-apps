@@ -17,7 +17,7 @@
 # under the License.
 #
 
-pkg.name: apps/node_mesh
+pkg.name: apps/depreciated/twr_tag_tdma_ota_ble
 pkg.type: app
 pkg.description: "Basic reverse superres anchor node"
 pkg.author: "Paul Kettle <paul.kettle@decawave.com>"
@@ -31,22 +31,35 @@ pkg.deps:
     - "@apache-mynewt-core/hw/hal"
     - "@apache-mynewt-core/sys/console/full" 
     - "@apache-mynewt-core/sys/shell"
+    - "@apache-mynewt-core/sys/log/full"
+    - "@apache-mynewt-core/sys/stats/full"
+    - "@apache-mynewt-core/sys/sysinit"
+    - "@apache-mynewt-core/sys/id"
     - "@apache-mynewt-core/encoding/json"
-    - "@mynewt-dw1000-core/hw/drivers/dw1000"
+    - "@mynewt-dw1000-core/hw/drivers/uwb"
     - "@mynewt-dw1000-core/lib/dsp"
     - "@mynewt-dw1000-core/lib/tdma"
     - "@mynewt-dw1000-core/lib/ccp"
+    - "@mynewt-dw1000-core/lib/wcs"
+    - "@mynewt-timescale-lib/lib/timescale"
+    - "@mynewt-dw1000-core/lib/rng"
     - "@mynewt-dw1000-core/lib/twr_ss"
     - "@mynewt-dw1000-core/lib/twr_ds"
     - "@mynewt-dw1000-core/lib/twr_ds_ext"
-    - "@apache-mynewt-nimble/nimble/controller"
+    - "@apache-mynewt-core/boot/split"
+    - "@apache-mynewt-core/boot/bootutil"
+    - "@apache-mynewt-core/kernel/os"
+    - "@apache-mynewt-core/mgmt/imgmgr"
+    - "@apache-mynewt-core/mgmt/newtmgr"
+    - "@apache-mynewt-core/mgmt/newtmgr/transport/ble"
     - "@apache-mynewt-nimble/nimble/host"
+    - "@apache-mynewt-nimble/nimble/host/services/bleuart"
+    - "@apache-mynewt-nimble/nimble/host/services/ans"
     - "@apache-mynewt-nimble/nimble/host/services/gap"
     - "@apache-mynewt-nimble/nimble/host/services/gatt"
-    - "@apache-mynewt-nimble/nimble/host/store/ram"
-    - "@apache-mynewt-nimble/nimble/transport/ram"
-    - "@apache-mynewt-core/sys/log/full"
-    - "@apache-mynewt-core/sys/stats/full"
+    - "@apache-mynewt-nimble/nimble/host/store/config"
+    - "@apache-mynewt-nimble/nimble/host/util"
+    - "@apache-mynewt-nimble/nimble/transport"
 
     
 pkg.cflags:
@@ -54,7 +67,7 @@ pkg.cflags:
     - "-fms-extensions"
     - "-DNRF52"
     - "-Wno-strict-aliasing"
-
+    
 pkg.lflags:
     - "-lm"
 

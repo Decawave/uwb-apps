@@ -28,8 +28,3 @@ syscfg.vals:
 
     DW_DEVICE_ID_0: 0x1234
 
-syscfg.defs:
-    UUID_CCP_MASTER:
-        description: Clock Master UUID
-        value: ((uint64_t){0x8000})
-

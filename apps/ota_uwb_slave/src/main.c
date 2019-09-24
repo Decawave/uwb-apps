@@ -32,27 +32,12 @@
 #include "mcu/mcu_sim.h"
 #endif
 
-#include <dw1000/dw1000_dev.h>
-#include <dw1000/dw1000_hal.h>
-#include <dw1000/dw1000_phy.h>
-#include <dw1000/dw1000_mac.h>
-#include <dw1000/dw1000_ftypes.h>
+#include <uwb/uwb.h>
+#include <uwb/uwb_ftypes.h>
 #include <nmgr_uwb/nmgr_uwb.h> 
-#include <rng/rng.h>
+#include <uwb_rng/uwb_rng.h>
 #include <mgmt/mgmt.h>
 #include <nmgr_os/nmgr_os.h>
-#if MYNEWT_VAL(TDMA_ENABLED)
-#include <tdma/tdma.h>
-#endif
-#if MYNEWT_VAL(CCP_ENABLED)
-#include <ccp/ccp.h>
-#endif
-#if MYNEWT_VAL(WCS_ENABLED)
-#include <wcs/wcs.h>
-#endif
-#if MYNEWT_VAL(DW1000_LWIP)
-#include <lwip/lwip.h>
-#endif
 
 //#define DIAGMSG(s,u) printf(s,u)
 #ifndef DIAGMSG
@@ -74,8 +59,8 @@ uwb_ev_cb(struct os_event *ev) {
         return;
     }
 
-    dw1000_set_rx_timeout(nmgr->dev_inst, 0);
-    dw1000_start_rx(nmgr->dev_inst);
+    uwb_set_rx_timeout(nmgr->dev_inst, 0);
+    uwb_start_rx(nmgr->dev_inst);
 }
 
 int main(int argc, char **argv){
@@ -86,26 +71,25 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
     
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+    struct uwb_dev *udev = uwb_dev_idx_lookup(0);
     
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
     printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 
-    printf("{\"utime\": %lu,\"msg\": \"device_id = 0x%lX\"}\n",utime,inst->device_id);
-    printf("{\"utime\": %lu,\"msg\": \"PANID = 0x%X\"}\n",utime,inst->PANID);
-    printf("{\"utime\": %lu,\"msg\": \"DeviceID = 0x%X\"}\n",utime,inst->my_short_address);
-    printf("{\"utime\": %lu,\"msg\": \"partID = 0x%lX\"}\n",utime,inst->partID);
-    printf("{\"utime\": %lu,\"msg\": \"lotID = 0x%lX\"}\n",utime,inst->lotID);
-    printf("{\"utime\": %lu,\"msg\": \"xtal_trim = 0x%X\"}\n",utime,inst->xtal_trim);  
-    printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime,dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t))); 
-    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,dw1000_phy_SHR_duration(&inst->attrib)); 
-    printf("{\"utime\":,\"msg\": \"DeviceID = 0x%X\"}\n",inst->my_short_address);
+    printf("{\"utime\": %lu,\"msg\": \"device_id = 0x%lX\"}\n",utime,udev->device_id);
+    printf("{\"utime\": %lu,\"msg\": \"PANID = 0x%X\"}\n",utime,udev->pan_id);
+    printf("{\"utime\": %lu,\"msg\": \"DeviceID = 0x%X\"}\n",utime,udev->uid);
+    printf("{\"utime\": %lu,\"msg\": \"partID = 0x%lX\"}\n",
+           utime,(uint32_t)(udev->euid&0xffffffff));
+    printf("{\"utime\": %lu,\"msg\": \"lotID = 0x%lX\"}\n",
+           utime,(uint32_t)(udev->euid>>32));
+    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime, uwb_phy_SHR_duration(udev)); 
 
-    struct _nmgr_uwb_instance_t *nmgr = (struct _nmgr_uwb_instance_t *) dw1000_mac_find_cb_inst_ptr(inst, DW1000_NMGR_UWB);
+    struct _nmgr_uwb_instance_t *nmgr = (struct _nmgr_uwb_instance_t *) uwb_mac_find_cb_inst_ptr(udev, UWBEXT_NMGR_UWB);
     os_callout_init(&uwb_callout, os_eventq_dflt_get(), uwb_ev_cb, nmgr);
     os_callout_reset(&uwb_callout, OS_TICKS_PER_SEC/25);
 
-    dw1000_set_rx_timeout(inst, 0);
-    dw1000_start_rx(inst);
+    uwb_set_rx_timeout(udev, 0);
+    uwb_start_rx(udev);
 
     while (1) {
         os_eventq_run(os_eventq_dflt_get());

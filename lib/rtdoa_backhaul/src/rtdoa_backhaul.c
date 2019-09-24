@@ -35,13 +35,10 @@
 #include "sensor/mag.h"
 #include "sensor/pressure.h"
 
-#include <dw1000/dw1000_regs.h>
-#include <dw1000/dw1000_dev.h>
-#include <dw1000/dw1000_hal.h>
-#include <dw1000/dw1000_mac.h>
-#include <dw1000/dw1000_phy.h>
-#include <dw1000/dw1000_ftypes.h>
-#include <rng/rng.h>
+#include <uwb/uwb.h>
+#include <uwb/uwb_mac.h>
+#include <uwb/uwb_ftypes.h>
+#include <uwb_rng/uwb_rng.h>
 
 #if MYNEWT_VAL(RTDOABH_STATS)
 #include <stats/stats.h>
@@ -155,13 +152,11 @@ static struct rtdoabh_tag_results_pkg g_result_pkg_imu = {
     .ranges = {{0}}
 };
 
-static bool tx_complete_cb(struct _dw1000_dev_instance_t * inst,
-                           dw1000_mac_interface_t * cbs);
-static bool rx_complete_cb(struct _dw1000_dev_instance_t * inst,
-                           dw1000_mac_interface_t * cbs);
+static bool tx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs);
+static bool rx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs);
 
-static dw1000_mac_interface_t g_cbs = {
-    .id = DW1000_RTDOA_BH,
+static struct uwb_mac_interface g_cbs = {
+    .id = UWBEXT_RTDOA_BH,
     .rx_complete_cb = rx_complete_cb,
     .tx_complete_cb = tx_complete_cb,
     .reset_cb = 0
@@ -227,7 +222,7 @@ rtdoa_backhaul_print(struct rtdoabh_tag_results_pkg *p, bool tight)
         printf(",\"mode\":\"anchor\"");
     }
     if (d->ts) {
-        double ts = dw1000_dwt_usecs_to_usecs(d->ts);
+        double ts = uwb_dwt_usecs_to_usecs(d->ts);
         uint64_t ts_s  = (uint64_t)(ts/1000000);
         uint32_t ts_tms = (ts-ts_s*1000000)/100.0;
         printf(",\"ts\":\"%llu.%04lu\"", ts_s, ts_tms);
@@ -373,21 +368,21 @@ process_rx_data_queue(struct os_event *ev)
 /**
  * Listen for data
  *
- * @param inst Pointer to dw1000_dev_instance_t.
+ * @param inst Pointer to struct uwb_dev.
  *
- * @return dw1000_dev_status_t 
+ * @return struct uwb_dev_status 
  */
-dw1000_dev_status_t 
-rtdoa_backhaul_listen(dw1000_dev_instance_t * inst, uint64_t dx_time, uint16_t timeout_uus)
+struct uwb_dev_status 
+rtdoa_backhaul_listen(struct uwb_dev * inst, uint64_t dx_time, uint16_t timeout_uus)
 {
     os_error_t err = os_sem_pend(&g_sem,  OS_TIMEOUT_NEVER);
     assert(err == OS_OK);
 
     g_to_dx_time = dx_time + (((uint64_t)timeout_uus)<<16);
-    dw1000_set_delay_start(inst, dx_time);
-    dw1000_set_rx_timeout(inst, timeout_uus);
+    uwb_set_delay_start(inst, dx_time);
+    uwb_set_rx_timeout(inst, timeout_uus);
 
-    if(dw1000_start_rx(inst).start_rx_error){
+    if(uwb_start_rx(inst).start_rx_error){
         err = os_sem_release(&g_sem);
         assert(err == OS_OK);
         RTDOABH_STATS_INC(rx_error);
@@ -403,7 +398,7 @@ rtdoa_backhaul_listen(dw1000_dev_instance_t * inst, uint64_t dx_time, uint16_t t
 }
 
 static bool 
-tx_complete_cb(struct _dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
+tx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 {
     if(inst->fctrl != FCNTL_IEEE_RTDOABH){
         return false;
@@ -420,7 +415,7 @@ tx_complete_cb(struct _dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cb
 }
 
 static bool 
-rx_complete_cb(struct _dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
+rx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 {
     static uint16_t last_address = 0;
     static uint8_t last_seq_num = 0;
@@ -429,7 +424,7 @@ rx_complete_cb(struct _dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cb
 
     if (g_to_dx_time) {
         uint16_t timeout_uus = (g_to_dx_time - inst->rxtimestamp) >> 16;
-        dw1000_set_rx_timeout(inst, timeout_uus);
+        uwb_set_rx_timeout(inst, timeout_uus);
     }
 
     if(inst->fctrl != FCNTL_IEEE_RTDOABH){
@@ -442,7 +437,7 @@ rx_complete_cb(struct _dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cb
     }
 
     if ((frame->dst_address != inst->my_short_address &&
-        frame->dst_address != BROADCAST_ADDRESS) ||
+        frame->dst_address != UWB_BROADCAST_ADDRESS) ||
         g_role == RTDOABH_ROLE_INVALID || g_role == RTDOABH_ROLE_PRODUCER) { 
 
         if(os_sem_get_count(&g_sem) == 0) {
@@ -492,13 +487,13 @@ rx_complete_cb(struct _dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cb
 }
 
 void
-rtdoa_backhaul_set_role(dw1000_dev_instance_t * inst, rtdoa_backhaul_role_t role)
+rtdoa_backhaul_set_role(struct uwb_dev * inst, rtdoa_backhaul_role_t role)
 {
     g_role = role;
 }
 
 void
-rtdoa_backhaul_set_a2a(dw1000_dev_instance_t * inst)
+rtdoa_backhaul_set_a2a(struct uwb_dev * inst)
 {
     g_result_pkg.sensors.is_anchor_data = 1;
 }
@@ -623,8 +618,8 @@ rtdoa_backhaul_send_imu_only(uint64_t ts)
     memset(&g_result_pkg_imu.sensors, 0, sizeof(struct rtdoabh_sensor_data));
 }
 
-dw1000_dev_status_t
-rtdoa_backhaul_send(dw1000_dev_instance_t * inst, dw1000_rtdoa_instance_t *rtdoa,
+struct uwb_dev_status
+rtdoa_backhaul_send(struct uwb_dev * inst, struct rtdoa_instance *rtdoa,
                     uint64_t dx_time)
 {
     g_result_pkg.head.seq_num++;
@@ -635,7 +630,7 @@ rtdoa_backhaul_send(dw1000_dev_instance_t * inst, dw1000_rtdoa_instance_t *rtdoa
     int dlen = sizeof(struct rtdoabh_tag_results_pkg);
     int split_at = offsetof(struct rtdoabh_tag_results_pkg, num_ranges);
     if (dx_time) {
-        dw1000_write_tx(inst, (uint8_t*)&g_result_pkg, 0, split_at+1); /* +1 to write 0 to num rng */
+        uwb_write_tx(inst, (uint8_t*)&g_result_pkg, 0, split_at+1); /* +1 to write 0 to num rng */
     }
     g_result_pkg.ref_anchor_addr = rtdoa->req_frame->src_address;
 
@@ -653,15 +648,15 @@ rtdoa_backhaul_send(dw1000_dev_instance_t * inst, dw1000_rtdoa_instance_t *rtdoa
         if (rtdoa->frames[i]->src_address == 0) {
             continue;
         }
-        float rssi = dw1000_calc_rssi(inst, &rtdoa->frames[i]->diag);
-        float fppl = dw1000_calc_fppl(inst, &rtdoa->frames[i]->diag);
+        float rssi = uwb_calc_rssi(inst, &rtdoa->frames[i]->diag);
+        float fppl = uwb_calc_fppl(inst, &rtdoa->frames[i]->diag);
 #if MYNEWT_VAL(RTDOABH_STATS)
         RTDOABH_STATS_INC(num_ranges);
         update_range_stats(i, diff_mm, rssi);
 #endif
         g_result_pkg.ranges[g_result_pkg.num_ranges].anchor_addr = rtdoa->frames[i]->src_address;
         g_result_pkg.ranges[g_result_pkg.num_ranges].rssi = rssi*10;
-        g_result_pkg.ranges[g_result_pkg.num_ranges].quality = (int)dw1000_rng_is_los(rssi,fppl);
+        g_result_pkg.ranges[g_result_pkg.num_ranges].quality = (int)uwb_estimate_los(inst, rssi,fppl);
         g_result_pkg.num_ranges++;
     }
 
@@ -670,19 +665,16 @@ rtdoa_backhaul_send(dw1000_dev_instance_t * inst, dw1000_rtdoa_instance_t *rtdoa
                                           g_result_pkg.num_ranges);
 
     if (dx_time) {
-        dw1000_set_delay_start(inst, dx_time);
-        dw1000_write_tx_fctrl(inst, dlen, 0);
-        if (dw1000_start_tx(inst).start_tx_error) {
+        uwb_set_delay_start(inst, dx_time);
+        uwb_write_tx_fctrl(inst, dlen, 0);
+        uwb_write_tx(inst, ((uint8_t*)&g_result_pkg)+split_at, split_at, dlen-split_at);
+        if (uwb_start_tx(inst).start_tx_error) {
             RTDOABH_STATS_INC(tx_err);
             uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
             printf("{\"utime\": %lu,\"msg\": \"rtdoabh_start_tx_error(res)\"}\n",utime);
             goto exit_err;
         } else if (dlen-split_at > 1) {
             RTDOABH_STATS_INC(tx_ok);
-            /* NOTE: Writing ranges to tx buffer _after_ tx has started, if there is anything to add */
-            dw1000_write_tx(inst, ((uint8_t*)&g_result_pkg)+split_at, split_at, dlen-split_at);
-            /* Make sure the above write finished before we continue and clear the result_pkg */
-            dw1000_read_reg(inst, DEV_ID_ID, 0, 1);
         }
     }
     /* If we're a local bridge */
@@ -701,7 +693,7 @@ exit_err:
 }
 
 void
-rtdoa_backhaul_init(dw1000_dev_instance_t * inst)
+rtdoa_backhaul_init(struct uwb_dev * inst)
 {
     assert(inst);
 
@@ -711,13 +703,13 @@ rtdoa_backhaul_init(dw1000_dev_instance_t * inst)
     g_result_pkg.head.src_address = inst->my_short_address;
     g_result_pkg_imu.head.src_address = inst->my_short_address;
 
-    dw1000_mac_append_interface(inst, &g_cbs);
+    uwb_mac_append_interface(inst, &g_cbs);
 }
 
 void
 rtdoa_backhaul_pkg_init(void)
 {
-    rtdoa_backhaul_init(hal_dw1000_inst(0));
+    rtdoa_backhaul_init(uwb_dev_idx_lookup(0));
 
     os_error_t err = os_sem_init(&g_sem, 0x1);
     assert(err == OS_OK);

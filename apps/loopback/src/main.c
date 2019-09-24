@@ -29,14 +29,12 @@
 #include "hal/hal_gpio.h"
 #include "hal/hal_bsp.h"
 
-#include <dw1000/dw1000_dev.h>
 #include <dw1000/dw1000_hal.h>
-#include <dw1000/dw1000_phy.h>
-#include <dw1000/dw1000_mac.h>
-#include <dw1000/dw1000_ftypes.h>
+#include <uwb/uwb.h>
+#include <uwb/uwb_ftypes.h>
 
-#if MYNEWT_VAL(RNG_ENABLED)
-#include <rng/rng.h>
+#if MYNEWT_VAL(UWB_RNG_ENABLED)
+#include <uwb_rng/uwb_rng.h>
 #endif
 #if MYNEWT_VAL(TWR_DS_EXT_ENABLED)
 #include <twr_ds_ext/twr_ds_ext.h>
@@ -44,14 +42,11 @@
 #if MYNEWT_VAL(TDMA_ENABLED)
 #include <tdma/tdma.h>
 #endif
-#if MYNEWT_VAL(CCP_ENABLED)
-#include <ccp/ccp.h>
+#if MYNEWT_VAL(UWB_CCP_ENABLED)
+#include <uwb_ccp/uwb_ccp.h>
 #endif
-#if MYNEWT_VAL(WCS_ENABLED)
-#include <wcs/wcs.h>
-#endif
-#if MYNEWT_VAL(DW1000_LWIP)
-#include <lwip/lwip.h>
+#if MYNEWT_VAL(UWB_WCS_ENABLED)
+#include <uwb_wcs/uwb_wcs.h>
 #endif
 #if MYNEWT_VAL(TIMESCALE)
 #include <timescale/timescale.h> 
@@ -88,16 +83,16 @@ master_slot_ev_cb(struct dpl_event * ev){
 
     tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
     tdma_instance_t * tdma = slot->parent;
-    dw1000_dev_instance_t * inst = tdma->dev_inst;
-    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *) dw1000_mac_find_cb_inst_ptr(inst, DW1000_RNG);
+    struct uwb_rng_instance * rng = (struct uwb_rng_instance *)slot->arg;
+    struct uwb_dev * inst = tdma->dev_inst;
     uint16_t idx = slot->idx;
 
-    dw1000_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
-    uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(ieee_rng_response_frame_t))                 
-                            + rng->config.tx_holdoff_delay;         // Remote side turn arroud time. 
+    uwb_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
+    uint16_t timeout = uwb_phy_frame_duration(inst, sizeof(ieee_rng_response_frame_t))
+                            + rng->config.tx_holdoff_delay;  // Remote side turn around time.
                             
-    dw1000_set_rx_timeout(inst, timeout);
-    dw1000_rng_listen(rng, DWT_BLOCKING);
+    uwb_set_rx_timeout(inst, timeout);
+    uwb_rng_listen(rng, UWB_BLOCKING);
 }
 
 
@@ -107,8 +102,7 @@ slave_slot_ev_cb(struct dpl_event *ev){
 
     tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
     tdma_instance_t * tdma = slot->parent;
-    dw1000_dev_instance_t * inst = tdma->dev_inst;
-    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *) dw1000_mac_find_cb_inst_ptr(inst, DW1000_RNG);
+    struct uwb_rng_instance * rng = (struct uwb_rng_instance *)slot->arg;
 
     uint16_t idx = slot->idx;
     
@@ -116,13 +110,13 @@ slave_slot_ev_cb(struct dpl_event *ev){
     dx_time = dx_time & 0xFFFFFFFFFE00UL;
   
     switch (idx%4){
-        case 0:dw1000_rng_request_delay_start(rng, 0x4321, dx_time, DWT_SS_TWR);
+        case 0:uwb_rng_request_delay_start(rng, 0x4321, dx_time, DWT_SS_TWR);
         break;
-        case 1:dw1000_rng_request_delay_start(rng, 0x4321, dx_time, DWT_SS_TWR_EXT);
+        case 1:uwb_rng_request_delay_start(rng, 0x4321, dx_time, DWT_SS_TWR_EXT);
         break;
-        case 2:dw1000_rng_request_delay_start(rng, 0x4321, dx_time, DWT_DS_TWR);
+        case 2:uwb_rng_request_delay_start(rng, 0x4321, dx_time, DWT_DS_TWR);
         break;
-        case 3:dw1000_rng_request_delay_start(rng, 0x4321, dx_time, DWT_DS_TWR_EXT);
+        case 3:uwb_rng_request_delay_start(rng, 0x4321, dx_time, DWT_DS_TWR_EXT);
         break;
         default:break;
     }
@@ -139,8 +133,12 @@ int main(int argc, char **argv){
         hal_dw1000_inst(0),
         hal_dw1000_inst(1)
     };
+    struct uwb_dev *udev[] = {
+        uwb_dev_idx_lookup(0),
+        uwb_dev_idx_lookup(1)
+    };
 
-    inst[0]->config.txrf = inst[1]->config.txrf = (struct _dw1000_dev_txrf_config_t ){
+    udev[0]->config.txrf = udev[1]->config.txrf = (struct uwb_dev_txrf_config){
                     .PGdly = TC_PGDELAY_CH5,
                     .BOOSTNORM = dw1000_power_value(DW1000_txrf_config_0db, 0.5),
                     .BOOSTP500 = dw1000_power_value(DW1000_txrf_config_0db, 0.5),
@@ -154,14 +152,16 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_3, 1);
 
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
-    printf("{\"utime\": %lu,\"msg\": \"request_duration = %d usec\"}\n", utime, dw1000_phy_frame_duration(&inst[0]->attrib, sizeof(ieee_rng_request_frame_t) )); 
-    printf("{\"utime\": %lu,\"msg\": \"response_duration = %d usec\"}\n",utime, dw1000_phy_frame_duration(&inst[0]->attrib, sizeof(ieee_rng_response_frame_t) )); 
-    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime, dw1000_phy_SHR_duration(&inst[0]->attrib)); 
-    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *) dw1000_mac_find_cb_inst_ptr(inst[0], DW1000_RNG);
-    printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime, (uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay) ));
+    printf("{\"utime\": %lu,\"msg\": \"request_duration = %d usec\"}\n", utime, uwb_phy_frame_duration(udev[0], sizeof(ieee_rng_request_frame_t) )); 
+    printf("{\"utime\": %lu,\"msg\": \"response_duration = %d usec\"}\n",utime, uwb_phy_frame_duration(udev[0], sizeof(ieee_rng_response_frame_t) )); 
+    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime, uwb_phy_SHR_duration(udev[0])); 
+
+    struct uwb_rng_instance * rng0 = (struct uwb_rng_instance *) uwb_mac_find_cb_inst_ptr(udev[0], UWBEXT_RNG);
+    struct uwb_rng_instance * rng1 = (struct uwb_rng_instance *) uwb_mac_find_cb_inst_ptr(udev[1], UWBEXT_RNG);
+    printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime, (uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng0->config.tx_holdoff_delay) ));
     
-    dw1000_ccp_start(dw1000_mac_find_cb_inst_ptr(inst[0], DW1000_CCP), CCP_ROLE_MASTER);
-    dw1000_ccp_start(dw1000_mac_find_cb_inst_ptr(inst[1], DW1000_CCP), CCP_ROLE_SLAVE);
+    uwb_ccp_start(uwb_mac_find_cb_inst_ptr(udev[0], UWBEXT_CCP), CCP_ROLE_MASTER);
+    uwb_ccp_start(uwb_mac_find_cb_inst_ptr(udev[1], UWBEXT_CCP), CCP_ROLE_SLAVE);
 
     // Using GPIO5 and GPIO6 to study timing.
     dw1000_gpio5_config_ext_txe(inst[0]);
@@ -169,9 +169,12 @@ int main(int argc, char **argv){
     dw1000_gpio6_config_ext_rxe(inst[0]);
     dw1000_gpio6_config_ext_rxe(inst[1]);
 
+    struct _tdma_instance_t *tdma0 = (struct _tdma_instance_t *) uwb_mac_find_cb_inst_ptr(udev[0], UWBEXT_TDMA);
+    struct _tdma_instance_t *tdma1 = (struct _tdma_instance_t *) uwb_mac_find_cb_inst_ptr(udev[1], UWBEXT_TDMA);
+
     for (uint16_t i = 3; i < MYNEWT_VAL(TDMA_NSLOTS); i+=1){
-        tdma_assign_slot(dw1000_mac_find_cb_inst_ptr(inst[0], DW1000_TDMA), master_slot_ev_cb, i, NULL);
-        tdma_assign_slot(dw1000_mac_find_cb_inst_ptr(inst[1], DW1000_TDMA), slave_slot_ev_cb, i, NULL);
+        tdma_assign_slot(tdma0, master_slot_ev_cb, i, (void*)rng0);
+        tdma_assign_slot(tdma1, slave_slot_ev_cb, i, (void*)rng1);
     }
     
     clk_sync(inst, 2);

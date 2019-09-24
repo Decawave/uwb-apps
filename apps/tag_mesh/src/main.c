@@ -32,26 +32,16 @@
 #include "mcu/mcu_sim.h"
 #endif
 
-#include <dw1000/dw1000_dev.h>
-#include <dw1000/dw1000_hal.h>
-#include <dw1000/dw1000_phy.h>
-#include <dw1000/dw1000_mac.h>
-#include <dw1000/dw1000_ftypes.h>
-#if MYNEWT_VAL(RNG_ENABLED)
-#include <rng/rng.h>
+#include <uwb/uwb.h>
+#if MYNEWT_VAL(UWBCFG_ENABLED)
+#include <config/config.h>
+#include <uwbcfg/uwbcfg.h>
 #endif
-#if MYNEWT_VAL(TDMA_ENABLED)
+#if MYNEWT_VAL(UWB_RNG_ENABLED)
+#include <uwb_rng/uwb_rng.h>
+#endif
+#include <uwb_ccp/uwb_ccp.h>
 #include <tdma/tdma.h>
-#endif
-#if MYNEWT_VAL(CCP_ENABLED)
-#include <ccp/ccp.h>
-#endif
-#if MYNEWT_VAL(WCS_ENABLED)
-#include <wcs/wcs.h>
-#endif
-#if MYNEWT_VAL(DW1000_LWIP)
-#include <lwip/lwip.h>
-#endif
 
 //#define DIAGMSG(s,u) printf(s,u)
 #ifndef DIAGMSG
@@ -62,8 +52,8 @@
 #undef TICTOC 
 #endif 
 
-static bool error_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs);
-static void slot_complete_cb(struct os_event * ev);
+static bool error_cb(struct uwb_dev * udev, struct uwb_mac_interface * cbs);
+static void slot_complete_cb(struct dpl_event * ev);
 
 void mesh_init(void);
 
@@ -89,37 +79,32 @@ void mesh_init(void);
 static void 
 slot_cb(struct dpl_event *ev){
     assert(ev);
-
     tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
     tdma_instance_t * tdma = slot->parent;
     uint16_t idx = slot->idx;
-    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t*)slot->arg;
+    struct uwb_rng_instance *rng = (struct uwb_rng_instance*)slot->arg;
 
     hal_gpio_toggle(LED_BLINK_PIN);  
-
-    uint64_t dx_time = tdma_tx_slot_start(tdma, idx);
-    dx_time = dx_time & 0xFFFFFFFFFE00UL;
+    uint64_t dx_time = tdma_tx_slot_start(tdma, idx) & 0xFFFFFFFFFE00UL;
   
-#ifdef TICTOC
-    uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
-#endif
-    if(dw1000_rng_request_delay_start(rng, 0x4321, dx_time, DWT_SS_TWR).start_tx_error){
-        uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
-        printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\",\"%s\":%d}\n",utime,idx,__FILE__, __LINE__);
-    }else{
-#ifdef TICTOC
-        uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
-        printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %ld}\n",toc, (toc - tic) - MYNEWT_VAL(OS_LATENCY));
-#endif
-    }
+    /* Range with the clock master by default */
+    struct uwb_ccp_instance *ccp = tdma->ccp;
+    uint16_t node_address = ccp->frames[0]->short_address;
+
+    /* Select single-sided or double sided twr every second slot */    
+    int mode = DWT_DS_TWR_EXT;
+    //if (slot->idx%2==0) {
+    //mode = DWT_SS_TWR_EXT;
+        //}
+    uwb_rng_request_delay_start(rng, node_address, dx_time, mode);
 }
 
 
 /*! 
- * @fn complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
+ * @fn complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
  *
- * @brief This callback is part of the  dw1000_mac_interface_t extension interface and invoked of the completion of a range request 
- * in the context of this example. The dw1000_mac_interface_t is in the interrupt context and is used to schedule events an event queue. 
+ * @brief This callback is part of the  struct uwb_mac_interface extension interface and invoked of the completion of a range request 
+ * in the context of this example. The struct uwb_mac_interface is in the interrupt context and is used to schedule events an event queue. 
  * Processing should be kept to a minimum giving the interrupt context. All algorithms activities should be deferred to a thread on an event queue. 
  * The callback should return true if and only if it can determine if it is the sole recipient of this event. 
  * 
@@ -127,26 +112,28 @@ slot_cb(struct dpl_event *ev){
  * event of returning true. 
  *
  * @param inst  - dw1000_dev_instance_t *
- * @param cbs   - dw1000_mac_interface_t *
+ * @param cbs   - struct uwb_mac_interface *
  *
  * output parameters
  *
  * returns bool
  */
 /* The timer callout */
-static struct os_callout slot_complete_callout;
+static struct dpl_event slot_event = {0};
 static uint16_t g_idx_latest;
 
 static bool
-complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
+complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
+{
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
     }
-    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t*)cbs->inst_ptr;
+    struct uwb_rng_instance* rng = (struct uwb_rng_instance*)cbs->inst_ptr;
     g_idx_latest = (rng->idx)%rng->nframes; // Store valid frame pointer
-
-    os_callout_init(&slot_complete_callout, os_eventq_dflt_get(), slot_complete_cb, rng);
-    os_eventq_put(os_eventq_dflt_get(), &slot_complete_callout.c_ev);
+    if (!dpl_event_is_queued(&slot_event)) {
+        dpl_event_init(&slot_event, slot_complete_cb, rng);
+        dpl_eventq_put(dpl_eventq_dflt_get(), &slot_event);
+    }
     return true;
 }
 
@@ -164,59 +151,10 @@ complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
  * returns none 
  */
 static void 
-slot_complete_cb(struct os_event * ev){
+slot_complete_cb(struct dpl_event * ev){
     assert(ev != NULL);
-    assert(ev->ev_arg != NULL);
-
+  
     hal_gpio_toggle(LED_BLINK_PIN);
-    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)ev->ev_arg;
-    
-    twr_frame_t * frame = rng->frames[g_idx_latest%rng->nframes];
-    float skew = dw1000_calc_clock_offset_ratio(rng->dev_inst, frame->carrier_integrator);
-    
-    if (frame->code == DWT_SS_TWR_FINAL) {
-        float time_of_flight = (float) dw1000_rng_twr_to_tof(rng, g_idx_latest);
-        float range = dw1000_rng_tof_to_meters(time_of_flight);
-        printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"res_req\": \"%lX\","
-                " \"rec_tra\": \"%lX\", \"skew\": %lu}\n",
-                os_cputime_ticks_to_usecs(os_cputime_get32()),
-                *(uint32_t *)(&time_of_flight), 
-                *(uint32_t *)(&range),
-                (frame->response_timestamp - frame->request_timestamp),
-                (frame->transmission_timestamp - frame->reception_timestamp),
-                *(uint32_t *)(&skew)
-        );
-        frame->code = DWT_SS_TWR_END;
-    }
-
-    else if (frame->code == DWT_DS_TWR_FINAL) {
-        float time_of_flight = dw1000_rng_twr_to_tof(rng, g_idx_latest);
-        float range = dw1000_rng_tof_to_meters(time_of_flight);
-        printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"azimuth\": %lu,\"res_req\":\"%lX\","
-                " \"rec_tra\": \"%lX\"}\n",
-                os_cputime_ticks_to_usecs(os_cputime_get32()), 
-                *(uint32_t *)(&time_of_flight), 
-                *(uint32_t *)(&range),
-                *(uint32_t *)(&frame->spherical.azimuth),
-                (frame->response_timestamp - frame->request_timestamp),
-                (frame->transmission_timestamp - frame->reception_timestamp)
-        );
-        frame->code = DWT_DS_TWR_END;
-    } 
-
-    else if (frame->code == DWT_DS_TWR_EXT_FINAL) {
-        float time_of_flight = dw1000_rng_twr_to_tof(rng, g_idx_latest);
-        printf("{\"utime\": %lu,\"tof\": %lu,\"range\": %lu,\"azimuth\": %lu,\"res_req\":\"%lX\","
-                " \"rec_tra\": \"%lX\"}\n",
-                os_cputime_ticks_to_usecs(os_cputime_get32()), 
-                *(uint32_t *)(&time_of_flight), 
-                *(uint32_t *)(&frame->spherical.range),
-                *(uint32_t *)(&frame->spherical.azimuth),
-                (frame->response_timestamp - frame->request_timestamp),
-                (frame->transmission_timestamp - frame->reception_timestamp)
-        );
-        frame->code = DWT_DS_TWR_END;
-    } 
 }
 
 
@@ -234,7 +172,7 @@ slot_complete_cb(struct os_event * ev){
  * returns none 
  */
 static bool
-error_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
+error_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 { 
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
@@ -251,10 +189,24 @@ error_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
     return true;
 }
 
-
-
-
-
+#if MYNEWT_VAL(UWBCFG_ENABLED)
+/**
+ * @fn uwb_config_update
+ * 
+ * Called from the main event queue as a result of the uwbcfg packet
+ * having received a commit/load of new uwb configuration.
+ */
+int
+uwb_config_updated()
+{
+    uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
+    struct uwb_dev *udev = uwb_dev_idx_lookup(0);
+    uwb_mac_config(udev, NULL);
+    uwb_txrf_config(udev, &udev->config.txrf);
+    printf("{\"utime\": %lu,\"msg\": \"new config applied\"}\n",utime);
+    return 0;
+}
+#endif
 
 int main(int argc, char **argv){
     int rc;
@@ -263,39 +215,46 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_BLINK_PIN, 1);
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
-    
+
+#if MYNEWT_VAL(UWBCFG_ENABLED)
+    /* Register callback for UWB configuration changes */
+    struct uwbcfg_cbs uwb_cb = {
+        .uc_update = uwb_config_updated
+    };
+    uwbcfg_register(&uwb_cb);
+    /* Load config from flash */
+    conf_load();
+#endif    
     mesh_init();
-    
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)dw1000_mac_find_cb_inst_ptr(inst, DW1000_RNG);
+
+    struct uwb_dev *udev = uwb_dev_idx_lookup(0);
+    struct uwb_rng_instance* rng = (struct uwb_rng_instance*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_RNG);
     assert(rng);
-    
-    dw1000_mac_interface_t cbs = {
-        .id = DW1000_APP0,
+
+    struct uwb_mac_interface cbs = {
+        .id = UWBEXT_APP0,
         .inst_ptr = rng,
         .tx_error_cb = error_cb,
         .rx_error_cb = error_cb,
         .complete_cb = complete_cb
     };
-    dw1000_mac_append_interface(inst, &cbs);
+    uwb_mac_append_interface(udev, &cbs);
     
-#if MYNEWT_VAL(CCP_ENABLED)
-    struct _dw1000_ccp_instance_t *ccp = (struct _dw1000_ccp_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
-    assert(ccp);
-    dw1000_ccp_start(ccp, CCP_ROLE_SLAVE);
-#endif
-
-    printf("device_id = 0x%lX\n",inst->device_id);
-    printf("PANID = 0x%X\n",inst->PANID);
-    printf("DeviceID = 0x%X\n",inst->my_short_address);
-    printf("partID = 0x%lX\n",inst->partID);
-    printf("lotID = 0x%lX\n",inst->lotID);
-    printf("xtal_trim = 0x%X\n",inst->xtal_trim);
-    printf("frame_duration = %d usec\n",dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t)));
-    printf("SHR_duration = %d usec\n",dw1000_phy_SHR_duration(&inst->attrib));
-
-    tdma_instance_t * tdma = (tdma_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_TDMA);
+    tdma_instance_t * tdma = (tdma_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_TDMA);
     assert(tdma);
+    uwb_ccp_start(tdma->ccp, CCP_ROLE_SLAVE);
+
+    uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
+    printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 
+    printf("{\"device_id\"=\"%lX\"",udev->device_id);
+    printf(",\"panid=\"%X\"",udev->pan_id);
+    printf(",\"addr\"=\"%X\"",udev->uid);
+    printf(",\"part_id\"=\"%lX\"",(uint32_t)(udev->euid&0xffffffff));
+    printf(",\"lot_id\"=\"%lX\"}\n",(uint32_t)(udev->euid>>32));
+    printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime, uwb_phy_frame_duration(udev, sizeof(twr_frame_final_t))); 
+    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime, uwb_phy_SHR_duration(udev)); 
+    printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay))); 
+
     for (uint16_t i = 1; i < MYNEWT_VAL(TDMA_NSLOTS); i++)
         tdma_assign_slot(tdma, slot_cb,  i, (void*)rng);
 

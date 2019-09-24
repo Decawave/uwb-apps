@@ -6,9 +6,8 @@
 
 #include <inttypes.h>
 #include <sensor/sensor.h>
-#include <dw1000/dw1000_regs.h>
-#include <dw1000/dw1000_dev.h>
-#include <dw1000/dw1000_ftypes.h>
+#include <uwb/uwb.h>
+#include <uwb/uwb_ftypes.h>
 
 #include "rtdoa/rtdoa.h"
 #include "rtdoa_tag/rtdoa_tag.h"
@@ -65,19 +64,19 @@ typedef enum _rtdoa_backhaul_role_t{
 extern "C" {
 #endif
 
-void rtdoa_backhaul_set_a2a(dw1000_dev_instance_t * inst);
-void rtdoa_backhaul_set_role(dw1000_dev_instance_t * inst, rtdoa_backhaul_role_t role);
+void rtdoa_backhaul_set_a2a(struct uwb_dev * inst);
+void rtdoa_backhaul_set_role(struct uwb_dev * inst, rtdoa_backhaul_role_t role);
 void rtdoa_backhaul_print(struct rtdoabh_tag_results_pkg *p, bool tight);
 int rtdoa_backhaul_sensor_data_cb(struct sensor* sensor, void *arg, void *data, sensor_type_t type);
 void rtdoa_backhaul_battery_cb(float battery_volt);
 void rtdoa_backhaul_usb_cb(float usb_volt);
 void rtdoa_backhaul_set_ts(uint64_t sensor_time);
 
-dw1000_dev_status_t rtdoa_backhaul_send(dw1000_dev_instance_t * inst, dw1000_rtdoa_instance_t *rtdoa, uint64_t dxtime);
+struct uwb_dev_status rtdoa_backhaul_send(struct uwb_dev * inst, struct rtdoa_instance *rtdoa, uint64_t dxtime);
 int rtdoa_backhaul_queue_size();
 void rtdoa_backhaul_send_imu_only(uint64_t ts);
-dw1000_dev_status_t rtdoa_backhaul_local(dw1000_dev_instance_t * inst, dw1000_rtdoa_instance_t *rtdoa);
-dw1000_dev_status_t rtdoa_backhaul_listen(dw1000_dev_instance_t * inst, uint64_t dx_time, uint16_t timeout_uus);
+struct uwb_dev_status rtdoa_backhaul_local(struct uwb_dev * inst, struct rtdoa_instance *rtdoa);
+struct uwb_dev_status rtdoa_backhaul_listen(struct uwb_dev * inst, uint64_t dx_time, uint16_t timeout_uus);
 #ifdef __cplusplus
 }
 #endif

@@ -1,7 +1,7 @@
 syscfg.vals:
     # Route console to RTT
     CONSOLE_UART: 0
-    CONSOLE_UART_BAUD: '115200' 
+    CONSOLE_UART_BAUD: '460800'
     CONSOLE_UART_TX_BUF_SIZE: '1024'
     CONSOLE_RTT: 1
     CONSOLE_HISTORY_SIZE: 8
