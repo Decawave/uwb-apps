@@ -38,7 +38,7 @@ pkg.deps:
     - "@decawave-uwb-core/hw/drivers/uwb"
 
 pkg.deps.BLE_ENABLED:
-    - "@mynewt-dw1000-apps/lib/bleprph"
+    - "@decawave-uwb-apps/lib/bleprph"
     
 pkg.cflags:
     - "-std=gnu99"

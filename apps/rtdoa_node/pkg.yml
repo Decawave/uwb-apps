@@ -52,7 +52,7 @@ pkg.deps:
     - "@decawave-uwb-core/lib/tofdb"
     - "@decawave-uwb-core/mgmt/bcast_ota"
     - "@decawave-uwb-core/lib/panmaster"
-    - "@mynewt-dw1000-apps/lib/bleprph"
+    - "@decawave-uwb-apps/lib/bleprph"
 
 pkg.cflags:
     - "-std=gnu99"

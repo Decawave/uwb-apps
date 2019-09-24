@@ -46,8 +46,8 @@ pkg.deps:
     - "@mynewt-timescale-lib/lib/timescale"
     - "@decawave-uwb-core/sys/uwbcfg"
     - "@decawave-uwb-core/lib/nmgr_uwb"
-    - "@mynewt-dw1000-apps/lib/bleprph"
-    - "@mynewt-dw1000-apps/lib/rtdoa_backhaul"
+    - "@decawave-uwb-apps/lib/bleprph"
+    - "@decawave-uwb-apps/lib/rtdoa_backhaul"
 
 pkg.cflags:
     - "-std=gnu99"
