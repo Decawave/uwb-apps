@@ -59,7 +59,7 @@ extern void nrf5AlarmInit(ot_instance_t * ot);
 
 int main(int argc, char **argv)
 {
-    ot_instance_t *ot
+    ot_instance_t *ot;
     otInstance *sInstance;
 	struct uwb_dev * inst = uwb_dev_idx_lookup(0);
 
