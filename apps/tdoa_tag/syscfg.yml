@@ -25,12 +25,9 @@ syscfg.vals:
     STATS_NEWTMGR: 1
     DW1000_CLI: 1
 
-    # Enable DW1000
+    # Enable DWx000
     SPI_0_MASTER: 1
-    DW1000_DEVICE_0: 1
-    DW1000_SS_TWR_ENABLED: 0
-    DW1000_DS_TWR_ENABLED: 0
-    DW1000_DS_TWR_EXT_ENABLED: 0
+    UWB_DEVICE_0: 1
     UWBCFG_APPLY_AT_INIT: 1
     
     # ST Mems

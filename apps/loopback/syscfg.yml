@@ -2,10 +2,10 @@ syscfg.vals:
     # Route console to RTT
     CONSOLE_UART: 0
     CONSOLE_RTT: 1
-    DW1000_DEVICE_0: 1
-    DW1000_DEVICE_1: 1
+
+    UWB_DEVICE_0: 1
+    UWB_DEVICE_1: 1
     FS_XTALT_AUTOTUNE_ENABLED: 0
-    DW1000_BIAS_CORRECTION_ENABLED: 0
     HARDFLOAT: 1
     STATS_CLI: 1
     SHELL_TASK: 1
@@ -33,8 +33,4 @@ syscfg.vals:
 
     DW_DEVICE_ID_0: (0x4321U)
     DW_DEVICE_ID_1: (0x1234U)
-    
-syscfg.defs:
-    UUID_CCP_MASTER:
-        description: Clock Master UUID
-        value: ((uint64_t){0x8000}) 
+

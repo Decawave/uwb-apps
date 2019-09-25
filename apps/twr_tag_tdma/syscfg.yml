@@ -6,9 +6,8 @@ syscfg.vals:
     CONSOLE_RTT: 1
     CONSOLE_HISTORY_SIZE: 8
 
-    DW1000_DEVICE_0: 1
+    UWB_DEVICE_0: 1
     FS_XTALT_AUTOTUNE_ENABLED: 0
-    DW1000_BIAS_CORRECTION_ENABLED: 0
     HARDFLOAT: 1
     FLOAT_USER: 1
     TDMA_NSLOTS: 160
@@ -18,6 +17,7 @@ syscfg.vals:
     STATS_CLI: 1
     CONFIG_CLI: 1
     DW1000_CLI: 1
+    DW3000_CLI: 1
     SHELL_TASK: 1
 
     # Enable newtmgr commands.

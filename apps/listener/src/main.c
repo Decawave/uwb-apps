@@ -39,10 +39,18 @@
 #include "uwbcfg/uwbcfg.h"
 
 #include <uwb/uwb.h>
-#include "dw1000/dw1000_hal.h"
 #if MYNEWT_VAL(CIR_ENABLED)
 #include <cir/cir.h>
+
+#if MYNEWT_VAL(DW1000_DEVICE_0)
+#include "dw1000/dw1000_hal.h"
 #include <cir_dw1000/cir_dw1000.h>
+#endif
+#if MYNEWT_VAL(DW3000_DEVICE_0)
+#include "dw3000/dw3000_hal.h"
+#include <cir_dw3000/cir_dw3000.h>
+#endif
+
 #endif
 
 #if MYNEWT_VAL(UWB_DEVICE_0) && MYNEWT_VAL(UWB_DEVICE_1)
@@ -194,7 +202,12 @@ create_mbuf_pool(void)
 }
 
 #if MYNEWT_VAL(CIR_ENABLED)
+#if MYNEWT_VAL(DW1000_DEVICE_0)
 static struct cir_dw1000_instance tmp_cir;
+#endif
+#if MYNEWT_VAL(DW3000_DEVICE_0)
+static struct cir_dw3000_instance tmp_cir;
+#endif
 #endif
 static uint8_t print_buffer[1024];
 static void
@@ -293,8 +306,14 @@ process_rx_data_queue(struct os_event *ev)
         if (local_conf.verbose&VERBOSE_CIR) {
             printf(",\"cir\":[");
             for(int j=0;j<n_instances;j++) {
+#if MYNEWT_VAL(DW1000_DEVICE_0)
                 rc = os_mbuf_copydata(om, hdr->dlen + j*sizeof(struct cir_dw1000_instance), sizeof(struct cir_dw1000_instance), &tmp_cir);
                 struct cir_dw1000_instance* cirp = &tmp_cir;
+#endif
+#if MYNEWT_VAL(DW3000_DEVICE_0)
+                rc = os_mbuf_copydata(om, hdr->dlen + j*sizeof(struct cir_dw3000_instance), sizeof(struct cir_dw3000_instance), &tmp_cir);
+                struct cir_dw3000_instance* cirp = &tmp_cir;
+#endif
                 if (cirp->cir_inst.status.valid > 0 || 1) {
                     //float idx = ((float) hdr->diag[j].fp_idx)/64.0f;
                     float idx = cirp->fp_idx;
@@ -312,11 +331,11 @@ process_rx_data_queue(struct os_event *ev)
                     if (local_conf.acc_samples_to_load) {
                         printf(",\"real\":[");
                         for (int i=0;i<local_conf.acc_samples_to_load;i++) {
-                            printf("%s%d", (i==0)? "":",", cirp->cir.array[i].real);
+                printf("%s%d", (i==0)? "":",", (int)cirp->cir.array[i].real);
                         }
                         printf("],\"imag\":[");
                         for (int i=0;i<local_conf.acc_samples_to_load;i++) {
-                            printf("%s%d", (i==0)? "":",", cirp->cir.array[i].imag);
+                printf("%s%d", (i==0)? "":",", (int)cirp->cir.array[i].imag);
                         }
                         console_out(']');
                     }
@@ -390,9 +409,10 @@ rx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
         }
 #else
         for(int i=0;i<N_DW_INSTANCES;i++) {
-            memcpy(&hdr->diag[i], uwb_dev_idx_lookup(i)->rxdiag, uwb_dev_idx_lookup(i)->rxdiag->rxd_len);
-            if (!uwb_dev_idx_lookup(i)->status.lde_error) {
-                hdr->ts[i] = uwb_dev_idx_lookup(i)->rxtimestamp;
+            struct uwb_dev * udev = uwb_dev_idx_lookup(i);
+            memcpy(&hdr->diag[i], udev->rxdiag, udev->rxdiag->rxd_len);
+            if (!udev->status.lde_error) {
+                hdr->ts[i] = udev->rxtimestamp;
             }
         }
 #endif
@@ -435,7 +455,12 @@ rx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 
         /* Do we need to load accumulator data */
         if (local_conf.acc_samples_to_load) {
+#if MYNEWT_VAL(DW1000_DEVICE_0)
             struct cir_dw1000_instance *src;
+#endif
+#if MYNEWT_VAL(DW3000_DEVICE_0)
+            struct cir_dw3000_instance *src;
+#endif
 #ifdef MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
             for(int i=0;i<MYNEWT_VAL(PDOA_SPI_NUM_INSTANCES);i++) {
                 if (i==0) {
@@ -446,10 +471,17 @@ rx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
                 }
 #else
             for(int i=0;i<N_DW_INSTANCES;i++) {
+#if MYNEWT_VAL(DW1000_DEVICE_0)
                 src = hal_dw1000_inst(i)->cir;
 #endif
-                rc = os_mbuf_copyinto(om, hdr->dlen + i*sizeof(struct cir_dw1000_instance),
-                                      src, sizeof(struct cir_dw1000_instance));
+#if MYNEWT_VAL(DW3000_DEVICE_0)
+                src = hal_dw3000_inst(i)->cir;
+#endif
+
+#endif
+                rc = os_mbuf_copyinto(om, hdr->dlen + i*sizeof(*src),
+                                      src, sizeof(*src));
+                assert(rc == 0);
             }
         }
 #endif // CIR_ENABLED
@@ -468,7 +500,6 @@ rx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 bool
 error_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 {
-    printf("# err_cb s %lx\n", ((struct _dw1000_dev_instance_t*)inst)->sys_status);
     return true;
 }
 
@@ -490,7 +521,6 @@ timeout_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 bool
 reset_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 {
-    printf("# rst_cb s %lx\n", ((struct _dw1000_dev_instance_t*)inst)->sys_status);
     return true;
 }
 
@@ -508,8 +538,8 @@ uwb_config_update(struct os_event * ev)
 #if N_DW_INSTANCES > 1
         uwb_set_rxauto_disable(inst, MYNEWT_VAL(CIR_ENABLED));
 #endif
-        uwb_start_rx(inst);
         inst->config.rxdiag_enable = (local_conf.verbose&VERBOSE_RX_DIAG) != 0;
+        uwb_start_rx(inst);
     }
 }
 
@@ -559,6 +589,11 @@ int main(int argc, char **argv){
     sysinit();
     hal_gpio_init_out(LED_BLINK_PIN, 1);
 
+    /* Load any saved uwb settings */
+    uwbcfg_register(&uwb_cb);
+    conf_register(&lstnr_handler);
+    conf_load();
+
     for(int i=0;i<N_DW_INSTANCES;i++) {
         udev[i] = uwb_dev_idx_lookup(i);
         udev[i]->config.rxdiag_enable = (local_conf.verbose&VERBOSE_RX_DIAG) != 0;
@@ -592,11 +627,6 @@ int main(int argc, char **argv){
         uwb_mac_append_interface(udev[i], &g_cbs);
     }
 
-    /* Load any saved uwb settings */
-    uwbcfg_register(&uwb_cb);
-    conf_register(&lstnr_handler);
-    conf_load();
-
     /* Sync clocks if available */
     if (uwb_sync_to_ext_clock(udev[0]).ext_sync || 1) {
         printf("{\"ext_sync\"=\"");
@@ -620,7 +650,7 @@ int main(int argc, char **argv){
         uwb_set_rx_timeout(udev[i], 0);
 #if N_DW_INSTANCES > 1
         uwb_set_rxauto_disable(udev[i], MYNEWT_VAL(CIR_ENABLED));
-#endif
+#endif        
         uwb_start_rx(udev[i]);
     }
 

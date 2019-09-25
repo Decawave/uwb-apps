@@ -28,10 +28,9 @@ syscfg.vals:
     DW1000_CLI: 1
     BCAST_OTA_CLI: 0
     
-    SPI_0_MASTER: 1
-    DW1000_DEVICE_0: 1
 
     # UWB
+    UWB_DEVICE_0: 1
     DW1000_DEV_TASK_STACK_SZ: 256
     UWB_PKG_INIT_LOG: 1
     DW1000_RXTX_LEDS: 0
