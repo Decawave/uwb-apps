@@ -36,7 +36,6 @@
 
 #include <uwb/uwb.h>
 #include <uwb/uwb_ftypes.h>
-#include <dw1000/dw1000_hal.h>
 #include <uwb_rng/uwb_rng.h>
 #include <config/config.h>
 #include "uwbcfg/uwbcfg.h"
@@ -294,8 +293,7 @@ int main(int argc, char **argv){
     assert(rng);
 #elif  MYNEWT_VAL(UWB_DEVICE_0) && !MYNEWT_VAL(UWB_DEVICE_1)
     struct uwb_dev * udev = uwb_dev_idx_lookup(0);
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    dw1000_set_dblrxbuff(inst, false);
+    uwb_set_dblrxbuff(udev, false);
     struct uwb_rng_instance * rng = (struct uwb_rng_instance *)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_RNG);
     assert(rng);
 #endif

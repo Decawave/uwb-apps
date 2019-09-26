@@ -35,7 +35,6 @@
 #endif
 
 #include <uwb/uwb.h>
-#include <dw1000/dw1000_hal.h>
 #include <uwb_rng/uwb_rng.h>
 #include <config/config.h>
 #include <uwbcfg/uwbcfg.h>
@@ -222,6 +221,8 @@ int main(int argc, char **argv){
     }
 #if MYNEWT_VAL(RNG_VERBOSE) > 1
     udev->config.rxdiag_enable = 1;
+#else
+    udev->config.rxdiag_enable = 0;
 #endif
     while (1) {
         os_eventq_run(os_eventq_dflt_get());

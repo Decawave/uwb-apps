@@ -33,10 +33,13 @@
 #endif
 
 #include <uwb/uwb.h>
-#include <dw1000/dw1000_hal.h>
 #include <uwb_rng/uwb_rng.h>
 #include <config/config.h>
 #include <uwbcfg/uwbcfg.h>
+
+#if MYNEWT_VAL(DW1000_DEVICE_0)
+#include <dw1000/dw1000_hal.h>
+#endif
 
 #include <tdma/tdma.h>
 #include <uwb_ccp/uwb_ccp.h>
@@ -103,7 +106,7 @@ slot_cb(struct dpl_event *ev){
  * NOTE: The MAC extension interface is a link-list of callbacks, subsequent callbacks on the list will be not be called in the 
  * event of returning true. 
  *
- * @param inst  - dw1000_dev_instance_t *
+ * @param inst  - struct uwb_dev *
  * @param cbs   - struct uwb_mac_interface *
  *
  * output parameters
@@ -155,7 +158,7 @@ slot_complete_cb(struct dpl_event * ev){
  * In this example just log event. 
  * Note: interrupt context so overlapping IO is possible
  * input parameters
- * @param inst - dw1000_dev_instance_t * inst
+ * @param inst - struct uwb_dev * inst
  *
  * output parameters
  *
@@ -241,7 +244,7 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime, uwb_phy_SHR_duration(udev)); 
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay))); 
 
-#if MYNEWT_VAL(UWB_DEVICE_0)
+#if MYNEWT_VAL(DW1000_DEVICE_0)
     // Using DW GPIO5 and GPIO6 to study timing.
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     dw1000_gpio5_config_ext_txe( inst);
