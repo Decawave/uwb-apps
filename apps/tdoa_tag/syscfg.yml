@@ -26,7 +26,6 @@ syscfg.vals:
     DW1000_CLI: 1
 
     # Enable DWx000
-    SPI_0_MASTER: 1
     UWB_DEVICE_0: 1
     UWBCFG_APPLY_AT_INIT: 1
     

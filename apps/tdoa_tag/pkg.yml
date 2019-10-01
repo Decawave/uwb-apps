@@ -35,6 +35,7 @@ pkg.deps:
     - "@apache-mynewt-core/sys/stats/full"
     - "@apache-mynewt-core/hw/sensor"
     - "@decawave-uwb-core/sys/uwbcfg"
+    - "@apache-mynewt-core/sys/config"
     - "@decawave-uwb-core/hw/drivers/uwb"
 
 pkg.deps.BLE_ENABLED:

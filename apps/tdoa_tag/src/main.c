@@ -31,7 +31,9 @@
 #include "mcu/mcu_sim.h"
 #endif
 
+#if MYNEWT_VAL(BLE_ENABLED)
 #include "bleprph/bleprph.h"
+#endif
 
 #include "sensor/sensor.h"
 #include "sensor/accel.h"
@@ -213,9 +215,6 @@ int main(int argc, char **argv){
     /* Register local config */
     rc = conf_register(&uwb_conf_cbs);
     assert(rc == 0);
-
-    /* Load config from flash */
-    conf_load();
 
     struct uwb_dev *udev = uwb_dev_idx_lookup(0);
     udev->config.dblbuffon_enabled = 0;
