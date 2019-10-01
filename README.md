@@ -20,11 +20,11 @@
 -->
 
 # Decawave UWB Applications 
-[![Build Status](https://travis-ci.org/Decawave/uwb-apps.svg?branch=master)](https://travis-ci.org/Decawave/uwb-apps)
+[![Build Status](https://travis-ci.com/Decawave/uwb-apps.svg?token=Qc1ARRCEWyUvYoAtFTkY&branch=master)](https://travis-ci.com/Decawave/uwb-apps)
 
 ## Overview
 
-This distribution contains the example applications for the DW1000 IR-UWB transceiver within the mynewt-OS. The dw1000 device driver model is integrated into the mynewt-OS (https://github.com/decawave/mynewt-dw1000-core). This driver includes native support for a 6lowPAN stack, Ranging Services, and Location Services, etc. Mynewt and its build environment tool newt and management tool newtmgt creates a powerful environment for deploying large-scale distributions within IoT.
+This distribution contains the example applications for the DW1000 IR-UWB transceiver within the mynewt-OS. The dw1000 device driver model is integrated into the mynewt-OS (https://github.com/decawave/uwb-core). This driver includes native support for a 6lowPAN stack, Ranging Services, and Location Services, etc. Mynewt and its build environment tool newt and management tool newtmgt creates a powerful environment for deploying large-scale distributions within IoT.
 
 For these examples, we leverage the Decawave dwm1001 module and dwm1001-dev kit. The DWM1001 includes a nrf52832 and the DW1000 transceiver. The DWM1001-DEV is a breakout board that supports a Seggar OB-JLink interface with RTT support. The mynewt build environment provides a clean interface for maintaining platform agnostic distributions. The DWM1001-DEV and the examples contained herein provide a clean out-of-the-box experience for UWB Location Based Services.
 
