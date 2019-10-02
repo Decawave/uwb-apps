@@ -273,7 +273,8 @@ process_rx_data_queue(struct os_event *ev)
             console_out(']');
         }
         if (hdr->carrier_integrator && (local_conf.verbose&VERBOSE_CARRIER_INTEGRATOR)) {
-            float ccor = uwb_calc_clock_offset_ratio(uwb_dev_idx_lookup(0), hdr->carrier_integrator, 0);
+            float ccor = uwb_calc_clock_offset_ratio(uwb_dev_idx_lookup(0), hdr->carrier_integrator, UWB_CR_CARRIER_INTEGRATOR);
+
             int ppm = (int)(ccor*1000000.0f);
             printf(",\"ccor\":%d.%03de-6",
                    ppm,
@@ -331,11 +332,11 @@ process_rx_data_queue(struct os_event *ev)
                     if (local_conf.acc_samples_to_load) {
                         printf(",\"real\":[");
                         for (int i=0;i<local_conf.acc_samples_to_load;i++) {
-                printf("%s%d", (i==0)? "":",", (int)cirp->cir.array[i].real);
+                            printf("%s%d", (i==0)? "":",", (int)cirp->cir.array[i].real);
                         }
                         printf("],\"imag\":[");
                         for (int i=0;i<local_conf.acc_samples_to_load;i++) {
-                printf("%s%d", (i==0)? "":",", (int)cirp->cir.array[i].imag);
+                            printf("%s%d", (i==0)? "":",", (int)cirp->cir.array[i].imag);
                         }
                         console_out(']');
                     }

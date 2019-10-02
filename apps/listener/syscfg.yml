@@ -46,6 +46,8 @@ syscfg.vals:
     CIR_VERBOSE: 0
     CIR_OFFSET:  4
     CIR_SIZE:    8
+    DW1000_CLI:  1
+    DW3000_CLI:  1
 
     ## Where to store config 
     CONFIG_FCB: 1
