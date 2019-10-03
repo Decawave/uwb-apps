@@ -38,17 +38,7 @@ pkg.deps:
     - "@decawave-uwb-core/lib/cir"
 
 pkg.deps.BLE_ENABLED:
-    - "@apache-mynewt-core/mgmt/newtmgr/transport/ble"
-    - "@apache-mynewt-nimble/nimble/host/services/ans"
-    - "@apache-mynewt-nimble/nimble/host/services/gap"
-    - "@apache-mynewt-nimble/nimble/host/services/gatt"
-    - "@apache-mynewt-nimble/nimble/host/store/config"
-    - "@apache-mynewt-nimble/nimble/host/util"
-    - "@apache-mynewt-nimble/nimble/transport"
-    - "@apache-mynewt-core/mgmt/imgmgr"
-    - "@apache-mynewt-core/mgmt/newtmgr"
-    - "@apache-mynewt-core/mgmt/newtmgr/transport/nmgr_shell"
-    - "@apache-mynewt-core/boot/bootutil"
+    - "@decawave-uwb-apps/lib/bleprph"
     
 pkg.cflags:
     - "-std=gnu99"

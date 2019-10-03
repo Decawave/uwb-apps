@@ -32,7 +32,9 @@
 #include "mcu/mcu_sim.h"
 #endif
 
-#include "bleprph.h"
+#if MYNEWT_VAL(BLE_ENABLED)
+#include "bleprph/bleprph.h"
+#endif
 
 #include "console/console.h"
 #include <config/config.h>
@@ -217,6 +219,7 @@ process_rx_data_queue(struct os_event *ev)
     struct os_mbuf *om;
     struct uwb_msg_hdr *hdr;
     int payload_len;
+    struct uwb_dev *udev = uwb_dev_idx_lookup(0);
     uint64_t ts;
 #ifdef MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
     int n_instances = MYNEWT_VAL(PDOA_SPI_NUM_INSTANCES);
@@ -251,7 +254,7 @@ process_rx_data_queue(struct os_event *ev)
         if ((local_conf.verbose&VERBOSE_RX_DIAG)) {
             printf(",\"rssi\":[");
             for(int j=0;j<n_instances;j++) {
-                float rssi = uwb_calc_rssi(uwb_dev_idx_lookup(0), &hdr->diag[j].diag);
+                float rssi = uwb_calc_rssi(udev, &hdr->diag[j].diag);
                 if (rssi > -200 && rssi < 100) {
                     printf("%s%d.%01d", (j==0)?"":",",
                            (int)rssi, abs((int)(10*(rssi-(int)rssi))));
@@ -262,7 +265,7 @@ process_rx_data_queue(struct os_event *ev)
             console_out(']');
             printf(",\"fppl\":[");
             for(int j=0;j<n_instances;j++) {
-                float fppl = uwb_calc_fppl(uwb_dev_idx_lookup(0), &hdr->diag[j].diag);
+                float fppl = uwb_calc_fppl(udev, &hdr->diag[j].diag);
                 if (fppl > -200 && fppl < 100) {
                     printf("%s%d.%01d", (j==0)?"":",",
                            (int)fppl, abs((int)(10*(fppl-(int)fppl))));
@@ -273,7 +276,7 @@ process_rx_data_queue(struct os_event *ev)
             console_out(']');
         }
         if (hdr->carrier_integrator && (local_conf.verbose&VERBOSE_CARRIER_INTEGRATOR)) {
-            float ccor = uwb_calc_clock_offset_ratio(uwb_dev_idx_lookup(0), hdr->carrier_integrator, UWB_CR_CARRIER_INTEGRATOR);
+            float ccor = uwb_calc_clock_offset_ratio(udev, hdr->carrier_integrator, UWB_CR_CARRIER_INTEGRATOR);
 
             int ppm = (int)(ccor*1000000.0f);
             printf(",\"ccor\":%d.%03de-6",
@@ -360,18 +363,23 @@ rx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     int rc;
     struct os_mbuf *om;
 
+    struct uwb_dev *udev[N_DW_INSTANCES];
+    for(int i=0;i<N_DW_INSTANCES;i++) {
+        udev[i] = uwb_dev_idx_lookup(i);
+    }
+
 #if MYNEWT_VAL(CIR_ENABLED)
     struct cir_instance * cir[] = {
-        uwb_dev_idx_lookup(0)->cir
+        udev[0]->cir
 #if N_DW_INSTANCES > 1
-        , uwb_dev_idx_lookup(1)->cir
+        , udev[1]->cir
 #endif
     };
 #endif
 
 #if N_DW_INSTANCES == 2
     /* Only use incoming data from the last instance */
-    if (inst != uwb_dev_idx_lookup(1)) {
+    if (inst != udev[1]) {
         if (!inst->status.rx_restarted) {
             dpl_callout_reset(&rx_reenable_callout, DPL_TICKS_PER_SEC/100);
         }
@@ -381,14 +389,13 @@ rx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     dpl_callout_stop(&rx_reenable_callout);
     /* Restart receivers */
     for(int i=0;i<N_DW_INSTANCES;i++) {
-        uwb_set_rx_timeout(uwb_dev_idx_lookup(i), 0xffff);
-        uwb_set_rxauto_disable(uwb_dev_idx_lookup(i), MYNEWT_VAL(CIR_ENABLED));
-        uwb_start_rx(uwb_dev_idx_lookup(i));
+        uwb_set_rx_timeout(udev[i], 0xffff);
+        uwb_set_rxauto_disable(udev[i], MYNEWT_VAL(CIR_ENABLED));
+        uwb_start_rx(udev[i]);
     }
 #endif
-
     /* Skip packet if other dw instance doesn't have the same data in it's buffer */
-    if (memcmp(uwb_dev_idx_lookup(0)->rxbuf, uwb_dev_idx_lookup(1)->rxbuf, uwb_dev_idx_lookup(0)->frame_len)) {
+    if (memcmp(udev[0]->rxbuf, udev[1]->rxbuf, udev[0]->frame_len)) {
         return true;
     }
 #endif
@@ -637,7 +644,9 @@ int main(int argc, char **argv){
         printf("\"}\n");
     }
     
+#if MYNEWT_VAL(BLE_ENABLED)
     ble_init(udev[0]->euid);
+#endif
 
     for (int i=0;i<sizeof(g_mbuf_buffer)/sizeof(g_mbuf_buffer[0]);i++) {
         g_mbuf_buffer[i] = 0xdeadbeef;
