@@ -112,7 +112,7 @@ $
 
 newt target create dwm1001_boot
 newt target set dwm1001_boot app=@apache-mynewt-core/apps/boot
-newt target set dwm1001_boot bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set dwm1001_boot bsp=@decawave-uwb-core/hw/bsp/dwm1001
 newt target set dwm1001_boot build_profile=optimized
 newt build dwm1001_boot
 newt load dwm1001_boot
@@ -123,7 +123,7 @@ newt load dwm1001_boot
 ```no-highlight
 newt target create openThreadApp
 newt target set openThreadApp app=apps/openThreadApp
-newt target set openThreadApp bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set openThreadApp bsp=@decawave-uwb-core/hw/bsp/dwm1001
 newt target set openThreadApp build_profile=optimized
 newt build openThreadApp
 newt create-image openThreadApp 1.0.0

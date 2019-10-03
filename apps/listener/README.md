@@ -9,7 +9,7 @@ timestamps for each package.
 ```no-highlight
 newt target create dwm1001_listener
 newt target set dwm1001_listener app=apps/listener
-newt target set dwm1001_listener bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set dwm1001_listener bsp=@decawave-uwb-core/hw/bsp/dwm1001
 newt target amend dwm1001_listener syscfg=CONSOLE_UART_BAUD=115200
 newt run dwm1001_listener 0
 ```
@@ -40,7 +40,7 @@ a direction to the incoming packet. In the example below all this data (and more
 ```no-highlight
 newt target create dwm1002_listener
 newt target set dwm1002_listener app=apps/listener
-newt target set dwm1002_listener bsp=@mynewt-dw1000-core/hw/bsp/dwm1002
+newt target set dwm1002_listener bsp=@decawave-uwb-core/hw/bsp/dwm1002
 newt target amend dwm1002_listener syscfg=CONSOLE_UART_BAUD=460800:DW1000_DEVICE_0=1:DW1000_DEVICE_1=1:CIR_ENABLED=1:USE_DBLBUFFER=0
 newt run dwm1002_listener 0
 ```

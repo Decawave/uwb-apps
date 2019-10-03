@@ -40,7 +40,7 @@ $
 
 newt target create master
 newt target set master app=apps/ota_uwb_master
-newt target set master bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set master bsp=@decawave-uwb-core/hw/bsp/dwm1001
 newt target set master build_profile=optimized
 newt target amend master syscfg="LOG_LEVEL=1"
 newt build master
@@ -52,7 +52,7 @@ newt load master
 
 newt target create slave
 newt target set slave app=apps/ota_uwb_slave
-newt target set slave bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set slave bsp=@decawave-uwb-core/hw/bsp/dwm1001
 newt target set slave build_profile=optimized
 newt target amend slave syscfg="LOG_LEVEL=1"
 newt build slave

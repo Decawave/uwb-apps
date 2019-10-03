@@ -40,7 +40,7 @@ $
 
 newt target create twr_node
 newt target set twr_node app=apps/twr_aloha
-newt target set twr_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set twr_node bsp=@decawave-uwb-core/hw/bsp/dwm1001
 newt target set twr_node build_profile=debug
 newt target amend twr_node syscfg=LOG_LEVEL=1:UWBCFG_DEF_ROLE='"0x4"'
 newt run twr_node 0
@@ -53,7 +53,7 @@ newt run twr_node 0
 
 newt target create twr_tag
 newt target set twr_tag app=apps/twr_aloha
-newt target set twr_tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set twr_tag bsp=@decawave-uwb-core/hw/bsp/dwm1001
 newt target set twr_tag build_profile=debug
 newt run twr_tag 0
 

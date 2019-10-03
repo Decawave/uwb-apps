@@ -50,7 +50,7 @@ Program and build the bootloader, see other README files.
 
 newt target create tdoa_tag
 newt target set tdoa_tag app=apps/tdoa_tag
-newt target set tdoa_tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set tdoa_tag bsp=@decawave-uwb-core/hw/bsp/dwm1001
 newt target set tdoa_tag build_profile=debug
 newt run tdoa_tag 0
 

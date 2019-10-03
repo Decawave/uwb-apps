@@ -29,7 +29,7 @@ The DW1002 contains two instances of the DW1000 on a single board. The board is 
 ```no-highlight
 newt target create dwm1002_boot
 newt target set dwm1002_boot app=@apache-mynewt-core/apps/boot
-newt target set dwm1002_boot bsp=@mynewt-dw1000-core/hw/bsp/dwm1002
+newt target set dwm1002_boot bsp=@decawave-uwb-core/hw/bsp/dwm1002
 newt target set dwm1002_boot build_profile=optimized 
 newt build dwm1002_boot
 newt create-image dwm1002_boot 1.0.0
@@ -44,13 +44,13 @@ newt load dwm1002_boot
 ```no-highlight
 newt target create loopback
 newt target set loopback app=apps/loopback
-newt target set loopback bsp=@mynewt-dw1000-core/hw/bsp/dwm1002
+newt target set loopback bsp=@decawave-uwb-core/hw/bsp/dwm1002
 newt target set loopback build_profile=debug 
 newt run loopback 0
 
 newt target create listener
 newt target set listener app=apps/listener
-newt target set listener bsp=@mynewt-dw1000-core/hw/bsp/dwm1002
+newt target set listener bsp=@decawave-uwb-core/hw/bsp/dwm1002
 newt target set listener build_profile=debug 
 newt run listener 0
 

@@ -41,7 +41,7 @@ $
 
 newt target create node_tdma
 newt target set node_tdma app=apps/twr_node_tdma
-newt target set node_tdma bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set node_tdma bsp=@decawave-uwb-core/hw/bsp/dwm1001
 newt target set node_tdma build_profile=optimized
 newt target set node_tdma syscfg=BLE_MESH_PB_GATT=1:BLE_MESH_DEV_UUID='(uint8_t[16]){0x22, 0x20, 0}'
 newt build node_tdma
@@ -56,7 +56,7 @@ newt load node_tdma
 
 newt target create tag_mesh
 newt target set tag_mesh app=apps/tag_mesh
-newt target set tag_mesh bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set tag_mesh bsp=@decawave-uwb-core/hw/bsp/dwm1001
 newt target set tag_mesh build_profile=optimized
 newt target set tag_mesh syscfg=BLE_MESH_PB_GATT=1:BLE_MESH_DEV_UUID='(uint8_t[16]){0x22, 0x21, 0}'
 newt build tag_mesh

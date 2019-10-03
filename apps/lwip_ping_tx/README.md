@@ -25,24 +25,13 @@
 The Decawave DW1000 Application lwip_ping_tx showcases the ability of lwIP driver to send and receive 
 payloads to and from a node. In this sample application, we are sending a ping from Node A to NODE B.
 
-## Pre-Requisites
-Repo 	:	mynewt-dw1000-apps
-Branch	:	refactor
-
-Repo	:	mynewt-dw1000-core
-Branch	:	refactor
-
-Repo	:	apache-mynewt-core
-Branch	:	master
-Tag 	:	1.4.1
-
 ## Building
 1. Build and flash the lwip_ping_tx app.
 
 ```no-highlight
 newt target create lwip_ping_tx
 newt target set lwip_ping_tx app=apps/lwip_ping_tx
-newt target set lwip_ping_tx bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set lwip_ping_tx bsp=@decawave-uwb-core/hw/bsp/dwm1001
 newt target set lwip_ping_tx build_profile=debug
 newt build lwip_ping_tx
 newt create-image lwip_ping_tx 1.0.0

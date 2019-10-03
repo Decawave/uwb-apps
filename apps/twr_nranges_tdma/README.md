@@ -11,7 +11,7 @@ Master node (only one allowed per network):
 ```no-highlight
 newt target create nrng_master_node
 newt target set nrng_master_node app=apps/twr_nranges_tdma
-newt target set nrng_master_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set nrng_master_node bsp=@decawave-uwb-core/hw/bsp/dwm1001
 newt target set nrng_master_node build_profile=debug
 newt target amend nrng_master_node syscfg=PANMASTER_ISSUER=1
 newt run nrng_master_node 0.1.0
@@ -21,7 +21,7 @@ Slave nodes
 ```no-highlight
 newt target create nrng_slave_node
 newt target set nrng_slave_node app=apps/twr_nranges_tdma
-newt target set nrng_slave_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set nrng_slave_node bsp=@decawave-uwb-core/hw/bsp/dwm1001
 newt target set nrng_slave_node build_profile=debug
 newt target amend nrng_slave_node syscfg=NRANGES_ANCHOR=1
 newt run nrng_slave_node 0.1.0
@@ -31,7 +31,7 @@ newt run nrng_slave_node 0.1.0
 ```
 newt target create nrng_tag
 newt target set nrng_tag app=apps/twr_nranges_tdma
-newt target set nrng_tag bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set nrng_tag bsp=@decawave-uwb-core/hw/bsp/dwm1001
 newt target set nrng_tag build_profile=debug
 newt target amend nrng_tag syscfg=NRNG_NTAGS=4:NRNG_NNODES=8:NRNG_NFRAMES=16:NODE_START_SLOT_ID=0:NODE_END_SLOT_ID=7
 newt run nrng_tag 0.1.0
