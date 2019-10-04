@@ -32,12 +32,15 @@
 #include "mcu/mcu_sim.h"
 #endif
 
+#if MYNEWT_VAL(BLE_ENABLED)
+#include "bleprph/bleprph.h"
+#endif
+
 #include <dpl/dpl.h>
 #include <uwb/uwb.h>
 #include <uwb/uwb_ftypes.h>
 #include <nmgr_uwb/nmgr_uwb.h> 
 #include <nmgr_cmds/nmgr_cmds.h> 
-#include "bleprph.h"
 //#define DIAGMSG(s,u) printf(s,u)
 #ifndef DIAGMSG
 #define DIAGMSG(s,u)
@@ -64,9 +67,10 @@ int main(int argc, char **argv){
 
     sysinit();
     struct uwb_dev *udev = uwb_dev_idx_lookup(0);
-    char name[32]={0};
-    sprintf(name,"%X-%04X",udev->pan_id, udev->my_short_address);
-    prph_init(name);
+
+#if MYNEWT_VAL(BLE_ENABLED)
+    ble_init(udev->my_short_address);
+#endif
 
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
     printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 

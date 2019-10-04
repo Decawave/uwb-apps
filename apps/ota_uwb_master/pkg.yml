@@ -41,14 +41,6 @@ pkg.deps:
     - "@apache-mynewt-core/mgmt/newtmgr"
     - "@apache-mynewt-core/mgmt/imgmgr"
     - "@apache-mynewt-core/boot/split"
-#BLE related
-    - "@apache-mynewt-nimble/nimble/host/services/ans"
-    - "@apache-mynewt-nimble/nimble/host/services/gap"
-    - "@apache-mynewt-nimble/nimble/host/services/gatt"
-    - "@apache-mynewt-nimble/nimble/host/store/config"
-    - "@apache-mynewt-nimble/nimble/host/util"
-    - "@apache-mynewt-nimble/nimble/transport"
-    - "@apache-mynewt-nimble/nimble/host"
 #uwb related
     - "@decawave-uwb-core/hw/drivers/uwb"
     - "@decawave-uwb-core/lib/twr_ds_ext"
@@ -61,6 +53,9 @@ pkg.deps:
     - "@decawave-uwb-core/lib/dsp"
     - "@decawave-uwb-core/lib/uwb_ccp"
 
+pkg.deps.BLE_ENABLED:
+    - "@decawave-uwb-apps/lib/bleprph"
+    
 pkg.cflags:
     - "-std=gnu99"
     - "-fms-extensions"

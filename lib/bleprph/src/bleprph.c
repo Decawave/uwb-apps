@@ -265,15 +265,6 @@ int
 ble_init(uint64_t ble_id)
 {
     int rc = 0;
-#if MYNEWT_VAL(BLEPRPH_LOG_ENABLE)
-    /* Initialize the bleprph log. */
-    log_register("bleprph", &bleprph_log, &log_console_handler, NULL,
-                 LOG_SYSLEVEL);
-
-    /* Initialize the NimBLE host configuration. */
-    log_register("ble_hs", &ble_hs_log, &log_console_handler, NULL,
-                 LOG_SYSLEVEL);
-#endif
 
     ble_hs_cfg.reset_cb = bleprph_on_reset;
     ble_hs_cfg.sync_cb = bleprph_on_sync;
