@@ -30,6 +30,7 @@ pkg.deps:
     - "@apache-mynewt-core/kernel/os"
     - "@apache-mynewt-core/hw/hal"
     - "@apache-mynewt-core/sys/console/full" 
+    - "@apache-mynewt-core/sys/log/full"
     - "@apache-mynewt-core/sys/shell"
     - "@apache-mynewt-core/hw/mcu/nordic"
     - "@apache-mynewt-core/crypto/mbedtls"
