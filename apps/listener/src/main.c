@@ -128,9 +128,11 @@ lstnr_commit(void)
 {
     conf_value_from_str(lstnr_config.acc_samples, CONF_INT16,
                         (void*)&(local_conf.acc_samples_to_load), 0);
+#if MYNEWT_VAL(CIR_ENABLED)
     if (local_conf.acc_samples_to_load > MYNEWT_VAL(CIR_SIZE)) {
         local_conf.acc_samples_to_load = MYNEWT_VAL(CIR_SIZE);
     }
+#endif
     conf_value_from_str(lstnr_config.verbose, CONF_INT16,
                         (void*)&(local_conf.verbose), 0);
     uwb_config_updated();
@@ -363,12 +365,12 @@ rx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     int rc;
     struct os_mbuf *om;
 
+#if MYNEWT_VAL(CIR_ENABLED)
     struct uwb_dev *udev[N_DW_INSTANCES];
     for(int i=0;i<N_DW_INSTANCES;i++) {
         udev[i] = uwb_dev_idx_lookup(i);
     }
 
-#if MYNEWT_VAL(CIR_ENABLED)
     struct cir_instance * cir[] = {
         udev[0]->cir
 #if N_DW_INSTANCES > 1
