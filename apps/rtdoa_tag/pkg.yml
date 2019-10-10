@@ -29,7 +29,7 @@ pkg.keywords:
 pkg.deps:
     - "@apache-mynewt-core/kernel/os"
     - "@apache-mynewt-core/hw/hal"
-    - "@apache-mynewt-core/boot/bootutil"
+    - "@mcuboot/boot/bootutil"
     - "@apache-mynewt-core/sys/id"
     - "@apache-mynewt-core/sys/shell"
     - "@apache-mynewt-core/sys/log/full"
@@ -50,7 +50,7 @@ pkg.deps:
     - "@decawave-uwb-apps/lib/rtdoa_backhaul"
 
 pkg.cflags:
-    - "-std=gnu99"
+    - "-std=gnu11"
     - "-fms-extensions"
 
 pkg.lflags:

@@ -41,7 +41,7 @@ pkg.deps.BLE_ENABLED:
     - "@decawave-uwb-apps/lib/bleprph"
     
 pkg.cflags:
-    - "-std=gnu99"
+    - "-std=gnu11"
     - "-fms-extensions"
 
     

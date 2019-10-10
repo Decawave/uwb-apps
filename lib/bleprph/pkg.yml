@@ -35,7 +35,7 @@ pkg.deps:
     - "@apache-mynewt-core/mgmt/imgmgr"
     - "@apache-mynewt-core/mgmt/newtmgr"
     - "@apache-mynewt-core/mgmt/newtmgr/transport/nmgr_shell"
-    - "@apache-mynewt-core/boot/bootutil"
+    - "@mcuboot/boot/bootutil"
 
 pkg.init:
     bleprph_pkg_init: 320

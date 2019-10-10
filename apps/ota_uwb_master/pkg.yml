@@ -37,7 +37,7 @@ pkg.deps:
     - "@apache-mynewt-core/sys/shell"
     - "@apache-mynewt-core/sys/id"
     - "@apache-mynewt-core/mgmt/newtmgr/transport/ble"
-    - "@apache-mynewt-core/boot/bootutil"
+    - "@mcuboot/boot/bootutil"
     - "@apache-mynewt-core/mgmt/newtmgr"
     - "@apache-mynewt-core/mgmt/imgmgr"
     - "@apache-mynewt-core/boot/split"
@@ -57,7 +57,7 @@ pkg.deps.BLE_ENABLED:
     - "@decawave-uwb-apps/lib/bleprph"
     
 pkg.cflags:
-    - "-std=gnu99"
+    - "-std=gnu11"
     - "-fms-extensions"
     - "-DNRF52"
     - "-Wno-strict-aliasing"
