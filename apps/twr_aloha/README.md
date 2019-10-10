@@ -111,13 +111,13 @@ to use the double sided two way ranging change the pkg.yml as below:
 <excerpt from pkg.yml>
 ...
     - "@apache-mynewt-core/encoding/json"
-    - "@mynewt-dw1000-core/hw/drivers/uwb"
+    - "@decawave-uwb-core/hw/drivers/uwb"
 # Use only one of the twr pkgs below
-#    - "@mynewt-dw1000-core/lib/twr_ss"
-#    - "@mynewt-dw1000-core/lib/twr_ss_ext"
-     - "@mynewt-dw1000-core/lib/twr_ds"
-#    - "@mynewt-dw1000-core/lib/twr_ds_ext"
-    - "@mynewt-dw1000-core/sys/uwbcfg"
+#    - "@decawave-uwb-core/lib/twr_ss"
+#    - "@decawave-uwb-core/lib/twr_ss_ext"
+     - "@decawave-uwb-core/lib/twr_ds"
+#    - "@decawave-uwb-core/lib/twr_ds_ext"
+    - "@decawave-uwb-core/sys/uwbcfg"
     - "@apache-mynewt-core/boot/split"
 
 ```

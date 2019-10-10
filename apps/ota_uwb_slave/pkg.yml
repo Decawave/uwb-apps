@@ -44,7 +44,7 @@ pkg.deps:
     - "@decawave-uwb-core/lib/nmgr_cmds"
     - "@decawave-uwb-core/sys/uwbcfg"   
     - "@apache-mynewt-core/boot/split"
-    - "@apache-mynewt-core/boot/bootutil"
+    - "@mcuboot/boot/bootutil"
     - "@apache-mynewt-core/kernel/os"
     - "@apache-mynewt-core/mgmt/imgmgr"
     - "@apache-mynewt-core/mgmt/newtmgr"
@@ -53,7 +53,7 @@ pkg.deps:
     - "@apache-mynewt-core/sys/log/modlog"
     
 pkg.cflags:
-    - "-std=gnu99"
+    - "-std=gnu11"
     - "-fms-extensions"
     - "-DNRF52"
     - "-Wno-strict-aliasing"

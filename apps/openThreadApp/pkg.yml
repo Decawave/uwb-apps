@@ -38,8 +38,11 @@ pkg.deps:
     - "@decawave-uwb-core/lib/openthread"
 
 pkg.cflags:
-    - "-std=gnu99"
+    - "-std=gnu11"
     - "-fms-extensions"
+    - "-DNRFX_CLOCK_ENABLED=1"
+    - "-DNRFX_CLOCK_CONFIG_IRQ_PRIORITY=1"
+    - "-DNRFX_CLOCK_CONFIG_LF_SRC=1"
     - "-DNRFX_RTC2_ENABLED=1"
     - "-DNRFX_RTC_MAXIMUM_LATENCY_US=2000"
     - "-DNRFX_RTC_DEFAULT_CONFIG_FREQUENCY=32768"

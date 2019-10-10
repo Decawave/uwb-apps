@@ -28,7 +28,7 @@
    Openthread is a mesh networking protocol based on the Thread specifications.
 More Information on the Openthread can be found here https://github.com/openthread/openthread.
 
-   In this project Openthread is ported on the mynewt supporting DWM1001 platfrom. This project uses the Openthread stack in the form of libraries which are built standalone and copied to the **mynewt-dw1000-core/lib/openthread/src/ot_prebuilt**. The various abstraction layers are written in the mynewt style to run OT on the DWM1001, the abstraction layers can be found in the **mynewt-dw1000-core/lib/openthread/src** and relative headers in **mynewt-dw1000-core/lib/openthread/include/openthread**.
+   In this project Openthread is ported on the mynewt supporting DWM1001 platfrom. This project uses the Openthread stack in the form of libraries which are built standalone and copied to the **udecawave-uwb-core/lib/openthread/src/ot_prebuilt**. The various abstraction layers are written in the mynewt style to run OT on the DWM1001, the abstraction layers can be found in the **decawave-uwb-core/lib/openthread/src** and relative headers in **decawave-uwb-core/lib/openthread/include/openthread**.
 This example application demonstrates a minimal OpenThread application that exposes the OpenThread configuration and management interfaces via a basic command-line interface.
 
 The steps below take you through the minimal steps required to ping one emulated Thread device from another emulated Thread device.
@@ -62,20 +62,20 @@ The static libraries of openthread stack can found in **output/nrf52840/lib/**
 2. Download the DW1000 Mynewt apps.
 
 ```no-highlight
-    git clone git@github.com:Decawave/mynewt-dw1000-apps.git
-    cd mynewt-dw1000-apps
+    git clone git@github.com:Decawave/uwb-apps.git decawave-uwb-apps
+    cd decawave-uwb-apps
     git checkout openthread
 ```
 
-3. Running the newt install command downloads the apache-mynewt-core, mynewt-dw1000-core, and mynewt-timescale-lib packages, these are dependent repos of the mynewt-dw1000-apps project and are automatically checked-out by the newt tools.
+3. Running the newt upgrade command downloads the apache-mynewt-core, decawave-uwb-core, and mynewt-timescale-lib packages, these are dependent repos of the decawave-uwb-apps project and are automatically checked-out by the newt tools.
 
 ```no-highlight
-    $ newt install -v
+    $ newt upgrade -v
 ```
 
 4. Copying the Openthread Libraries mynewt project.
    (This step is required only if any updates/changes done in the actual OT source code, as already standard ot libraries are available).
- Copy **libmbedcrypto.a  libopenthread-cli-ftd.a  libopenthread-diag.a  libopenthread-ftd.a   libopenthread-platform-utils.a** into **repos/mynewt-dw1000-core/lib/openthread/src/ot_prebuilt/**
+ Copy **libmbedcrypto.a  libopenthread-cli-ftd.a  libopenthread-diag.a  libopenthread-ftd.a   libopenthread-platform-utils.a** into **repos/decawave-uwb-core/lib/openthread/src/ot_prebuilt/**
 
 ## Erase the default flash image that shipped with the DWM1001.
 
@@ -106,12 +106,12 @@ $
 
 ### Build and load the bootloader applicaiton for the DWM1001 target.
 
-(executed from the mynewt-dw1000-app directory).
+(executed from the decawave-uwb-apps directory).
 
 ```no-highlight
 
 newt target create dwm1001_boot
-newt target set dwm1001_boot app=@apache-mynewt-core/apps/boot
+newt target set dwm1001_boot app=@mcuboot/boot/mynewt
 newt target set dwm1001_boot bsp=@decawave-uwb-core/hw/bsp/dwm1001
 newt target set dwm1001_boot build_profile=optimized
 newt build dwm1001_boot

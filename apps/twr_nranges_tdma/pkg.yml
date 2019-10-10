@@ -51,7 +51,7 @@ pkg.deps:
 
 
 pkg.cflags:
-    - "-std=gnu99"
+    - "-std=gnu11"
     - "-fms-extensions"
 
 pkg.lflags:

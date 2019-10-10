@@ -38,6 +38,6 @@ pkg.deps:
     - "@decawave-uwb-core/lib/uwb_lwip"
 
 pkg.cflags:
-    - "-std=gnu99"
+    - "-std=gnu11"
     - "-fms-extensions"
 

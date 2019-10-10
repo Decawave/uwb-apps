@@ -28,7 +28,7 @@ The DW1002 contains two instances of the DW1000 on a single board. The board is 
 
 ```no-highlight
 newt target create dwm1002_boot
-newt target set dwm1002_boot app=@apache-mynewt-core/apps/boot
+newt target set dwm1002_boot app=@mcuboot/boot/mynewt
 newt target set dwm1002_boot bsp=@decawave-uwb-core/hw/bsp/dwm1002
 newt target set dwm1002_boot build_profile=optimized 
 newt build dwm1002_boot
