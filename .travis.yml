@@ -37,23 +37,23 @@ matrix:
     - os: linux
       env:
         - TEST=BUILD_TARGETS
-        - VM_AMOUNT=4
+        - VM_AMOUNT=2
         - TARGET_SET=1
     - os: linux
       env:
         - TEST=BUILD_TARGETS
-        - VM_AMOUNT=4
+        - VM_AMOUNT=2
         - TARGET_SET=2
-    - os: linux
-      env:
-        - TEST=BUILD_TARGETS
-        - VM_AMOUNT=4
-        - TARGET_SET=3
-    - os: linux
-      env:
-        - TEST=BUILD_TARGETS
-        - VM_AMOUNT=4
-        - TARGET_SET=4
+#    - os: linux
+#      env:
+#        - TEST=BUILD_TARGETS
+#        - VM_AMOUNT=4
+#        - TARGET_SET=3
+#    - os: linux
+#      env:
+#        - TEST=BUILD_TARGETS
+#        - VM_AMOUNT=4
+#        - TARGET_SET=4
 
     # newt test all (Linux)
 #    - os: linux
