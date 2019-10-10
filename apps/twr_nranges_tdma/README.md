@@ -166,7 +166,7 @@ where role 1=anchor and 2=tag.
 
 newt target create dwm1002_nrng_slave_node
 newt target set dwm1002_nrng_slave_node app=apps/twr_nranges_tdma
-newt target set dwm1002_nrng_slave_node bsp=@mynewt-dw1000-core/hw/bsp/dwm1002
+newt target set dwm1002_nrng_slave_node bsp=@decawave-uwb-core/hw/bsp/dwm1002
 newt target set dwm1002_nrng_slave_node build_profile=debug
 newt target amend dwm1002_nrng_slave_node syscfg=DW1000_DEVICE_0=1:DW1000_DEVICE_1=1:USE_DBLBUFFER=0:CIR_ENABLED=1
 newt target amend dwm1002_nrng_slave_node syscfg=NRANGES_ANCHOR=1
