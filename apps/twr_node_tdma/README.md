@@ -29,7 +29,7 @@ Another advantege of wireless synchronization is the ability to turn-on transeiv
 
 ### Under-the-hood
 
-The decawave-uwb-core driver implements the MAC layers and exports a MAC extension interface for additional services. One such service is ranging (./lib/rng). The ranging services through the extension interface expose callback to various events within the ranging process. One such callback is the complete_cb which marks the successful completion of the range request. In these examples, we attach to the complete_cb and perform subsequent processing. The available callbacks are defined in the struct _dw1000_mac_interface_t which is defined in dw1000_dev.h
+The decawave-uwb-core driver implements the MAC layers and exports a MAC extension interface for additional services. One such service is ranging (./lib/rng). The ranging services through the extension interface expose callback to various events within the ranging process. One such callback is the complete_cb which marks the successful completion of the range request. In these examples, we attach to the complete_cb and perform subsequent processing. The available callbacks are defined in the struct uwb_mac_interface which is defined in uwb.h
 
 This example also illustrates the clock calibration packet (CCP) and time division multiple access (TDMA) services. Both of which also bind to the MAC interface. In a synchronous network, the CCP service establishes the metronome through superframes transmissions. All epochs are derived from these superframes. The TDMA service divides the superframe period into slots and schedules event about each slot. The transceiver controls the precise timing of all frames to the microsecond. The operating system loosely schedules an event in advance of the desired epoch and this event issues a delay_start request to the transceiver. This loose/tight timing relationship reduces the timing requirements on the OS and permits the dw1000 to operate at optimum efficiency.
 
@@ -93,7 +93,7 @@ newt target create dwm1002_twr_node_tdma
 newt target set dwm1002_twr_node_tdma app=apps/twr_node_tdma
 newt target set dwm1002_twr_node_tdma bsp=@decawave-uwb-core/hw/bsp/dwm1002
 newt target set dwm1002_twr_node_tdma build_profile=debug
-newt target amend dwm1002_twr_node_tdma syscfg=DW1000_DEVICE_0=1:DW1000_DEVICE_1=1:USE_DBLBUFFER=0:CIR_ENABLED=1:LOG_LEVEL=1:UWBCFG_DEF_ROLE='"0x1"'
+newt target amend dwm1002_twr_node_tdma syscfg=UWB_DEVICE_0=1:UWB_DEVICE_1=1:USE_DBLBUFFER=0:CIR_ENABLED=1:LOG_LEVEL=1:UWBCFG_DEF_ROLE='"0x1"'
 # Uncomment next line to use uart instead of rtt console
 #newt target amend dwm1002_twr_node_tdma syscfg=CONSOLE_UART=1:CONSOLE_RTT=0
 newt run dwm1002_twr_node_tdma 0
@@ -124,6 +124,33 @@ newt run dwm1003_twr_tag_tdma 0
 
 
 ```
+
+8. For PDOA on board with DW3000 module. 
+
+```no-highlight
+
+newt target create nucleo-f429zi_B0_twr_node_tdma
+newt target set nucleo-f429zi_B0_twr_node_tdma app=apps/twr_node_tdma
+newt target set nucleo-f429zi_B0_twr_node_tdma bsp=@decawave-uwb-core/hw/bsp/nucleo-f429zi_B0
+newt target set nucleo-f429zi_B0_twr_node_tdma build_profile=debug
+newt target amend nucleo-f429zi_B0_twr_node_tdma syscfg=UWB_DEVICE_0=1:USE_DBLBUFFER=0:LOG_LEVEL=1:UWBCFG_DEF_ROLE='"0x1"'
+# Uncomment next line to use uart instead of rtt console
+#newt target amend nucleo-f429zi_B0_twr_node_tdma syscfg=CONSOLE_UART=1:CONSOLE_RTT=0
+# Uncomment next line if the aoa angle appears inverted (Antenna facing other way)
+#newt target amend nucleo-f429zi_B0_twr_node_tdma syscfg=AOA_ANGLE_INVERT=1
+newt run nucleo-f429zi_B0_twr_node_tdma 0
+
+newt target create nucleo-f429zi_B0_twr_tag_tdma
+newt target set nucleo-f429zi_B0_twr_tag_tdma app=apps/twr_tag_tdma
+newt target set nucleo-f429zi_B0_twr_tag_tdma bsp=@decawave-uwb-core/hw/bsp/nucleo-f429zi_B0
+newt target set nucleo-f429zi_B0_twr_tag_tdma build_profile=debug
+# Uncomment next line to use uart instead of rtt console
+#newt target amend nucleo-f429zi_B0_twr_tag_tdma syscfg=CONSOLE_UART=1:CONSOLE_RTT=0
+newt run nucleo-f429zi_B0_twr_tag_tdma 0
+
+
+```
+
 
 ### Visualisation
 

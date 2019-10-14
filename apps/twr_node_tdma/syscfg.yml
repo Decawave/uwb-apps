@@ -26,3 +26,8 @@ syscfg.vals:
     LOG_NEWTMGR: 1
     CONFIG_NEWTMGR: 1
     CONFIG_FCB: 1
+
+syscfg.defs:
+    AOA_ANGLE_INVERT:
+        description: 'Set this to one if the aoa direction is inverted relative your board'
+        value: 0
