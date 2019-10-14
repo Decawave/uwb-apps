@@ -124,6 +124,11 @@ complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     struct uwb_rng_instance * rng = (struct uwb_rng_instance*)cbs->inst_ptr;
     twr_frame_t * frame = rng->frames[rng->idx_current];
     
+    if (inst->capabilities.single_receiver_pdoa) {
+        float pd = uwb_calc_pdoa(inst, inst->rxdiag);
+        g_angle.azimuth = cir_calc_aoa(pd, WAVELENGTH, ANTENNA_SEPERATION);
+    }
+
     frame->spherical.azimuth = g_angle.azimuth;
     frame->spherical.zenith = g_angle.zenith;
 
@@ -327,6 +332,7 @@ int main(int argc, char **argv){
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
     printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 
     printf("{\"device_id\"=\"%lX\"",udev->device_id);
+    printf(",\"role=\"%X\"",udev->role);
     printf(",\"panid=\"%X\"",udev->pan_id);
     printf(",\"addr\"=\"%X\"",udev->uid);
     printf(",\"part_id\"=\"%lX\"",(uint32_t)(udev->euid&0xffffffff));
