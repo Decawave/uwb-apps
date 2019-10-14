@@ -166,12 +166,10 @@ struct uwb_msg_hdr {
         };
     } diag[N_DW_INSTANCES];
 #endif
-#if MYNEWT_VAL(CIR_ENABLED)
 #ifdef MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
     float    pd[MYNEWT_VAL(PDOA_SPI_NUM_INSTANCES)-1];
 #else
     float    pd[1];
-#endif
 #endif
 };
 
@@ -286,8 +284,20 @@ process_rx_data_queue(struct os_event *ev)
                    (int)roundf(fabsf(ccor-ppm/1000000.0f)*1000000000.0f)
                 );
         }
-#if MYNEWT_VAL(CIR_ENABLED) && N_DW_INSTANCES > 1
         printf(",\"pd\":[");
+        if (udev->capabilities.single_receiver_pdoa) {
+            int j=0;
+            float pdoa = uwb_calc_pdoa(udev, &hdr->diag[j].diag);
+            if (isnan(pdoa)) {
+                /* Json can't handle Nan, but it can handle null */
+                printf("%snull", (j==0)?"":",");
+                continue;
+            }
+            printf((pdoa < 0)?"%s-%d.%03d":"%s%d.%03d",
+                   (j==0)?"":",",
+                   abs((int)pdoa), abs((int)(1000*(pdoa-(int)pdoa))));
+        }
+
         for(int j=0;j<n_instances-1;j++) {
             if (isnan(hdr->pd[j])) {
                 /* Json can't handle Nan, but it can handle null */
@@ -299,7 +309,6 @@ process_rx_data_queue(struct os_event *ev)
                    abs((int)hdr->pd[j]), abs((int)(1000*(hdr->pd[j]-(int)hdr->pd[j]))));
         }
         console_out(']');
-#endif // CIR_ENABLED
 
         printf(",\"dlen\":%d", hdr->dlen);
         printf(",\"d\":\"");
