@@ -41,7 +41,9 @@
 #include <uwb/uwb_ftypes.h>
 #include <uwb_rng/uwb_rng.h>
 #include <config/config.h>
+#if MYNEWT_VAL(UWBCFG_ENABLED)
 #include "uwbcfg/uwbcfg.h"
+#endif
 #include <uwb_transport/uwb_transport.h>
 
 #if MYNEWT_VAL(TDMA_ENABLED)
@@ -59,6 +61,7 @@
 #define DIAGMSG(s,u)
 #endif
 
+#if MYNEWT_VAL(UWBCFG_ENABLED)
 static bool uwb_config_updated = false;
 
 /**
@@ -85,6 +88,7 @@ uwb_config_updated_func()
     uwb_config_updated = true;
     return 0;
 }
+#endif
 
 /*! 
  * @fn slot_cb(struct dpl_event * ev)
@@ -112,30 +116,27 @@ slot_cb(struct dpl_event * ev)
     tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
     tdma_instance_t * tdma = slot->parent;
     struct uwb_ccp_instance *ccp = tdma->ccp;
-    struct uwb_dev *inst = tdma->dev_inst;
+   
     uint16_t idx = slot->idx;
     uwb_transport_instance_t * uwb_transport = (uwb_transport_instance_t *)slot->arg;
-    
     /* Avoid colliding with the ccp in case we've got out of sync */
     if (dpl_sem_get_count(&ccp->sem) == 0) {
         return;
     }
-
+#if MYNEWT_VAL(UWBCFG_ENABLED)
+    struct uwb_dev * inst = tdma->dev_inst;
     if (uwb_config_updated) {
         uwb_mac_config(inst, NULL);
         uwb_txrf_config(inst, &inst->config.txrf);
         uwb_config_updated = false;
         return;
     }
-    if(uwb_transport_dequeue_tx(uwb_transport, tdma_tx_slot_start(tdma, idx))){
-        uwb_transport_dequeue_tx(uwb_transport, 0);
-        uwb_transport_dequeue_tx(uwb_transport, 0);
-        uwb_transport_dequeue_tx(uwb_transport, 0);
-    }
-    else{
-        return;
-        uwb_transport_listen(uwb_transport, UWB_BLOCKING, tdma_rx_slot_start(tdma, idx), 
-                        tdma_rx_slot_start(tdma, idx+1) - MYNEWT_VAL(OS_LATENCY));
+#endif
+    if(uwb_transport_dequeue_tx(uwb_transport, 
+            tdma_tx_slot_start(tdma, idx), (tdma_tx_slot_start(tdma, idx+1) >> 16) - (MYNEWT_VAL(OS_LATENCY))) == true){
+    }else{
+        uwb_transport_listen(uwb_transport, UWB_BLOCKING, 
+            tdma_rx_slot_start(tdma, idx), (tdma_rx_slot_start(tdma, idx+1) >> 16) - MYNEWT_VAL(OS_LATENCY));
     }
 }
 
@@ -145,15 +146,17 @@ uwb_transport_cb(struct uwb_dev * inst, uint16_t uid, struct os_mbuf * mbuf){
     return true;
 }
 
-#if MYNEWT_VAL(UWB_TRANSPORT_ROLE) == 1
+#if MYNEWT_VAL(UWB_TRANSPORT_ROLE) == 1 
 static struct dpl_callout stream_callout;
 static void
-stream_timer(struct dpl_event *ev)
+stream_timer(struct dpl_event *ev) 
 {
+    dpl_callout_reset(&stream_callout, OS_TICKS_PER_SEC/64);
+
     uwb_transport_instance_t * uwb_transport = (uwb_transport_instance_t *)dpl_event_get_arg(ev);
     struct uwb_ccp_instance * ccp = (struct uwb_ccp_instance *)uwb_mac_find_cb_inst_ptr(uwb_transport->dev_inst, UWBEXT_CCP);
 
-    for (uint8_t i =0; i < 7; i++){
+    for (uint8_t i = 0; i < 16; i++){
         uint16_t destination_uid = ccp->frames[0]->short_address;  
         struct os_mbuf * mbuf;
         if (uwb_transport->config.os_msys_mpool){
@@ -165,14 +168,14 @@ stream_timer(struct dpl_event *ev)
         if (mbuf){
             os_mbuf_copyinto(mbuf, 0, &test, sizeof(test));
             uwb_transport_enqueue_tx(uwb_transport, destination_uid, 0xDEAD, mbuf);
-            uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
-            printf("{\"utime\": %lu,\"success\": \"%s:%d\"}\n",utime,__FILE__,__LINE__); 
+            //uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
+            //printf("{\"utime\": %lu,\"success\": \"%s:%d\"}\n",utime,__FILE__,__LINE__); 
         }else{
-            uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
-            printf("{\"utime\": %lu,\"sys_mpool full\": \"%s:%d\"}\n",utime,__FILE__,__LINE__); 
+  //          uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
+  //          printf("{\"utime\": %lu,\"sys_mpool full\": \"%s:%d\"}\n",utime,__FILE__,__LINE__); 
+            break;
         }
     }
-    dpl_callout_reset(&stream_callout, OS_TICKS_PER_SEC/60);
 }
 #endif
 
@@ -181,6 +184,7 @@ int main(int argc, char **argv){
     int rc;
 
     sysinit();
+#if MYNEWT_VAL(UWBCFG_ENABLED)
     /* Register callback for UWB configuration changes */
     struct uwbcfg_cbs uwb_cb = {
         .uc_update = uwb_config_updated_func
@@ -188,7 +192,7 @@ int main(int argc, char **argv){
     uwbcfg_register(&uwb_cb);
     /* Load config from flash */
     conf_load();
-    
+#endif
     hal_gpio_init_out(LED_BLINK_PIN, 1);
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
@@ -220,7 +224,7 @@ int main(int argc, char **argv){
     ble_init(udev->euid);
 #endif
 
-#if  MYNEWT_VAL(UWB_DEVICE_0)
+#if  MYNEWT_VAL(UWB_DEVICE_0) 
     // Using GPIO5 and GPIO6 to study timing.
     dw1000_gpio5_config_ext_txe( hal_dw1000_inst(0));
     dw1000_gpio6_config_ext_rxe( hal_dw1000_inst(0));
@@ -240,8 +244,8 @@ int main(int argc, char **argv){
     tdma_instance_t * tdma = (tdma_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_TDMA);
     assert(tdma);
 
-    /* Slot 0:ccp, 1+ twr */
-    for (uint16_t i = 1; i < MYNEWT_VAL(TDMA_NSLOTS); i++)
+    /* Slot 0:ccp, 1-160 stream */
+    for (uint16_t i = 1; i < MYNEWT_VAL(TDMA_NSLOTS) - 1; i++)
         tdma_assign_slot(tdma, slot_cb,  i, (void*)uwb_transport);
 
 #if MYNEWT_VAL(UWB_TRANSPORT_ROLE) == 1

@@ -43,9 +43,9 @@ pkg.deps:
     - "@decawave-uwb-core/lib/twr_ss_ext"
     - "@decawave-uwb-core/lib/twr_ds"
     - "@decawave-uwb-core/lib/twr_ds_ext"
-    - "@decawave-uwb-core/sys/uwbcfg"   
+#    - "@decawave-uwb-core/sys/uwbcfg"   
     - "@apache-mynewt-core/boot/split"
-    - "@apache-mynewt-core/boot/bootutil"
+    - "@mcuboot/boot/bootutil"
     - "@apache-mynewt-core/kernel/os"
     - "@apache-mynewt-core/mgmt/imgmgr"
     - "@apache-mynewt-core/mgmt/newtmgr"
@@ -56,7 +56,7 @@ pkg.deps.BLE_ENABLED:
     - "@decawave-uwb-apps/lib/bleprph"
 
 pkg.cflags:
-    - "-std=gnu99"
+    - "-std=gnu11"
     - "-fms-extensions"
     - "-Wno-strict-aliasing"
 

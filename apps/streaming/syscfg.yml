@@ -34,5 +34,5 @@ syscfg.defs:
         value: 1
     BLE_ENABLED:
         description: 'Activate BLE'
-        value: 1
+        value: 0
 
