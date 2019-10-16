@@ -128,8 +128,11 @@ complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
         float pd = uwb_calc_pdoa(inst, inst->rxdiag);
         g_angle.azimuth = cir_calc_aoa(pd, WAVELENGTH, ANTENNA_SEPERATION);
     }
-
+#if MYNEWT_VAL(AOA_ANGLE_INVERT)
+    frame->spherical.azimuth = -g_angle.azimuth;
+#else
     frame->spherical.azimuth = g_angle.azimuth;
+#endif
     frame->spherical.zenith = g_angle.zenith;
 
     dpl_eventq_put(dpl_eventq_dflt_get(), &slot_event);
