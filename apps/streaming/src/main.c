@@ -151,7 +151,7 @@ static struct dpl_callout stream_callout;
 static void
 stream_timer(struct dpl_event *ev) 
 {
-    dpl_callout_reset(&stream_callout, OS_TICKS_PER_SEC/64);
+    dpl_callout_reset(&stream_callout, OS_TICKS_PER_SEC/60);
 
     uwb_transport_instance_t * uwb_transport = (uwb_transport_instance_t *)dpl_event_get_arg(ev);
     struct uwb_ccp_instance * ccp = (struct uwb_ccp_instance *)uwb_mac_find_cb_inst_ptr(uwb_transport->dev_inst, UWBEXT_CCP);
@@ -184,6 +184,7 @@ int main(int argc, char **argv){
     int rc;
 
     sysinit();
+
 #if MYNEWT_VAL(UWBCFG_ENABLED)
     /* Register callback for UWB configuration changes */
     struct uwbcfg_cbs uwb_cb = {
@@ -193,12 +194,24 @@ int main(int argc, char **argv){
     /* Load config from flash */
     conf_load();
 #endif
+
     hal_gpio_init_out(LED_BLINK_PIN, 1);
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
 
     struct uwb_dev * udev = uwb_dev_idx_lookup(0);
-    uwb_set_dblrxbuff(udev, false);
+
+#if MYNEWT_VAL(USE_DBLBUFFER)
+        /* Make sure to enable double buffring */
+        udev->config.dblbuffon_enabled = 1;
+        udev->config.rxauto_enable = 0;
+        uwb_set_dblrxbuff(udev, true);
+#else
+        udev->config.dblbuffon_enabled = 0;
+        udev->config.rxauto_enable = 1;
+        uwb_set_dblrxbuff(udev, false);
+#endif
+
     struct _uwb_transport_instance * uwb_transport = (struct _uwb_transport_instance *)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_TRANSPORT);
     assert(uwb_transport);
 

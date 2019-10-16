@@ -27,6 +27,7 @@ syscfg.vals:
     CONFIG_NEWTMGR: 1
     CONFIG_FCB: 1
     DW1000_RXTX_GPIO: 1
+    
 
 syscfg.defs:
     UWB_TRANSPORT_ROLE:
@@ -35,4 +36,9 @@ syscfg.defs:
     BLE_ENABLED:
         description: 'Activate BLE'
         value: 0
+    USE_DBLBUFFER:
+        description: 'Enable doublebuffer or not'
+        value: 0
+        restrictions:
+          - '!CIR_ENABLED'
 
