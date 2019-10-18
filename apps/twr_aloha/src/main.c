@@ -43,6 +43,9 @@
 #ifndef DIAGMSG
 #define DIAGMSG(s,u)
 #endif
+#if MYNEWT_VAL(CIR_ENABLED)
+#include <cir/cir.h>
+#endif
 
 static void slot_complete_cb(struct dpl_event *ev);
 
@@ -70,6 +73,9 @@ static struct dpl_event slot_event = {0};
 static struct os_callout tx_callout;
 static uint16_t g_idx_latest;
 
+#define ANTENNA_SEPERATION 0.0205f
+#define WAVELENGTH 0.046f
+
 static bool
 complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 {
@@ -78,10 +84,16 @@ complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     }
     struct uwb_rng_instance * rng = (struct uwb_rng_instance*)cbs->inst_ptr;
     g_idx_latest = (rng->idx)%rng->nframes; // Store valid frame pointer
-    if (!dpl_event_is_queued(&slot_event)) {
-        dpl_event_init(&slot_event, slot_complete_cb, rng);
-        dpl_eventq_put(dpl_eventq_dflt_get(), &slot_event);
+    twr_frame_t * frame = rng->frames[rng->idx_current];
+
+    if (inst->capabilities.single_receiver_pdoa) {
+#if MYNEWT_VAL(CIR_ENABLED)
+        float pd = uwb_calc_pdoa(inst, inst->rxdiag);
+        frame->spherical.azimuth = cir_calc_aoa(pd, WAVELENGTH, ANTENNA_SEPERATION);
+#endif
     }
+
+    dpl_eventq_put(dpl_eventq_dflt_get(), &slot_event);
     return true;
 }
 
@@ -216,6 +228,8 @@ int main(int argc, char **argv){
     os_callout_init(&tx_callout, os_eventq_dflt_get(), uwb_ev_cb, rng);
     os_callout_reset(&tx_callout, OS_TICKS_PER_SEC/25);
 
+    dpl_event_init(&slot_event, slot_complete_cb, rng);
+    
     if ((udev->role&UWB_ROLE_ANCHOR)) {
         udev->my_short_address = MYNEWT_VAL(ANCHOR_ADDRESS);
     }

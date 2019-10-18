@@ -121,3 +121,14 @@ to use the double sided two way ranging change the pkg.yml as below:
     - "@apache-mynewt-core/boot/split"
 
 ```
+
+## Using DW3000_B0 as a tag
+
+```no-highlight
+newt target create nucleo-f429zi_B0_twr_aloha_tag
+newt target set nucleo-f429zi_B0_twr_aloha_tag app=apps/twr_aloha
+newt target set nucleo-f429zi_B0_twr_aloha_tag bsp=@decawave-uwb-core/hw/bsp/nucleo-f429zi_B0
+newt target set nucleo-f429zi_B0_twr_aloha_tag build_profile=debug
+newt target amend nucleo-f429zi_B0_twr_aloha_tag syscfg=TWR_DS_EXT_RX_TIMEOUT=0x40:TWR_SS_RX_TIMEOUT=0x40:BLE_ENABLED=0:CONSOLE_UART=1:CONSOLE_RTT=0
+newt run nucleo-f429zi_B0_twr_aloha_tag 0
+```
