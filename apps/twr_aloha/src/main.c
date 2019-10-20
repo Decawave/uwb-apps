@@ -84,10 +84,10 @@ complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     }
     struct uwb_rng_instance * rng = (struct uwb_rng_instance*)cbs->inst_ptr;
     g_idx_latest = (rng->idx)%rng->nframes; // Store valid frame pointer
-    twr_frame_t * frame = rng->frames[rng->idx_current];
 
     if (inst->capabilities.single_receiver_pdoa) {
 #if MYNEWT_VAL(CIR_ENABLED)
+        twr_frame_t * frame = rng->frames[rng->idx_current];
         float pd = uwb_calc_pdoa(inst, inst->rxdiag);
         frame->spherical.azimuth = cir_calc_aoa(pd, WAVELENGTH, ANTENNA_SEPERATION);
 #endif
