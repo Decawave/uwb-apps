@@ -19,7 +19,7 @@
 
 pkg.name: apps/twr_nranges_tdma
 pkg.type: app
-pkg.description: "Basic reverse superres anchor/tag node"
+pkg.description: "Basic nranges anchor/tag app"
 pkg.author: "Paul Kettle <paul.kettle@decawave.com>"
 pkg.homepage: "http://www.decawave.com/"
 pkg.keywords:
@@ -47,6 +47,7 @@ pkg.deps:
     - "@decawave-uwb-core/lib/nmgr_uwb"
     - "@decawave-uwb-core/mgmt/bcast_ota"
     - "@decawave-uwb-core/lib/panmaster"
+    - "@mcuboot/boot/bootutil"
 #    - "@decawave-uwb-apps/lib/bleprph"
 
 
