@@ -26,7 +26,7 @@
 
 The streaming example makes use of the UWB transport layer for stream data. The application uses a timer callback to enqueue packets into a memory queue asynchronously. The timer callback is called 60 times a second and attempts to enqueue 16 packets. The UWB transport is a synchronous transport scheme that makes use of the TMDA service to dequeue packets, encapsulates them in a frame header, and writes them to the tx_buffer. The TDMA scheme in this example consists of 160 slots. Within each slot, the UWB transport dequeue as many frames as the underlying transport can accommodate. The throughput depends on the data rate of the transceiver and the SPI clock frequency.
 
-In this example 60fps x 16(buffer) x 512 (sizeof(buffer)) x 8 (bits) = 3.9Mbps are written from the Tag to the ClockMaster Node. For the uwb transport this is 160fps x 5 (frames) x 512 x  8(bits) = 3.9Mbps. The default datarate is 6.8Mbps with an 8MHz SPI clock.
+In this example 60fps x 16(buffer) x 512 (sizeof(buffer)) x 8 (bits) = 3.9Mbps are written from the Tag to the ClockMaster Node. For the uwb transport this is 160fps x 6 (frames) x 512 x  8(bits) = 3.9Mbps. The default datarate is 6.8Mbps with an 8MHz SPI clock.
 
 The uwb transport layer coexists with other upper-mac layer services. The application layer handles the coexistence by defining how the TDMA slots are allocated. For example, by allocating every 16th slot to a nrng_request, it is possible to range to 16-nodes at 10Hz while streaming in the remaining slots. 
 
@@ -34,7 +34,7 @@ The uwb transport layer coexists with other upper-mac layer services. The applic
 
 1. Flash tx/rx_stream apps 
 
-In this example the tx_stream streams transmits a buffer at 3.9Mbps to the rx_stream. The rx_stream is the designated clock master. The example also enables bleprph package so stats information can be view through AdaFruit Mynewt Manager App. 
+In this example the tx_stream streams transmits a buffer at 3.9Mbps to the rx_stream. The rx_stream is the designated clock master. The example also enables bleprph package so stats information can be view through AdaFruit Mynewt Manager App or in the CLI.
 
 
 ```no-highlight
@@ -45,7 +45,7 @@ newt target set tx_stream bsp=@decawave-uwb-core/hw/bsp/dwm1001
 newt target set tx_stream build_profile=debug
 # Uncomment next line to use uart instead of rtt console
 #newt target amend tx_stream syscfg=CONSOLE_UART_BAUD=460800:CONSOLE_UART=1:CONSOLE_RTT=0
-newt target amend tx_stream syscfg=UWB_TRANSPORT_ROLE=1:OS_LATENCY=1400
+newt target amend tx_stream syscfg=UWB_TRANSPORT_ROLE=1:OS_LATENCY=1400:CONSOLE_UART_BAUD=115200:CONSOLE_UART=1:CONSOLE_RTT=0
 newt run tx_stream 0
 
 #newt target set tx_stream bsp=@decawave-uwb-core/hw/bsp/dwm1002
@@ -57,8 +57,7 @@ newt target set rx_stream bsp=@decawave-uwb-core/hw/bsp/dwm1001
 newt target set rx_stream build_profile=debug
 # Uncomment next line to use uart instead of rtt console
 #newt target amend rx_stream syscfg=CONSOLE_UART_BAUD=460800:CONSOLE_UART=1:CONSOLE_RTT=0
-newt target amend rx_stream syscfg=UWB_TRANSPORT_ROLE=0:OS_LATENCY=1400:USE_DBLBUFFER=1
+newt target amend rx_stream syscfg=UWB_TRANSPORT_ROLE=0:OS_LATENCY=1400:USE_DBLBUFFER=1:CONSOLE_UART_BAUD=115200:CONSOLE_UART=1:CONSOLE_RTT=0
 newt run rx_stream 0
 
 ```
-

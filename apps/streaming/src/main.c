@@ -45,7 +45,6 @@
 #include "uwbcfg/uwbcfg.h"
 #endif
 #include <uwb_transport/uwb_transport.h>
-
 #if MYNEWT_VAL(TDMA_ENABLED)
 #include <tdma/tdma.h>
 #endif
@@ -54,7 +53,9 @@
 #endif
 #include <dw1000/dw1000_gpio.h>
 #include <dw1000/dw1000_hal.h>
-
+#if MYNEWT_VAL(CONCURRENT_NRNG)
+#include <nrng/nrng.h>
+#endif
 
 //#define DIAGMSG(s,u) printf(s,u)
 #ifndef DIAGMSG
@@ -90,6 +91,60 @@ uwb_config_updated_func()
 }
 #endif
 
+#if MYNEWT_VAL(CONCURRENT_NRNG)
+
+static void 
+range_slot_cb(struct dpl_event * ev){
+    assert(ev);
+
+    tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
+    tdma_instance_t * tdma = slot->parent;
+    struct uwb_ccp_instance *ccp = tdma->ccp;
+    struct uwb_dev * udev = tdma->dev_inst;
+    uint16_t idx = slot->idx;
+    struct nrng_instance *nrng = (struct nrng_instance *)slot->arg;
+
+    /* Avoid colliding with the ccp in case we've got out of sync */
+    if (dpl_sem_get_count(&ccp->sem) == 0) {
+        return;
+    }
+
+    if (ccp->local_epoch==0 || udev->slot_id == 0xffff) return;
+
+    if (udev->role&UWB_ROLE_ANCHOR) {
+        /* Listen for a ranging tag */
+        uwb_set_delay_start(udev, tdma_rx_slot_start(tdma, idx));
+        uint16_t timeout = uwb_phy_frame_duration(udev, sizeof(nrng_request_frame_t))
+            + nrng->config.rx_timeout_delay;
+
+        /* Padded timeout to allow us to receive any nmgr packets too */
+        uwb_set_rx_timeout(udev, timeout + 0x1000);
+        nrng_listen(nrng, UWB_BLOCKING);
+    } else {
+        /* Range with the anchors */
+        if (idx%MYNEWT_VAL(NRNG_NTAGS) != udev->slot_id) {
+            return;
+        }
+
+        /* Range with the anchors */
+        uint64_t dx_time = tdma_tx_slot_start(tdma, idx) & 0xFFFFFFFFFE00UL;
+        uint32_t slot_mask = 0;
+        for (uint16_t i = MYNEWT_VAL(NODE_START_SLOT_ID);
+             i <= MYNEWT_VAL(NODE_END_SLOT_ID); i++) {
+            slot_mask |= 1UL << i;
+        }
+
+        if(nrng_request_delay_start(
+               nrng, UWB_BROADCAST_ADDRESS, dx_time,
+               DWT_SS_TWR_NRNG, slot_mask, 0).start_tx_error) {
+            uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
+            printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\"}\n",
+                   utime,idx);
+        }
+    }
+}
+#endif
+
 /*! 
  * @fn slot_cb(struct dpl_event * ev)
  * 
@@ -110,7 +165,7 @@ uwb_config_updated_func()
    
 uint8_t test[512 - sizeof(uwb_transport_frame_header_t) - 2]; 
 static void 
-slot_cb(struct dpl_event * ev)
+stream_slot_cb(struct dpl_event * ev)
 {
     assert(ev);
     tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
@@ -141,8 +196,8 @@ slot_cb(struct dpl_event * ev)
 }
 
 static bool 
-uwb_transport_cb(struct uwb_dev * inst, uint16_t uid, struct os_mbuf * mbuf){
-    os_mbuf_free_chain(mbuf);
+uwb_transport_cb(struct uwb_dev * inst, uint16_t uid, struct dpl_mbuf * mbuf){
+    dpl_mbuf_free_chain(mbuf);
     return true;
 }
 
@@ -156,17 +211,17 @@ stream_timer(struct dpl_event *ev)
     uwb_transport_instance_t * uwb_transport = (uwb_transport_instance_t *)dpl_event_get_arg(ev);
     struct uwb_ccp_instance * ccp = (struct uwb_ccp_instance *)uwb_mac_find_cb_inst_ptr(uwb_transport->dev_inst, UWBEXT_CCP);
 
-    for (uint8_t i = 0; i < 16; i++){
+    for (uint8_t i = 0; i < 18; i++){
         uint16_t destination_uid = ccp->frames[0]->short_address;  
-        struct os_mbuf * mbuf;
+        struct dpl_mbuf * mbuf;
         if (uwb_transport->config.os_msys_mpool){
-            mbuf = os_msys_get_pkthdr(sizeof(test), sizeof(uwb_transport_user_header_t));
+            mbuf = dpl_msys_get_pkthdr(sizeof(test), sizeof(uwb_transport_user_header_t));
         }
         else{                           
-            mbuf = os_mbuf_get_pkthdr(uwb_transport->omp, sizeof(uwb_transport_user_header_t));
+            mbuf = dpl_mbuf_get_pkthdr(uwb_transport->omp, sizeof(uwb_transport_user_header_t));
         }    
         if (mbuf){
-            os_mbuf_copyinto(mbuf, 0, &test, sizeof(test));
+            dpl_mbuf_copyinto(mbuf, 0, &test, sizeof(test));
             uwb_transport_enqueue_tx(uwb_transport, destination_uid, 0xDEAD, mbuf);
             //uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
             //printf("{\"utime\": %lu,\"success\": \"%s:%d\"}\n",utime,__FILE__,__LINE__); 
@@ -178,6 +233,8 @@ stream_timer(struct dpl_event *ev)
     }
 }
 #endif
+
+
 
 
 int main(int argc, char **argv){
@@ -257,9 +314,21 @@ int main(int argc, char **argv){
     tdma_instance_t * tdma = (tdma_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_TDMA);
     assert(tdma);
 
+#if MYNEWT_VAL(CONCURRENT_NRNG)
+    struct nrng_instance * nrng = (struct nrng_instance *)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_NRNG);
+    assert(nrng);
     /* Slot 0:ccp, 1-160 stream */
+    for (uint16_t i = 1; i < MYNEWT_VAL(TDMA_NSLOTS) - 1; i++){
+        if(i%16)
+            tdma_assign_slot(tdma, range_slot_cb,  i, (void*)nrng);
+        else
+            tdma_assign_slot(tdma, stream_slot_cb,  i, (void*)uwb_transport);
+    }
+#else
+/* Slot 0:ccp, 1-160 stream */
     for (uint16_t i = 1; i < MYNEWT_VAL(TDMA_NSLOTS) - 1; i++)
-        tdma_assign_slot(tdma, slot_cb,  i, (void*)uwb_transport);
+            tdma_assign_slot(tdma, stream_slot_cb,  i, (void*)uwb_transport);
+#endif
 
 #if MYNEWT_VAL(UWB_TRANSPORT_ROLE) == 1
     for (uint16_t i=0; i < sizeof(test); i++) 

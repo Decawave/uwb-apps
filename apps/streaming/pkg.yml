@@ -23,7 +23,6 @@ pkg.description: "Basic reverse superres anchor node"
 pkg.author: "Paul Kettle <paul.kettle@decawave.com>"
 pkg.homepage: "http://www.decawave.com/"
 pkg.keywords:
-  - dw1000
 
 pkg.deps:
     - "@decawave-uwb-core/lib/uwb_transport"   
@@ -38,11 +37,13 @@ pkg.deps:
     - "@decawave-uwb-core/lib/uwb_ccp"
     - "@decawave-uwb-core/lib/uwb_wcs"
     - "@mynewt-timescale-lib/lib/timescale"
-    - "@decawave-uwb-core/lib/twr_ss"
-    - "@decawave-uwb-core/lib/twr_ss_ext"
-    - "@decawave-uwb-core/lib/twr_ds"
-    - "@decawave-uwb-core/lib/twr_ds_ext"
-#    - "@decawave-uwb-core/sys/uwbcfg"   
+#    - "@decawave-uwb-core/lib/twr_ss"
+#    - "@decawave-uwb-core/lib/twr_ss_ext"
+#    - "@decawave-uwb-core/lib/twr_ds"
+#    - "@decawave-uwb-core/lib/twr_ds_ext"
+    - "@decawave-uwb-core/porting/dpl_lib"
+    - "@decawave-uwb-core/lib/twr_ss_nrng"
+    - "@decawave-uwb-core/sys/uwbcfg"   
     - "@apache-mynewt-core/boot/split"
     - "@mcuboot/boot/bootutil"
     - "@apache-mynewt-core/kernel/os"

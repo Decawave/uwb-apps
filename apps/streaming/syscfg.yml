@@ -27,6 +27,7 @@ syscfg.vals:
     CONFIG_NEWTMGR: 1
     CONFIG_FCB: 1
     DW1000_RXTX_GPIO: 1
+    UWB_TRANSPORT_SUBSLOT_GUARD: 200
     
 
 syscfg.defs:
@@ -41,4 +42,19 @@ syscfg.defs:
         value: 0
         restrictions:
           - '!CIR_ENABLED'
+    CONCURRENT_NRNG:
+        description: 'NRNG while streaming'
+        value: 0
+    NRANGES_ANCHOR:
+        description: 'Act as slave-anchor in the network'
+        value: 0
+    NODE_START_SLOT_ID:
+        description: >
+            Slot ID from which the nodes should respond
+        value: 0
+    NODE_END_SLOT_ID:
+        description: >
+            Slot ID till which the nodes should respond
+        value: 7
+
 
