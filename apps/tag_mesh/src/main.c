@@ -92,9 +92,9 @@ slot_cb(struct dpl_event *ev){
     uint16_t node_address = ccp->frames[0]->short_address;
 
     /* Select single-sided or double sided twr every second slot */    
-    int mode = DWT_DS_TWR_EXT;
+    int mode = UWB_DATA_CODE_DS_TWR_EXT;
     //if (slot->idx%2==0) {
-    //mode = DWT_SS_TWR_EXT;
+    //mode = UWB_DATA_CODE_SS_TWR_EXT;
         //}
     uwb_rng_request_delay_start(rng, node_address, dx_time, mode);
 }
