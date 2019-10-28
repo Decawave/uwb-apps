@@ -102,8 +102,8 @@ static void nrng_complete_cb(struct dpl_event *ev) {
     if (inst->status.rx_timeout_error)
         printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_timeout_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
 #endif
-    if (frame->code == DWT_DS_TWR_NRNG_FINAL || frame->code == DWT_DS_TWR_NRNG_EXT_FINAL){
-        frame->code = DWT_DS_TWR_NRNG_END;
+    if (frame->code == DWT_SS_TWR_NRNG_FINAL || frame->code == DWT_SS_TWR_NRNG_EXT_FINAL){
+        frame->code = DWT_SS_TWR_NRNG_END;
     }
 }
 
