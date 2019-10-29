@@ -57,10 +57,14 @@
 #include <nrng/nrng.h>
 #endif
 
+#include <crc/crc8.h>
+
 //#define DIAGMSG(s,u) printf(s,u)
 #ifndef DIAGMSG
 #define DIAGMSG(s,u)
 #endif
+
+uint8_t test[512 - sizeof(uwb_transport_frame_header_t) - 2]; 
 
 #if MYNEWT_VAL(UWBCFG_ENABLED)
 static bool uwb_config_updated = false;
@@ -163,7 +167,6 @@ range_slot_cb(struct dpl_event * ev){
  * returns none 
  */
    
-uint8_t test[512 - sizeof(uwb_transport_frame_header_t) - 2]; 
 static void 
 stream_slot_cb(struct dpl_event * ev)
 {
@@ -195,9 +198,17 @@ stream_slot_cb(struct dpl_event * ev)
     }
 }
 
+static uint16_t g_crc8;
 static bool 
 uwb_transport_cb(struct uwb_dev * inst, uint16_t uid, struct dpl_mbuf * mbuf){
+
+    uint16_t len = DPL_MBUF_PKTLEN(mbuf);
+    dpl_mbuf_copydata(mbuf, 0, sizeof(test), test);
     dpl_mbuf_free_chain(mbuf);
+    if (g_crc8 != crc8_calc(0, test, sizeof(test))){
+        uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
+        printf("{\"utime\": %lu,\"error\": \" crc mismatch len=%d, sizeof(test) = %d\"}\n",utime, len, sizeof(test));
+    }
     return true;
 }
 
@@ -206,7 +217,7 @@ static struct dpl_callout stream_callout;
 static void
 stream_timer(struct dpl_event *ev) 
 {
-    dpl_callout_reset(&stream_callout, OS_TICKS_PER_SEC/60);
+    dpl_callout_reset(&stream_callout, OS_TICKS_PER_SEC/80);
 
     uwb_transport_instance_t * uwb_transport = (uwb_transport_instance_t *)dpl_event_get_arg(ev);
     struct uwb_ccp_instance * ccp = (struct uwb_ccp_instance *)uwb_mac_find_cb_inst_ptr(uwb_transport->dev_inst, UWBEXT_CCP);
@@ -221,13 +232,9 @@ stream_timer(struct dpl_event *ev)
             mbuf = dpl_mbuf_get_pkthdr(uwb_transport->omp, sizeof(uwb_transport_user_header_t));
         }    
         if (mbuf){
-            dpl_mbuf_copyinto(mbuf, 0, &test, sizeof(test));
+            dpl_mbuf_copyinto(mbuf, 0, test, sizeof(test));
             uwb_transport_enqueue_tx(uwb_transport, destination_uid, 0xDEAD, mbuf);
-            //uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
-            //printf("{\"utime\": %lu,\"success\": \"%s:%d\"}\n",utime,__FILE__,__LINE__); 
         }else{
-  //          uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
-  //          printf("{\"utime\": %lu,\"sys_mpool full\": \"%s:%d\"}\n",utime,__FILE__,__LINE__); 
             break;
         }
     }
@@ -330,9 +337,10 @@ int main(int argc, char **argv){
             tdma_assign_slot(tdma, stream_slot_cb,  i, (void*)uwb_transport);
 #endif
 
-#if MYNEWT_VAL(UWB_TRANSPORT_ROLE) == 1
     for (uint16_t i=0; i < sizeof(test); i++) 
         test[i] = i;
+    g_crc8 = crc8_calc(0, test, sizeof(test));
+#if MYNEWT_VAL(UWB_TRANSPORT_ROLE) == 1
     dpl_callout_init(&stream_callout, dpl_eventq_dflt_get(), stream_timer, uwb_transport);
     dpl_callout_reset(&stream_callout, DPL_TICKS_PER_SEC);
 #endif

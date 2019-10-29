@@ -51,6 +51,7 @@ pkg.deps:
     - "@apache-mynewt-core/mgmt/newtmgr"
     - "@apache-mynewt-core/mgmt/newtmgr/transport/nmgr_shell"
     - "@apache-mynewt-core/sys/log/full"
+    - "@apache-mynewt-core/util/crc"
 
 pkg.deps.BLE_ENABLED:
     - "@decawave-uwb-apps/lib/bleprph"
