@@ -150,6 +150,45 @@ newt target amend nucleo-f429zi_B0_twr_tag_tdma syscfg=UWBCFG_DEF_RX_CIPHER_MODE
 #newt target amend nucleo-f429zi_B0_twr_tag_tdma syscfg=CONSOLE_UART=1:CONSOLE_RTT=0
 newt run nucleo-f429zi_B0_twr_tag_tdma 0
 
+minicom -D /dev/tty.usbmodem14403 -b 115200
+
+```
+
+9. For non-PDOA on board with DW3000 on nRF52. 
+
+```no-highlight
+
+newt target create pca10056_dw3000_B0_boot
+newt target set pca10056_dw3000_B0_boot app=@mcuboot/boot/mynewt
+newt target set pca10056_dw3000_B0_boot bsp=@decawave-uwb-core/hw/bsp/pca10056_dw3000_B0
+newt target set pca10056_dw3000_B0_boot build_profile=optimized 
+newt build pca10056_dw3000_B0_boot
+newt load pca10056_dw3000_B0_boot
+
+
+newt target create pca10056_dw3000_B0_twr_node_tdma
+newt target set pca10056_dw3000_B0_twr_node_tdma app=apps/twr_node_tdma
+newt target set pca10056_dw3000_B0_twr_node_tdma bsp=@decawave-uwb-core/hw/bsp/pca10056_dw3000_B0
+newt target set pca10056_dw3000_B0_twr_node_tdma build_profile=debug
+newt target amend pca10056_dw3000_B0_twr_node_tdma syscfg=UWB_DEVICE_0=1:USE_DBLBUFFER=0:LOG_LEVEL=1:UWBCFG_DEF_ROLE='"0x1"'
+#newt target amend pca10056_dw3000_B0_twr_node_tdma syscfg=UWBCFG_DEF_RX_PDOA_MODE='"3"':UWBCFG_DEF_RX_CIPHER_MODE='"1sdc"':UWBCFG_DEF_TX_PREAM_LEN='"64"':UWBCFG_DEF_RX_SFD_MODE='"1"':TWR_DS_EXT_RX_TIMEOUT=0x40
+# Uncomment next line to use uart instead of rtt console
+newt target amend pca10056_dw3000_B0_twr_node_tdma syscfg=CONSOLE_UART_BAUD=115200:CONSOLE_UART=1:CONSOLE_RTT=0
+# Uncomment next line if the aoa angle appears inverted (Antenna facing other way)
+#newt target amend pca10056_dw3000_B0_twr_node_tdma syscfg=AOA_ANGLE_INVERT=1
+newt run pca10056_dw3000_B0_twr_node_tdma 0
+
+newt target create pca10056_dw3000_B0_twr_tag_tdma
+newt target set pca10056_dw3000_B0_twr_tag_tdma app=apps/twr_tag_tdma
+newt target set pca10056_dw3000_B0_twr_tag_tdma bsp=@decawave-uwb-core/hw/bsp/pca10056_dw3000_B0
+newt target set pca10056_dw3000_B0_twr_tag_tdma build_profile=debug
+#newt target amend pca10056_dw3000_B0_twr_tag_tdma syscfg=UWBCFG_DEF_RX_CIPHER_MODE='"1sdc"':UWBCFG_DEF_TX_PREAM_LEN='"64"':UWBCFG_DEF_RX_SFD_MODE='"1"':TWR_DS_EXT_RX_TIMEOUT=0x40
+# Uncomment next line to use uart instead of rtt console
+newt target amend pca10056_dw3000_B0_twr_tag_tdma syscfg=CONSOLE_UART_BAUD=115200:CONSOLE_UART=1:CONSOLE_RTT=0
+newt run pca10056_dw3000_B0_twr_tag_tdma 0
+
+minicom -D /dev/tty.usbmodem14403 -b 115200
+
 ```
 
 Note for pdoa on the dw3000 to work (in this example) the cipher mode must be "1sdc" and the
@@ -182,3 +221,7 @@ clipboard, and select file to import.
 Navigate to the node-red directory and select the pdoa_viewer.json file. Or, simply drag and drop the file
 on the node-red webpage.
 Select deploy. Done. 
+
+
+
+
