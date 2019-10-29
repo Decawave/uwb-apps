@@ -1,7 +1,7 @@
 # Ranging with n nodes using n+2 messages along with TDMA slotting.
 
 ## Overview
-This example demonstrates the nrng use case--n ranges measurements with 2*n+2 frames. Here we use the CCP/TDMA to create a synchronous network with a superframe period of 1s and 160 TDMA slots. A tag[s] performs a range request[s] at the beginning of each TDMA slot. The nodes listen for a range request at the beginning [first 200us] of each TDMA slot. A tag can range to 1 to 16 nodes within a single TDMA slot. Each node responses sequential to the request based on their allocated node-slot--Note there are two slot mechanisms at work here; TDMA-slots and a node-slots. The node-slots are spaced approximately 270us apart within the TDMA slot with 16 nodes occupying about 4500us of the available 6300us windows. Practically a tag will range to a subset of available nodes or practically only a subset of the available nodes will be within range of the tag.
+This example demonstrates the nrng use case--n ranges measurements with n+2 frames. Here we use the CCP/TDMA to create a synchronous network with a superframe period of 1s and 160 TDMA slots. A tag[s] performs a range request[s] at the beginning of each TDMA slot. The nodes listen for a range request at the beginning [first 200us] of each TDMA slot. A tag can range to 1 to 16 nodes within a single TDMA slot. Each node responses sequential to the request based on their allocated node-slot--Note there are two slot mechanisms at work here; TDMA-slots and a node-slots. The node-slots are spaced approximately 270us apart within the TDMA slot with 16 nodes occupying about 4500us of the available 6300us windows. Practically a tag will range to a subset of available nodes or practically only a subset of the available nodes will be within range of the tag.
 
 The example also illustrates the WCS (Wireless Clock Synchronization) capability, here the TOA (Time Of Arrival) timestamps are reported in master clock (node0) reference frame.
 
@@ -34,13 +34,9 @@ newt target set nrng_tag app=apps/twr_nranges_tdma
 newt target set nrng_tag bsp=@decawave-uwb-core/hw/bsp/dwm1001
 newt target set nrng_tag build_profile=debug
 newt target amend nrng_tag syscfg=NRNG_NTAGS=4:NRNG_NNODES=8:NRNG_NFRAMES=16:NODE_START_SLOT_ID=0:NODE_END_SLOT_ID=7
+#newt target amend nrng_tag syscfg=DW1000_SYS_STATUS_BACKTRACE_LEN=128
 newt run nrng_tag 0.1.0
-```
 
-If you'd prefer to be able to read the ranges in mm rather than getting the float cast to uint32_t as the output replace the tag target amend line above with the one below:
-
-```
-newt target amend nrng_tag syscfg=FLOAT_USER=1
 ```
 
 **NOTE:** The value of NRNG_FRAMES must be atleast NRNG_NODES*2.
@@ -50,7 +46,7 @@ newt target amend nrng_tag syscfg=FLOAT_USER=1
 
 | profile       | Description  | Benchmark  |
 | ------------- |:-------------:| -----:|
-| nrng_ss | n TWR_SS ranges with n+2 messages. | 1860us for n=4, 2133us for n=6|
+| nrng_ss | n TWR_SS ranges with n+2 messages. | 2225us for n=4|
 
 FOM = frame duration + TX_HOLDOFF + n * (frame duration + TX_GUARD_DELAY)
 
@@ -86,7 +82,49 @@ Use Any serial Console app with 1000000 baudrate on PC to monitor the Logs.
 {"utime": 88683654,"nrng": {"seq": 238,"mask": 127,"rng": ["8.051","8.083","1.278","8.423","7.117","6.648","6.456"],"uid": ["1946","5199","5235","2293","1436","5936","3958"]}}
 ...
 ```
+### Expected Tag Interrupt backtrace Output
 
+By uncommenting the line:
+```
+newt target amend nrng_tag syscfg=DW1000_SYS_STATUS_BACKTRACE_LEN=128 
+```
+You can view the timing for the interrupts and see the occurrence of Tx and Rx frames. In this case, we see four nodes responding to the Tag's nrng request.
+
+```
+dw1000 ibt
+       usec   diff usec    abs usec  fctrl   status    status2txt
+--------------------------------------------------------------------------------
+          0           0    51983227  41 88  000000E1  TxFrameSent|TxPHYDone|TxPreamDone|IRS 
+        794         794    51984021  41 88  00006F01  RxFCSGood|RxDataFrmRdy|RxPHYDet|RxLDEdone|RxSFDet|RxPreamDet|IRS 
+       1271         477    51984498  41 88  00006F01  RxFCSGood|RxDataFrmRdy|RxPHYDet|RxLDEdone|RxSFDet|RxPreamDet|IRS 
+       1748         477    51984975  41 88  00006F01  RxFCSGood|RxDataFrmRdy|RxPHYDet|RxLDEdone|RxSFDet|RxPreamDet|IRS 
+       2225         477    51985452  41 88  00006F01  RxFCSGood|RxDataFrmRdy|RxPHYDet|RxLDEdone|RxSFDet|RxPreamDet|IRS 
+       4874        2649    51988101         00020001  RxTimeout|IRS 
+      26703       21829    52009930         00000011  TxStart|IRS 
+      26891         188    52010118  41 88  000000E1  TxFrameSent|TxPHYDone|TxPreamDone|IRS 
+      27684         793    52010911  41 88  00006F01  RxFCSGood|RxDataFrmRdy|RxPHYDet|RxLDEdone|RxSFDet|RxPreamDet|IRS 
+      28161         477    52011388  41 88  00006F01  RxFCSGood|RxDataFrmRdy|RxPHYDet|RxLDEdone|RxSFDet|RxPreamDet|IRS 
+      28638         477    52011865  41 88  00006F01  RxFCSGood|RxDataFrmRdy|RxPHYDet|RxLDEdone|RxSFDet|RxPreamDet|IRS 
+      29115         477    52012342  41 88  00006F01  RxFCSGood|RxDataFrmRdy|RxPHYDet|RxLDEdone|RxSFDet|RxPreamDet|IRS 
+      31781        2666    52015008         00020001  RxTimeout|IRS 
+      53590       21809    52036817         00000011  TxStart|IRS 
+      53777         187    52037004  41 88  000000E1  TxFrameSent|TxPHYDone|TxPreamDone|IRS 
+      54571         794    52037798  41 88  00006F01  RxFCSGood|RxDataFrmRdy|RxPHYDet|RxLDEdone|RxSFDet|RxPreamDet|IRS 
+      55048         477    52038275  41 88  00006F01  RxFCSGood|RxDataFrmRdy|RxPHYDet|RxLDEdone|RxSFDet|RxPreamDet|IRS 
+      55525         477    52038752  41 88  00006F01  RxFCSGood|RxDataFrmRdy|RxPHYDet|RxLDEdone|RxSFDet|RxPreamDet|IRS 
+      56002         477    52039229  41 88  00006F01  RxFCSGood|RxDataFrmRdy|RxPHYDet|RxLDEdone|RxSFDet|RxPreamDet|IRS 
+      58659        2657    52041886         00020001  RxTimeout|IRS 
+      80476       21817    52063703         00000011  TxStart|IRS 
+      80664         188    52063891  41 88  000000E1  TxFrameSent|TxPHYDone|TxPreamDone|IRS 
+      81458         794    52064685  41 88  00006F01  RxFCSGood|RxDataFrmRdy|RxPHYDet|RxLDEdone|RxSFDet|RxPreamDet|IRS 
+      81935         477    52065162  41 88  00006F01  RxFCSGood|RxDataFrmRdy|RxPHYDet|RxLDEdone|RxSFDet|RxPreamDet|IRS 
+      82412         477    52065639  41 88  00006F01  RxFCSGood|RxDataFrmRdy|RxPHYDet|RxLDEdone|RxSFDet|RxPreamDet|IRS 
+      82889         477    52066116  41 88  00006F01  RxFCSGood|RxDataFrmRdy|RxPHYDet|RxLDEdone|RxSFDet|RxPreamDet|IRS 
+      85553        2664    52068780         00020001  RxTimeout|IRS 
+     107370       21817    52090597         00000011  TxStart|IRS 
+
+...
+```
 
 ### Node specific commands
 
