@@ -196,6 +196,20 @@ Note for pdoa on the dw3000 to work (in this example) the cipher mode must be "1
 preamble_length (and the cipher preamble length) should be "64". The node must also have pdoa_mode
 set to "1".
 
+
+9. Using TWR-SS-ACK range model on a board with long/irregular interrupt latency
+
+The TWR-SS-ACK range model uses the hardware auto-ack capability to speed up the
+initial respons to a request. A follow up frame is then sent with the tx-time
+of the ack itself. 
+Auto-ack requires that the frame-filter is enabled:
+
+```no-highlight
+newt target amend <target_name> syscfg=UWBCFG_DEF_FRAME_FILTER='"0x00F"'
+
+```
+
+
 ### Visualisation
 
 If you have node-red installed you can import the flow in the node-red folder. Note that

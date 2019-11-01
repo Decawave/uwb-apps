@@ -88,13 +88,22 @@ slot_cb(struct dpl_event *ev){
   
     /* Range with the clock master by default */
     struct uwb_ccp_instance *ccp = tdma->ccp;
-    uint16_t node_address = ccp->frames[0]->short_address;
+    uint16_t node_address = ccp->frames[ccp->idx%ccp->nframes]->short_address;
 
     /* Select single-sided or double sided twr every second slot */    
-    int mode = UWB_DATA_CODE_DS_TWR_EXT;
-    //if (slot->idx%2==0) {
-    //mode = UWB_DATA_CODE_SS_TWR_EXT;
-        //}
+    int mode = UWB_DATA_CODE_SS_TWR_ACK;
+    if ((slot->idx&7)==1) {
+        mode = UWB_DATA_CODE_SS_TWR;
+    }
+    if ((slot->idx&7)==2) {
+        mode = UWB_DATA_CODE_SS_TWR_EXT;
+    }
+    if ((slot->idx&7)==3) {
+        mode = UWB_DATA_CODE_DS_TWR;
+    }
+    if ((slot->idx&7)==4) {
+        mode = UWB_DATA_CODE_DS_TWR_EXT;
+    }
     uwb_rng_request_delay_start(rng, node_address, dx_time, mode);
 }
 
@@ -124,7 +133,8 @@ static uint16_t g_idx_latest;
 static bool
 complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 {
-    if(inst->fctrl != FCNTL_IEEE_RANGE_16){
+    if (inst->fctrl != FCNTL_IEEE_RANGE_16 &&
+        inst->fctrl != (FCNTL_IEEE_RANGE_16|UWB_FCTRL_ACK_REQUESTED)) {
         return false;
     }
     struct uwb_rng_instance* rng = (struct uwb_rng_instance*)cbs->inst_ptr;
@@ -171,9 +181,10 @@ slot_complete_cb(struct dpl_event * ev){
 static bool
 error_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 { 
-    if(inst->fctrl != FCNTL_IEEE_RANGE_16){
+    if (inst->fctrl != FCNTL_IEEE_RANGE_16 &&
+        inst->fctrl != (FCNTL_IEEE_RANGE_16|UWB_FCTRL_ACK_REQUESTED)) {
         return false;
-    }   
+    }
 
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
     if (inst->status.start_rx_error)
@@ -259,8 +270,9 @@ int main(int argc, char **argv){
     dw1000_gpio6_config_ext_rxe( inst);
 #endif
     /* Slot 0:ccp, 1+ twr */
-    for (uint16_t i = 1; i < MYNEWT_VAL(TDMA_NSLOTS); i++)
+    for (uint16_t i = 1; i < MYNEWT_VAL(TDMA_NSLOTS); i++) {
         tdma_assign_slot(tdma, slot_cb,  i, (void*)rng);
+    }
 
 #if MYNEWT_VAL(RNG_VERBOSE) > 1
     udev->config.rxdiag_enable = 1;
