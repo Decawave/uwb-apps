@@ -193,6 +193,8 @@ uwb_config_updated_func()
         if (udev->config.rx.frameFilter) {
             uwb_set_autoack(udev, true);
             uwb_set_autoack_delay(udev, 0);
+        } else {
+            uwb_set_autoack(udev, false);
         }
         uwb_start_rx(udev);
         return 0;
@@ -252,6 +254,8 @@ slot_cb(struct dpl_event * ev)
         if (inst->config.rx.frameFilter) {
             uwb_set_autoack(inst, true);
             uwb_set_autoack_delay(inst, 0);
+        } else {
+            uwb_set_autoack(inst, false);
         }
         timeout = 0;
         return;
