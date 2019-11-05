@@ -40,6 +40,9 @@ pkg.deps:
 pkg.deps.BLE_ENABLED:
     - "@decawave-uwb-apps/lib/bleprph"
     
+pkg.deps.ETH_0:
+    - "@apache-mynewt-core/net/ip/inet_def_service"
+
 pkg.cflags:
     - "-std=gnu11"
     - "-fms-extensions"
