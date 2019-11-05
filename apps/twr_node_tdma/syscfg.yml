@@ -14,6 +14,8 @@ syscfg.vals:
     RNG_VERBOSE: 2
     CIR_VERBOSE: 0
     UWB_CCP_VERBOSE: 0
+    UWBCFG_DEF_FRAME_FILTER: '"0x00F"'
+
     STATS_NAMES: 1
     STATS_CLI: 1
     CONFIG_CLI: 1
