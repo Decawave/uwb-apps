@@ -32,6 +32,10 @@
 #include "mcu/mcu_sim.h"
 #endif
 
+#if MYNEWT_VAL(BLE_ENABLED)
+#include "bleprph/bleprph.h"
+#endif
+
 #include <uwb/uwb.h>
 #include <uwb_rng/uwb_rng.h>
 #include <config/config.h>
@@ -243,6 +247,10 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime, uwb_phy_frame_duration(udev, sizeof(twr_frame_final_t))); 
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime, uwb_phy_SHR_duration(udev)); 
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay))); 
+
+#if MYNEWT_VAL(BLE_ENABLED)
+    ble_init(udev->euid);
+#endif
 
 #if MYNEWT_VAL(DW1000_DEVICE_0)
     // Using DW GPIO5 and GPIO6 to study timing.

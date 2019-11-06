@@ -34,6 +34,10 @@
 #include "mcu/mcu_sim.h"
 #endif
 
+#if MYNEWT_VAL(BLE_ENABLED)
+#include "bleprph/bleprph.h"
+#endif
+
 #include <uwb/uwb.h>
 #include <uwb/uwb_ftypes.h>
 #include <uwb_rng/uwb_rng.h>
@@ -355,6 +359,9 @@ int main(int argc, char **argv){
     dw1000_gpio6_config_ext_rxe( hal_dw1000_inst(1));
 #endif
 
+#if MYNEWT_VAL(BLE_ENABLED)
+    ble_init(udev->euid);
+#endif
     dpl_event_init(&slot_event, slot_complete_cb, rng);
 
     /* Slot 0:ccp, 1+ twr */

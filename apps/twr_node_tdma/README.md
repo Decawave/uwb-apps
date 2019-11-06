@@ -50,7 +50,7 @@ newt target create twr_node_tdma
 newt target set twr_node_tdma app=apps/twr_node_tdma
 newt target set twr_node_tdma bsp=@decawave-uwb-core/hw/bsp/dwm1001
 newt target set twr_node_tdma build_profile=debug
-newt target amend twr_node_tdma syscfg=LOG_LEVEL=1:UWBCFG_DEF_ROLE='"0x1"'
+newt target amend twr_node_tdma syscfg=LOG_LEVEL=1:UWBCFG_DEF_ROLE='"0x1"':BLE_ENABLED=1
 # Uncomment next line to use uart instead of rtt console
 #newt target amend twr_node_tdma syscfg=CONSOLE_UART_BAUD=460800:CONSOLE_UART=1:CONSOLE_RTT=0
 newt run twr_node_tdma 0
@@ -65,6 +65,7 @@ newt target create twr_tag_tdma
 newt target set twr_tag_tdma app=apps/twr_tag_tdma
 newt target set twr_tag_tdma bsp=@decawave-uwb-core/hw/bsp/dwm1001
 newt target set twr_tag_tdma build_profile=debug
+newt target amend twr_node_tdma syscfg=BLE_ENABLED=1
 # Uncomment next line to use uart instead of rtt console
 #newt target amend twr_tag_tdma syscfg=CONSOLE_UART_BAUD=460800:CONSOLE_UART=1:CONSOLE_RTT=0
 newt run twr_tag_tdma 0
