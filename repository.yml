@@ -40,7 +40,7 @@ repo.deps:
         user: apache
         repo: mynewt-core
         vers:
-            master: 0-dev
+            #master: 0-dev
             uwb_apps_0_0_1_tag: 1.7.0
     decawave-uwb-core:
         type: github
