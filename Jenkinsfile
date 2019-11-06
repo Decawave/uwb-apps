@@ -21,8 +21,8 @@ pipeline {
                 sh '${JENKINS_CI}/jenkins/linux_jenkins_install.sh'
                 sh 'cp -r ${JENKINS_CI}/uwb-apps-project.yml project.yml'
                 sh 'mkdir -p targets;cp -r ${JENKINS_CI}/uwb-apps-targets/* targets/'
-                echo 'Remove any patches to mynewt-core..'
-                sh 'cd ${WORKSPACE}/repos/apache-mynewt-core;git checkout -- ./;cd ${WORKSPACE}'
+                echo 'Remove any patches to mynewt-core if there..'
+                sh '[ -d repos/apache-mynewt-core ] && (cd repos/apache-mynewt-core;git checkout -- ./;cd ${WORKSPACE})'
                 sh 'newt upgrade'
                 sh '${JENKINS_CI}/jenkins/uwb-apps-setup.sh'
             }
