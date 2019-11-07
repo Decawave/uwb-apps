@@ -38,6 +38,7 @@ pkg.deps:
     - "@decawave-uwb-core/lib/uwb_wcs"
     - "@mynewt-timescale-lib/lib/timescale"
     - "@decawave-uwb-core/lib/twr_ss"
+    - "@decawave-uwb-core/lib/twr_ss_ack"
     - "@decawave-uwb-core/lib/twr_ss_ext"
     - "@decawave-uwb-core/lib/twr_ds"
     - "@decawave-uwb-core/lib/twr_ds_ext"

@@ -133,7 +133,7 @@ nrng_slot_timer_cb(struct dpl_event *ev)
         uint32_t slot_mask = 0xFFFF;
 
         if(nrng_request_delay_start(nrng, UWB_BROADCAST_ADDRESS, dx_time,
-                                    DWT_SS_TWR_NRNG, slot_mask, 0).start_tx_error){
+                                    UWB_DATA_CODE_SS_TWR_NRNG, slot_mask, 0).start_tx_error){
             /* Do nothing */
         }
     } else {
@@ -159,7 +159,7 @@ nrng_complete_cb(struct dpl_event *ev)
     for (int i=0;i<nrng->nframes;i++) {
         frame = nrng->frames[(nrng->idx + i)%nrng->nframes];
         uint16_t dst_addr = frame->dst_address;
-        if (frame->code != DWT_SS_TWR_NRNG_FINAL || frame->seq_num != nrng->seq_num) {
+        if (frame->code != UWB_DATA_CODE_SS_TWR_NRNG_FINAL || frame->seq_num != nrng->seq_num) {
             continue;
         }
 

@@ -102,8 +102,8 @@ static void nrng_complete_cb(struct dpl_event *ev) {
     if (inst->status.rx_timeout_error)
         printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_timeout_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
 #endif
-    if (frame->code == DWT_SS_TWR_NRNG_FINAL || frame->code == DWT_SS_TWR_NRNG_EXT_FINAL){
-        frame->code = DWT_SS_TWR_NRNG_END;
+    if (frame->code == UWB_DATA_CODE_DS_TWR_NRNG_FINAL || frame->code == UWB_DATA_CODE_DS_TWR_NRNG_EXT_FINAL){
+        frame->code = UWB_DATA_CODE_DS_TWR_NRNG_END;
     }
 }
 
@@ -192,7 +192,7 @@ slot_cb(struct dpl_event * ev){
 
         if(nrng_request_delay_start(
                nrng, UWB_BROADCAST_ADDRESS, dx_time,
-               DWT_SS_TWR_NRNG, slot_mask, 0).start_tx_error) {
+               UWB_DATA_CODE_SS_TWR_NRNG, slot_mask, 0).start_tx_error) {
             uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
             printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\"}\n",
                    utime,idx);

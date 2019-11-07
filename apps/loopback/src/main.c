@@ -110,13 +110,13 @@ slave_slot_ev_cb(struct dpl_event *ev){
     dx_time = dx_time & 0xFFFFFFFFFE00UL;
   
     switch (idx%4){
-        case 0:uwb_rng_request_delay_start(rng, 0x4321, dx_time, DWT_SS_TWR);
+        case 0:uwb_rng_request_delay_start(rng, 0x4321, dx_time, UWB_DATA_CODE_SS_TWR);
         break;
-        case 1:uwb_rng_request_delay_start(rng, 0x4321, dx_time, DWT_SS_TWR_EXT);
+        case 1:uwb_rng_request_delay_start(rng, 0x4321, dx_time, UWB_DATA_CODE_SS_TWR_EXT);
         break;
-        case 2:uwb_rng_request_delay_start(rng, 0x4321, dx_time, DWT_DS_TWR);
+        case 2:uwb_rng_request_delay_start(rng, 0x4321, dx_time, UWB_DATA_CODE_DS_TWR);
         break;
-        case 3:uwb_rng_request_delay_start(rng, 0x4321, dx_time, DWT_DS_TWR_EXT);
+        case 3:uwb_rng_request_delay_start(rng, 0x4321, dx_time, UWB_DATA_CODE_DS_TWR_EXT);
         break;
         default:break;
     }

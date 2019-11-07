@@ -136,10 +136,6 @@ int main(int argc, char **argv){
 
     struct uwb_dev *udev = uwb_dev_idx_lookup(0);
 	udev->pan_id = MYNEWT_VAL(PANID);
-	udev->fctrl_array[0] = 'L';
-	udev->fctrl_array[1] = 'W';
-
-	uwb_set_panid(udev,udev->pan_id);
 
 	uwb_lwip_instance_t *lwip = uwb_lwip_init(udev, &lwip_config, MYNEWT_VAL(NUM_FRAMES),
                                                     MYNEWT_VAL(BUFFER_SIZE));
@@ -154,8 +150,8 @@ int main(int argc, char **argv){
 
     lwip->dst_addr = 0x4321;
 
-    IP_ADDR6(ip6_tgt_addr, MYNEWT_VAL(TGT_IP6_ADDR_1), MYNEWT_VAL(TGT_IP6_ADDR_2), 
-                            MYNEWT_VAL(TGT_IP6_ADDR_3), MYNEWT_VAL(TGT_IP6_ADDR_4));
+    IP_ADDR6(ip6_tgt_addr, MYNEWT_VAL(TGT_IP6_ADDR_1), MYNEWT_VAL(TGT_IP6_ADDR_2),
+                           MYNEWT_VAL(TGT_IP6_ADDR_3), MYNEWT_VAL(TGT_IP6_ADDR_4));
 
 
     payload = (char *)malloc(sizeof(struct ping_payload));

@@ -151,16 +151,16 @@ uwb_ev_cb(struct os_event *ev)
         }
     } else {
 #if MYNEWT_VAL(TWR_DS_ENABLED)
-        uwb_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_DS_TWR);
+        uwb_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), UWB_DATA_CODE_DS_TWR);
 #endif
 #if MYNEWT_VAL(TWR_DS_EXT_ENABLED)
-        uwb_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_DS_TWR_EXT);
+        uwb_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), UWB_DATA_CODE_DS_TWR_EXT);
 #endif
 #if MYNEWT_VAL(TWR_SS_ENABLED)
-        uwb_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_SS_TWR);
+        uwb_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), UWB_DATA_CODE_SS_TWR);
 #endif
 #if MYNEWT_VAL(TWR_SS_EXT_ENABLED)
-        uwb_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), DWT_SS_TWR_EXT);
+        uwb_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), UWB_DATA_CODE_SS_TWR_EXT);
 #endif
     }
     os_callout_reset(&tx_callout, OS_TICKS_PER_SEC/25);

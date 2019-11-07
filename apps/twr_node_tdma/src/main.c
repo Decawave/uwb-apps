@@ -40,6 +40,7 @@
 
 #include <uwb/uwb.h>
 #include <uwb/uwb_ftypes.h>
+#include <uwb/uwb_mac.h>
 #include <uwb_rng/uwb_rng.h>
 #include <config/config.h>
 #include "uwbcfg/uwbcfg.h"
@@ -71,7 +72,8 @@ static triadf_t g_angle = {0};
 static bool
 cir_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 {
-    if(inst->fctrl != FCNTL_IEEE_RANGE_16){
+    if (inst->fctrl != FCNTL_IEEE_RANGE_16 &&
+        inst->fctrl != (FCNTL_IEEE_RANGE_16|UWB_FCTRL_ACK_REQUESTED)) {
         return false;
     }
     
@@ -121,7 +123,8 @@ static struct dpl_event slot_event = {0};
 static bool
 complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 {
-    if(inst->fctrl != FCNTL_IEEE_RANGE_16){
+    if (inst->fctrl != FCNTL_IEEE_RANGE_16 &&
+        inst->fctrl != (FCNTL_IEEE_RANGE_16|UWB_FCTRL_ACK_REQUESTED)) {
         return false;
     }
 
@@ -186,6 +189,13 @@ uwb_config_updated_func()
         uwb_mac_config(uwb_dev_idx_lookup(1), NULL);
         uwb_txrf_config(uwb_dev_idx_lookup(1), &uwb_dev_idx_lookup(1)->config.txrf);
 #endif
+        /* Prepare for autoack */
+        if (udev->config.rx.frameFilter) {
+            uwb_set_autoack(udev, true);
+            uwb_set_autoack_delay(udev, 0);
+        } else {
+            uwb_set_autoack(udev, false);
+        }
         uwb_start_rx(udev);
         return 0;
     }
@@ -240,6 +250,13 @@ slot_cb(struct dpl_event * ev)
         uwb_txrf_config(uwb_dev_idx_lookup(1), &uwb_dev_idx_lookup(1)->config.txrf);
 #endif
         uwb_config_updated = false;
+        /* Prepare for autoack */
+        if (inst->config.rx.frameFilter) {
+            uwb_set_autoack(inst, true);
+            uwb_set_autoack_delay(inst, 0);
+        } else {
+            uwb_set_autoack(inst, false);
+        }
         timeout = 0;
         return;
     }

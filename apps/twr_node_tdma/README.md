@@ -52,7 +52,7 @@ newt target set twr_node_tdma bsp=@decawave-uwb-core/hw/bsp/dwm1001
 newt target set twr_node_tdma build_profile=debug
 newt target amend twr_node_tdma syscfg=LOG_LEVEL=1:UWBCFG_DEF_ROLE='"0x1"':BLE_ENABLED=1
 # Uncomment next line to use uart instead of rtt console
-#newt target amend twr_node_tdma syscfg=CONSOLE_UART_BAUD=460800:CONSOLE_UART=1:CONSOLE_RTT=0
+#newt target amend twr_node_tdma syscfg=CONSOLE_UART_BAUD=460800:CONSOLE_UART=1:CONSOLE_RTT=0:UWBCFG_DEF_FRAME_FILTER='"0x00F"'
 newt run twr_node_tdma 0
 
 ```
@@ -195,6 +195,20 @@ minicom -D /dev/tty.usbmodem14403 -b 115200
 Note for pdoa on the dw3000 to work (in this example) the cipher mode must be "1sdc" and the
 preamble_length (and the cipher preamble length) should be "64". The node must also have pdoa_mode
 set to "1".
+
+
+9. Using TWR-SS-ACK range model on a board with long/irregular interrupt latency
+
+The TWR-SS-ACK range model uses the hardware auto-ack capability to speed up the
+initial respons to a request. A follow up frame is then sent with the tx-time
+of the ack itself. 
+Auto-ack requires that the frame-filter is enabled:
+
+```no-highlight
+newt target amend <target_name> syscfg=UWBCFG_DEF_FRAME_FILTER='"0x00F"'
+
+```
+
 
 ### Visualisation
 

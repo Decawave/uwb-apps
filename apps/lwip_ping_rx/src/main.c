@@ -114,10 +114,6 @@ main(int argc, char **argv){
 
 	udev->pan_id = MYNEWT_VAL(PANID);
 	udev->my_short_address = MYNEWT_VAL(DW_DEVICE_ID_0);
-	udev->fctrl_array[0] = 'L';
-	udev->fctrl_array[1] = 'W';
-
-	uwb_set_panid(udev,udev->pan_id);
 
 	uwb_lwip_instance_t *lwip = uwb_lwip_init(udev, &lwip_config, MYNEWT_VAL(NUM_FRAMES),
                                                     MYNEWT_VAL(BUFFER_SIZE));

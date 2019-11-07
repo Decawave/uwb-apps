@@ -38,6 +38,78 @@
 
 #include "console/console.h"
 #include <config/config.h>
+
+#if MYNEWT_VAL(ETH_0)
+#include <lwip/tcpip.h>
+#include <lwip/dhcp.h>
+#include <mn_socket/mn_socket.h>
+#include <inet_def_service/inet_def_service.h>
+
+uint32_t udp_tx_addr;
+uint16_t udp_tx_port;
+static struct mn_socket *net_udp_socket = 0;
+static struct mn_sockaddr_in net_sin;
+static struct mn_sockaddr_in *net_sinp;
+
+static void net_test_readable(void *arg, int err)
+{
+    /* Print any incoming data to console */
+    int rc = 0;
+    struct os_mbuf *m = 0;
+    struct mn_sockaddr_in6 from;
+
+    rc = mn_recvfrom(net_udp_socket, &m, (struct mn_sockaddr*)&from);
+    assert(rc == 0);
+    if (m) {
+        uint8_t buf[32];
+        int off = 0;
+        int len = os_mbuf_len(m);
+        int to_read;
+        while (off < len) {
+            to_read = (len-off < sizeof(buf))? len-off : sizeof(buf);
+            os_mbuf_copydata(m, off, len, buf);
+            console_write((const char*)buf, to_read);
+            off += to_read;
+        }
+        os_mbuf_free_chain(m);
+    }
+}
+
+static void net_test_writable(void *arg, int err)
+{
+    // Do nothing
+}
+
+static const union mn_socket_cb net_test_cbs = {
+    .socket.readable = net_test_readable,
+    .socket.writable = net_test_writable
+};
+
+static int
+lwip_nif_up(const char *name)
+{
+    struct netif *nif;
+    err_t err;
+
+    nif = netif_find(name);
+    if (!nif) {
+        return MN_EINVAL;
+    }
+    if (nif->flags & NETIF_FLAG_LINK_UP) {
+        netif_set_up(nif);
+        netif_set_default(nif);
+#if LWIP_IPV6
+        nif->ip6_autoconfig_enabled = 1;
+        netif_create_ip6_linklocal_address(nif, 1);
+#endif
+        err = dhcp_start(nif);
+        return err;
+    }
+    return 0;
+}
+
+#endif
+
 #include "uwbcfg/uwbcfg.h"
 
 #include <uwb/uwb.h>
@@ -63,22 +135,15 @@
 
 static int uwb_config_updated();
 
-/* 
- * Default Config 
- */
-#define LSTNR_DEFAULT_CONFIG {        \
-        .acc_samples = MYNEWT_VAL(CIR_NUM_SAMPLES), \
-        .verbose = "0x0" \
-    }
-
 static struct lstnr_config {
     uint16_t acc_samples_to_load;
     uint16_t verbose;
 } local_conf = {0};
 
-#define VERBOSE_CARRIER_INTEGRATOR (0x1)
-#define VERBOSE_RX_DIAG            (0x2)
-#define VERBOSE_CIR                (0x4)
+#define VERBOSE_CARRIER_INTEGRATOR (0x0001)
+#define VERBOSE_RX_DIAG            (0x0002)
+#define VERBOSE_CIR                (0x0004)
+#define VERBOSE_NOT_TO_CONSOLE     (0x1000)
 
 static char *lstnr_get(int argc, char **argv, char *val, int val_len_max);
 static int lstnr_set(int argc, char **argv, char *val);
@@ -87,9 +152,20 @@ static int lstnr_export(void (*export_func)(char *name, char *val),
   enum conf_export_tgt tgt);
 
 static struct lstnr_config_s {
-    char acc_samples[6];
-    char verbose[6];
-} lstnr_config = LSTNR_DEFAULT_CONFIG;
+    char acc_samples[8];
+    char verbose[8];
+#if MYNEWT_VAL(ETH_0)
+    char udp_tx_addr[16];
+    char udp_tx_port[8];
+#endif
+} lstnr_config = {
+    .acc_samples = MYNEWT_VAL(CIR_NUM_SAMPLES),
+    .verbose = "0x0",
+#if MYNEWT_VAL(ETH_0)
+    .udp_tx_addr="192.168.10.255",
+    .udp_tx_port="8787"
+#endif
+};
 
 static struct conf_handler lstnr_handler = {
     .ch_name = "lstnr",
@@ -105,6 +181,10 @@ lstnr_get(int argc, char **argv, char *val, int val_len_max)
     if (argc == 1) {
         if (!strcmp(argv[0], "acc_samples"))  return lstnr_config.acc_samples;
         if (!strcmp(argv[0], "verbose"))  return lstnr_config.verbose;
+#if MYNEWT_VAL(ETH_0)
+        if (!strcmp(argv[0], "udp_tx_addr"))  return lstnr_config.udp_tx_addr;
+        if (!strcmp(argv[0], "udp_tx_port"))  return lstnr_config.udp_tx_port;
+#endif
     }
     return NULL;
 }
@@ -115,10 +195,18 @@ lstnr_set(int argc, char **argv, char *val)
     if (argc == 1) {
         if (!strcmp(argv[0], "acc_samples")) {
             return CONF_VALUE_SET(val, CONF_STRING, lstnr_config.acc_samples);
-        } 
+        }
         if (!strcmp(argv[0], "verbose")) {
             return CONF_VALUE_SET(val, CONF_STRING, lstnr_config.verbose);
-        } 
+        }
+#if MYNEWT_VAL(ETH_0)
+        if (!strcmp(argv[0], "udp_tx_addr")) {
+            return CONF_VALUE_SET(val, CONF_STRING, lstnr_config.udp_tx_addr);
+        }
+        if (!strcmp(argv[0], "udp_tx_port")) {
+            return CONF_VALUE_SET(val, CONF_STRING, lstnr_config.udp_tx_port);
+        }
+#endif
     }
     return OS_ENOENT;
 }
@@ -135,6 +223,23 @@ lstnr_commit(void)
 #endif
     conf_value_from_str(lstnr_config.verbose, CONF_INT16,
                         (void*)&(local_conf.verbose), 0);
+
+#if MYNEWT_VAL(ETH_0)
+    if (mn_inet_pton(MN_AF_INET, lstnr_config.udp_tx_addr, &udp_tx_addr) != 1) {
+        console_printf("Invalid udp address %s\n", lstnr_config.udp_tx_addr);
+        return 0;
+    }
+    conf_value_from_str(lstnr_config.udp_tx_port, CONF_INT16,
+                        (void*)&(udp_tx_port), 0);
+
+    memset(&net_sin, 0, sizeof(net_sin));
+    net_sin.msin_len = sizeof(net_sin);
+    net_sin.msin_family = MN_AF_INET;
+    net_sin.msin_port = htons(udp_tx_port);
+    net_sin.msin_addr.s_addr = udp_tx_addr;
+    net_sinp = &net_sin;
+#endif
+
     uwb_config_updated();
     return 0;
 }
@@ -145,6 +250,10 @@ lstnr_export(void (*export_func)(char *name, char *val),
 {
     export_func("lstnr/acc_samples", lstnr_config.acc_samples);
     export_func("lstnr/verbose", lstnr_config.verbose);
+#if MYNEWT_VAL(ETH_0)
+    export_func("lstnr/udp_tx_addr", lstnr_config.udp_tx_addr);
+    export_func("lstnr/udp_tx_port", lstnr_config.udp_tx_port);
+#endif
     return 0;
 }
 
@@ -203,6 +312,27 @@ create_mbuf_pool(void)
     assert(rc == 0);
 }
 
+static char output_buffer[512];
+static int
+mprintf(struct os_mbuf *m, const char *fmt, ...)
+{
+    int rc = 0;
+    va_list args;
+    int num_chars;
+
+    va_start(args, fmt);
+    num_chars = vsnprintf(output_buffer, sizeof(output_buffer)-10, fmt, args);
+    if (m) {
+        rc = os_mbuf_append(m, output_buffer, num_chars);
+        assert(rc==0);
+    }
+    if ((local_conf.verbose&VERBOSE_NOT_TO_CONSOLE)==0) {
+        console_write(output_buffer, num_chars);
+    }
+    va_end(args);
+    return num_chars;
+}
+
 #if MYNEWT_VAL(CIR_ENABLED)
 #if MYNEWT_VAL(DW1000_DEVICE_0)
 static struct cir_dw1000_instance tmp_cir;
@@ -216,7 +346,8 @@ static void
 process_rx_data_queue(struct os_event *ev)
 {
     int rc;
-    struct os_mbuf *om;
+    struct os_mbuf *m = 0;
+    struct os_mbuf *om = 0;
     struct uwb_msg_hdr *hdr;
     int payload_len;
     struct uwb_dev *udev = uwb_dev_idx_lookup(0);
@@ -235,65 +366,67 @@ process_rx_data_queue(struct os_event *ev)
         payload_len = (payload_len > sizeof(print_buffer)) ? sizeof(print_buffer) :
             payload_len;
 
-        rc = os_mbuf_copydata(om, 0, payload_len,
-                              print_buffer);
-        if (rc)
-        {
+        rc = os_mbuf_copydata(om, 0, payload_len, print_buffer);
+        if (rc) {
             goto end_msg;
         }
 
-        printf("{\"utime\":%lu", hdr->utime);
-        
-        printf(",\"ts\":[");
+        m = os_msys_get_pkthdr(16, 0);
+        if (!m) {
+            goto end_msg;
+        }
+
+        mprintf(m,"{\"utime\":%lu", hdr->utime);
+
+        mprintf(m,",\"ts\":[");
         for(int j=0;j<n_instances;j++) {
             ts = hdr->ts[j];
-            printf("%s%llu", (j==0)?"":",", ts);
+            mprintf(m,"%s%llu", (j==0)?"":",", ts);
         }
-        console_out(']');
+        mprintf(m,"]");
 
         if ((local_conf.verbose&VERBOSE_RX_DIAG)) {
-            printf(",\"rssi\":[");
+            mprintf(m,",\"rssi\":[");
             for(int j=0;j<n_instances;j++) {
                 float rssi = uwb_calc_rssi(udev, &hdr->diag[j].diag);
                 if (rssi > -200 && rssi < 100) {
-                    printf("%s%d.%01d", (j==0)?"":",",
+                    mprintf(m,"%s%d.%01d", (j==0)?"":",",
                            (int)rssi, abs((int)(10*(rssi-(int)rssi))));
                 } else {
-                    printf("%snull", (j==0)?"":",");
+                    mprintf(m,"%snull", (j==0)?"":",");
                 }
             }
-            console_out(']');
-            printf(",\"fppl\":[");
+            mprintf(m,"],\"fppl\":[");
             for(int j=0;j<n_instances;j++) {
                 float fppl = uwb_calc_fppl(udev, &hdr->diag[j].diag);
                 if (fppl > -200 && fppl < 100) {
-                    printf("%s%d.%01d", (j==0)?"":",",
+                    mprintf(m,"%s%d.%01d", (j==0)?"":",",
                            (int)fppl, abs((int)(10*(fppl-(int)fppl))));
                 } else {
-                    printf("%snull", (j==0)?"":",");
+                    mprintf(m,"%snull", (j==0)?"":",");
                 }
             }
-            console_out(']');
+            mprintf(m,"]");
         }
         if (hdr->carrier_integrator && (local_conf.verbose&VERBOSE_CARRIER_INTEGRATOR)) {
             float ccor = uwb_calc_clock_offset_ratio(udev, hdr->carrier_integrator, UWB_CR_CARRIER_INTEGRATOR);
 
             int ppm = (int)(ccor*1000000.0f);
-            printf(",\"ccor\":%d.%03de-6",
+            mprintf(m,",\"ccor\":%d.%03de-6",
                    ppm,
                    (int)roundf(fabsf(ccor-ppm/1000000.0f)*1000000000.0f)
                 );
         }
-        printf(",\"pd\":[");
+        mprintf(m,",\"pd\":[");
         if (udev->capabilities.single_receiver_pdoa) {
             int j=0;
             float pdoa = uwb_calc_pdoa(udev, &hdr->diag[j].diag);
             if (isnan(pdoa)) {
                 /* Json can't handle Nan, but it can handle null */
-                printf("%snull", (j==0)?"":",");
+                mprintf(m,"%snull", (j==0)?"":",");
                 continue;
             }
-            printf((pdoa < 0)?"%s-%d.%03d":"%s%d.%03d",
+            mprintf(m,(pdoa < 0)?"%s-%d.%03d":"%s%d.%03d",
                    (j==0)?"":",",
                    abs((int)pdoa), abs((int)(1000*(pdoa-(int)pdoa))));
         }
@@ -301,25 +434,24 @@ process_rx_data_queue(struct os_event *ev)
         for(int j=0;j<n_instances-1;j++) {
             if (isnan(hdr->pd[j])) {
                 /* Json can't handle Nan, but it can handle null */
-                printf("%snull", (j==0)?"":",");
+                mprintf(m,"%snull", (j==0)?"":",");
                 continue;
             }
-            printf((hdr->pd[j] < 0)?"%s-%d.%03d":"%s%d.%03d",
+            mprintf(m,(hdr->pd[j] < 0)?"%s-%d.%03d":"%s%d.%03d",
                    (j==0)?"":",",
                    abs((int)hdr->pd[j]), abs((int)(1000*(hdr->pd[j]-(int)hdr->pd[j]))));
         }
-        console_out(']');
 
-        printf(",\"dlen\":%d", hdr->dlen);
-        printf(",\"d\":\"");
+        mprintf(m,"],\"dlen\":%d", hdr->dlen);
+        mprintf(m,",\"d\":\"");
         for (int i=0;i<sizeof(print_buffer) && i<hdr->dlen;i++)
         {
-            printf("%02x", print_buffer[i]);
+            mprintf(m,"%02x", print_buffer[i]);
         }
-        console_out('"');
+        mprintf(m,"\"");
 #if MYNEWT_VAL(CIR_ENABLED)
         if (local_conf.verbose&VERBOSE_CIR) {
-            printf(",\"cir\":[");
+            mprintf(m,",\"cir\":[");
             for(int j=0;j<n_instances;j++) {
 #if MYNEWT_VAL(DW1000_DEVICE_0)
                 rc = os_mbuf_copydata(om, hdr->dlen + j*sizeof(struct cir_dw1000_instance), sizeof(struct cir_dw1000_instance), &tmp_cir);
@@ -334,33 +466,52 @@ process_rx_data_queue(struct os_event *ev)
                     float idx = cirp->fp_idx;
                     float ph = cirp->rcphase;
                     float an = cirp->angle;
-                    printf("%s{\"o\":%d,\"fp_idx\":%d.%03d,\"rcphase\":%d.%03d,\"angle\":%d.%03d,\"rts\":%lld",
+                    mprintf(m,"%s{\"o\":%d,\"fp_idx\":%d.%03d,\"rcphase\":%d.%03d,\"angle\":%d.%03d,\"rts\":%lld",
                            (j==0)?"":",", MYNEWT_VAL(CIR_OFFSET), (int)idx, (int)(1000*(idx-(int)idx)),
                            (int)ph, (int)fabsf((1000*(ph-(int)ph))),
                            (int)an, (int)fabsf((1000*(an-(int)an))),
                            cirp->raw_ts
                         );
-                    // printf(",\"fp_amp\":[%d,%d,%d]", hdr->diag[j].fp_amp, hdr->diag[j].fp_amp2, hdr->diag[j].fp_amp3);
-                    // printf(",\"cir_pwr\":%d", hdr->diag[j].cir_pwr);
-                    // printf(",\"rx_std\":%d", hdr->diag[j].rx_std);
+                    // mprintf(m,",\"fp_amp\":[%d,%d,%d]", hdr->diag[j].fp_amp, hdr->diag[j].fp_amp2, hdr->diag[j].fp_amp3);
+                    // mprintf(m,",\"cir_pwr\":%d", hdr->diag[j].cir_pwr);
+                    // mprintf(m,",\"rx_std\":%d", hdr->diag[j].rx_std);
                     if (local_conf.acc_samples_to_load) {
-                        printf(",\"real\":[");
+                        mprintf(m,",\"real\":[");
                         for (int i=0;i<local_conf.acc_samples_to_load;i++) {
-                            printf("%s%d", (i==0)? "":",", (int)cirp->cir.array[i].real);
+                            mprintf(m,"%s%d", (i==0)? "":",", (int)cirp->cir.array[i].real);
                         }
-                        printf("],\"imag\":[");
+                        mprintf(m,"],\"imag\":[");
                         for (int i=0;i<local_conf.acc_samples_to_load;i++) {
-                            printf("%s%d", (i==0)? "":",", (int)cirp->cir.array[i].imag);
+                            mprintf(m,"%s%d", (i==0)? "":",", (int)cirp->cir.array[i].imag);
                         }
-                        console_out(']');
+                        mprintf(m,"]");
                     }
-                    console_out('}');
+                    mprintf(m,"}");
                 }
             }
-            console_out(']');
+            mprintf(m,"]");
         }
+#endif  // CIR_ENABLED
+        mprintf(m,"}");
+        if ((local_conf.verbose&VERBOSE_NOT_TO_CONSOLE)==0) {
+            console_out('\n');
+        }
+#if MYNEWT_VAL(ETH_0)
+        /* Setup UDP broadcast socket */
+        if (!net_udp_socket) {
+            rc = mn_socket(&net_udp_socket, MN_PF_INET, MN_SOCK_DGRAM, 0);
+            mn_socket_set_cbs(net_udp_socket, NULL, &net_test_cbs);
+        }
+        if (m) {
+            rc = mn_sendto(net_udp_socket, m, (struct mn_sockaddr *)net_sinp);
+            if (rc != 0) {
+                printf("sendto: %d\n", rc);
+                os_mbuf_free_chain(m);
+            }
+        }
+#else
+        os_mbuf_free_chain(m);
 #endif
-        printf("}\n");
     end_msg:
         os_mbuf_free_chain(om);
         memset(print_buffer, 0, sizeof(print_buffer));
@@ -373,7 +524,6 @@ rx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 {
     int rc;
     struct os_mbuf *om;
-
 #if MYNEWT_VAL(CIR_ENABLED)
     struct uwb_dev *udev[N_DW_INSTANCES];
     for(int i=0;i<N_DW_INSTANCES;i++) {
@@ -613,6 +763,12 @@ int main(int argc, char **argv){
     conf_register(&lstnr_handler);
     conf_load();
 
+#if MYNEWT_VAL(ETH_0)
+    /* Bring up network device with dhcp */
+    rc = lwip_nif_up("st1");
+    assert(rc==0);
+#endif
+
     for(int i=0;i<N_DW_INSTANCES;i++) {
         udev[i] = uwb_dev_idx_lookup(i);
         udev[i]->config.rxdiag_enable = (local_conf.verbose&VERBOSE_RX_DIAG) != 0;
@@ -659,6 +815,7 @@ int main(int argc, char **argv){
     ble_init(udev[0]->euid);
 #endif
 
+    /* Prepare memory buffer */
     for (int i=0;i<sizeof(g_mbuf_buffer)/sizeof(g_mbuf_buffer[0]);i++) {
         g_mbuf_buffer[i] = 0xdeadbeef;
     }
