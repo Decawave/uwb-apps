@@ -29,6 +29,9 @@ syscfg.vals:
     CONFIG_NEWTMGR: 1
     CONFIG_FCB: 1
 
+    # Enable frame_filter by default to allow auto-ack to work
+    UWBCFG_DEF_FRAME_FILTER: '"0x00F"'
+
 syscfg.vals.BLE_ENABLED:
     BLE_PREFIX: '"twr-node"'
   # BLE Disable central and observer roles.
