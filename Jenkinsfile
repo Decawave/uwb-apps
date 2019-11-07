@@ -19,11 +19,17 @@ pipeline {
                 sh 'rm -rf ${JENKINS_CI};git clone https://github.com/decawave/mynewt-travis-ci ${JENKINS_CI}'
                 sh 'chmod +x ${JENKINS_CI}/jenkins/*.sh'
                 sh '${JENKINS_CI}/jenkins/linux_jenkins_install.sh'
-                sh 'cp -r ${JENKINS_CI}/uwb-apps-project.yml project.yml'
+                sh '#cp -r ${JENKINS_CI}/jenkins/uwb-apps-project.yml project.yml'
                 sh 'mkdir -p targets;cp -r ${JENKINS_CI}/uwb-apps-targets/* targets/'
                 echo 'Remove any patches to mynewt-core if there..'
                 sh '[ -d repos/apache-mynewt-core ] && (cd repos/apache-mynewt-core;git checkout -- ./;cd ${WORKSPACE}) || echo "nothing to do"'
-                sh 'newt upgrade'
+                sh '''
+                    if ! newt upgrade;then
+                        echo "Need to remove mcuboot/ext/mbedtls due to bug in git"
+                        rm -rf repos/mcuboot/ext/mbedtls;
+                        newt upgrade;
+                    fi
+                '''
                 sh '${JENKINS_CI}/jenkins/uwb-apps-setup.sh'
             }
         }
