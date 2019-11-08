@@ -51,8 +51,10 @@
 #if MYNEWT_VAL(UWB_CCP_ENABLED)
 #include <uwb_ccp/uwb_ccp.h>
 #endif
+#if MYNEWT_VAL(DW1000_DEVICE_0)
 #include <dw1000/dw1000_gpio.h>
 #include <dw1000/dw1000_hal.h>
+#endif
 #if MYNEWT_VAL(CONCURRENT_NRNG)
 #include <nrng/nrng.h>
 #endif
@@ -199,9 +201,9 @@ stream_slot_cb(struct dpl_event * ev)
 }
 
 static uint16_t g_crc8;
-static bool 
-uwb_transport_cb(struct uwb_dev * inst, uint16_t uid, struct dpl_mbuf * mbuf){
-
+static bool
+uwb_transport_cb(struct uwb_dev * inst, uint16_t uid, struct dpl_mbuf * mbuf)
+{
     uint16_t len = DPL_MBUF_PKTLEN(mbuf);
     dpl_mbuf_copydata(mbuf, 0, sizeof(test), test);
     dpl_mbuf_free_chain(mbuf);
@@ -228,9 +230,9 @@ stream_timer(struct dpl_event *ev)
         if (uwb_transport->config.os_msys_mpool){
             mbuf = dpl_msys_get_pkthdr(sizeof(test), sizeof(uwb_transport_user_header_t));
         }
-        else{                           
+        else{
             mbuf = dpl_mbuf_get_pkthdr(uwb_transport->omp, sizeof(uwb_transport_user_header_t));
-        }    
+        }
         if (mbuf){
             dpl_mbuf_copyinto(mbuf, 0, test, sizeof(test));
             uwb_transport_enqueue_tx(uwb_transport, destination_uid, 0xDEAD, mbuf);
@@ -280,7 +282,7 @@ int main(int argc, char **argv){
     assert(uwb_transport);
 
     struct _uwb_transport_extension extension = {
-        .code = 0xDEAD,
+        .tsp_code = 0xDEAD,
         .uwb_transport = uwb_transport,
         .extension_cb = uwb_transport_cb 
     };
@@ -301,7 +303,7 @@ int main(int argc, char **argv){
     ble_init(udev->euid);
 #endif
 
-#if  MYNEWT_VAL(UWB_DEVICE_0) 
+#if MYNEWT_VAL(DW1000_DEVICE_0)
     // Using GPIO5 and GPIO6 to study timing.
     dw1000_gpio5_config_ext_txe( hal_dw1000_inst(0));
     dw1000_gpio6_config_ext_rxe( hal_dw1000_inst(0));
