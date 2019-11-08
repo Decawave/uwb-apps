@@ -44,7 +44,7 @@ pkg.deps:
     - "@decawave-uwb-core/lib/twr_ss_ext"
     - "@decawave-uwb-core/lib/twr_ds"
     - "@decawave-uwb-core/lib/twr_ds_ext"
-    - "@decawave-uwb-core/sys/uwbcfg"   
+    - "@decawave-uwb-core/sys/uwbcfg"
     - "@apache-mynewt-core/boot/split"
     - "@mcuboot/boot/bootutil"
     - "@apache-mynewt-core/kernel/os"

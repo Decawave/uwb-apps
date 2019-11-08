@@ -40,6 +40,11 @@ syscfg.vals.BLE_ENABLED:
     BLE_ROLE_OBSERVER: 0
     BLE_ROLE_PERIPHERAL: 1
 
+# No point in having the CIR enabled unless we can use it for pdoa
+syscfg.vals.'!UWB_DEVICE_1 && !DW3000_DEVICE_0':
+    CIR_ENABLED: 0
+
+
 syscfg.defs:
     BLE_ENABLED:
         description: 'Activate BLE'
