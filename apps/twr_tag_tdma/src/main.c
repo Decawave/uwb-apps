@@ -276,6 +276,8 @@ int main(int argc, char **argv){
 
 #if MYNEWT_VAL(RNG_VERBOSE) > 1
     udev->config.rxdiag_enable = 1;
+#else
+    udev->config.rxdiag_enable = 0;
 #endif
 
     while (1) {

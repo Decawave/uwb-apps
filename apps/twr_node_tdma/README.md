@@ -135,7 +135,9 @@ newt target set nucleo-f429zi_B0_twr_node_tdma app=apps/twr_node_tdma
 newt target set nucleo-f429zi_B0_twr_node_tdma bsp=@decawave-uwb-core/hw/bsp/nucleo-f429zi_B0
 newt target set nucleo-f429zi_B0_twr_node_tdma build_profile=debug
 newt target amend nucleo-f429zi_B0_twr_node_tdma syscfg=UWB_DEVICE_0=1:USE_DBLBUFFER=0:LOG_LEVEL=1:UWBCFG_DEF_ROLE='"0x1"'
-newt target amend nucleo-f429zi_B0_twr_node_tdma syscfg=UWBCFG_DEF_RX_PDOA_MODE='"3"':UWBCFG_DEF_RX_CIPHER_MODE='"1sdc"':UWBCFG_DEF_TX_PREAM_LEN='"64"':UWBCFG_DEF_RX_SFD_MODE='"1"':TWR_DS_EXT_RX_TIMEOUT=0x40
+newt target amend nucleo-f429zi_B0_twr_node_tdma syscfg=UWBCFG_DEF_RX_PDOA_MODE='"3"':UWBCFG_DEF_RX_CIPHER_MODE='"1sdc"':UWBCFG_DEF_TX_PREAM_LEN='"64"':UWBCFG_DEF_RX_SFD_TYPE='"1"':TWR_DS_EXT_RX_TIMEOUT=0x40
+# If the config seems "stuck" you can force it to change with the line below. You may need a different (random) value at the end
+newt target amend nucleo-f429zi_B0_twr_node_tdma syscfg=CONFIG_FCB_MAGIC=0x12345678
 # Uncomment next line to use uart instead of rtt console
 #newt target amend nucleo-f429zi_B0_twr_node_tdma syscfg=CONSOLE_UART=1:CONSOLE_RTT=0
 # Uncomment next line if the aoa angle appears inverted (Antenna facing other way)
@@ -146,7 +148,9 @@ newt target create nucleo-f429zi_B0_twr_tag_tdma
 newt target set nucleo-f429zi_B0_twr_tag_tdma app=apps/twr_tag_tdma
 newt target set nucleo-f429zi_B0_twr_tag_tdma bsp=@decawave-uwb-core/hw/bsp/nucleo-f429zi_B0
 newt target set nucleo-f429zi_B0_twr_tag_tdma build_profile=debug
-newt target amend nucleo-f429zi_B0_twr_tag_tdma syscfg=UWBCFG_DEF_RX_CIPHER_MODE='"1sdc"':UWBCFG_DEF_TX_PREAM_LEN='"64"':UWBCFG_DEF_RX_SFD_MODE='"1"':TWR_DS_EXT_RX_TIMEOUT=0x40
+newt target amend nucleo-f429zi_B0_twr_tag_tdma syscfg=UWBCFG_DEF_RX_CIPHER_MODE='"1sdc"':UWBCFG_DEF_TX_PREAM_LEN='"64"':UWBCFG_DEF_RX_SFD_TYPE='"1"':TWR_DS_EXT_RX_TIMEOUT=0x40
+# If the config seems "stuck" you can force it to change with the line below. You may need a different (random) value at the end
+newt target amend nucleo-f429zi_B0_twr_tag_tdma syscfg=CONFIG_FCB_MAGIC=0x12345678
 # Uncomment next line to use uart instead of rtt console
 #newt target amend nucleo-f429zi_B0_twr_tag_tdma syscfg=CONSOLE_UART=1:CONSOLE_RTT=0
 newt run nucleo-f429zi_B0_twr_tag_tdma 0
