@@ -66,7 +66,6 @@ static bool cir_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cb
 static bool complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs);
 
 #define ANTENNA_SEPERATION 0.0205f
-#define WAVELENGTH 0.046f
 
 static triadf_t g_angle = {0};
 static bool
@@ -136,7 +135,8 @@ complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     if (inst->capabilities.single_receiver_pdoa) {
 #if MYNEWT_VAL(CIR_ENABLED)
         float pd = uwb_calc_pdoa(inst, inst->rxdiag);
-        g_angle.azimuth = cir_calc_aoa(pd, WAVELENGTH, ANTENNA_SEPERATION);
+        frame->spherical.azimuth = uwb_calc_aoa(
+            pd, inst->config.channel, ANTENNA_SEPERATION);
 #endif
     }
 #if MYNEWT_VAL(AOA_ANGLE_INVERT)

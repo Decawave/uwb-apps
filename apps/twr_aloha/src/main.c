@@ -74,7 +74,6 @@ static struct os_callout tx_callout;
 static uint16_t g_idx_latest;
 
 #define ANTENNA_SEPERATION 0.0205f
-#define WAVELENGTH 0.046f
 
 static bool
 complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
@@ -86,11 +85,10 @@ complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     g_idx_latest = (rng->idx)%rng->nframes; // Store valid frame pointer
 
     if (inst->capabilities.single_receiver_pdoa) {
-#if MYNEWT_VAL(CIR_ENABLED)
         twr_frame_t * frame = rng->frames[rng->idx_current];
         float pd = uwb_calc_pdoa(inst, inst->rxdiag);
-        frame->spherical.azimuth = cir_calc_aoa(pd, WAVELENGTH, ANTENNA_SEPERATION);
-#endif
+        frame->spherical.azimuth = uwb_calc_aoa(
+            pd, inst->config.channel, ANTENNA_SEPERATION);
     }
 
     dpl_eventq_put(dpl_eventq_dflt_get(), &slot_event);
@@ -103,7 +101,7 @@ rx_timeout_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     struct uwb_rng_instance * rng = (struct uwb_rng_instance*)cbs->inst_ptr;
     if (inst->role&UWB_ROLE_ANCHOR) {
         uwb_phy_forcetrxoff(inst);
-        uwb_set_rx_timeout(inst, 0xFFFF);
+        uwb_set_rx_timeout(inst, 0xfffff);
         uwb_rng_listen(rng, UWB_NONBLOCKING);
     } else {
         /* Do nothing */
@@ -143,25 +141,32 @@ uwb_ev_cb(struct os_event *ev)
 {
     struct uwb_rng_instance * rng = (struct uwb_rng_instance *)ev->ev_arg;
     struct uwb_dev * inst = rng->dev_inst;
-    
+
     if (inst->role&UWB_ROLE_ANCHOR) {
         if(dpl_sem_get_count(&rng->sem) == 1){
-            uwb_set_rx_timeout(inst, 0xFFFF);
+            uwb_set_rx_timeout(inst, 0xfffff);
             uwb_rng_listen(rng, UWB_NONBLOCKING);
         }
     } else {
-#if MYNEWT_VAL(TWR_DS_ENABLED)
-        uwb_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), UWB_DATA_CODE_DS_TWR);
-#endif
-#if MYNEWT_VAL(TWR_DS_EXT_ENABLED)
-        uwb_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), UWB_DATA_CODE_DS_TWR_EXT);
-#endif
+        int mode = -1;
 #if MYNEWT_VAL(TWR_SS_ENABLED)
-        uwb_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), UWB_DATA_CODE_SS_TWR);
+        mode = UWB_DATA_CODE_SS_TWR;
+#elif MYNEWT_VAL(TWR_SS_ACK_ENABLED)
+        mode = UWB_DATA_CODE_SS_TWR_ACK;
+#elif MYNEWT_VAL(TWR_DS_ENABLED)
+        mode = UWB_DATA_CODE_DS_TWR;
+#elif MYNEWT_VAL(TWR_DS_EXT_ENABLED)
+        mode = UWB_DATA_CODE_DS_TWR_EXT;
+#elif MYNEWT_VAL(TWR_SS_ENABLED)
+        mode = UWB_DATA_CODE_SS_TWR;
+#elif MYNEWT_VAL(TWR_SS_EXT_ENABLED)
+        mode = UWB_DATA_CODE_SS_TWR_EXT;
 #endif
-#if MYNEWT_VAL(TWR_SS_EXT_ENABLED)
-        uwb_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), UWB_DATA_CODE_SS_TWR_EXT);
-#endif
+        /* Uncomment the next line to force the range mode */
+        // mode = UWB_DATA_CODE_SS_TWR_ACK;
+        if (mode>0) {
+            uwb_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), mode);
+        }
     }
     os_callout_reset(&tx_callout, OS_TICKS_PER_SEC/25);
 }
@@ -195,7 +200,7 @@ int main(int argc, char **argv){
     uwbcfg_register(&uwb_cb);
     /* Load config from flash */
     conf_load();
-    
+
     hal_gpio_init_out(LED_BLINK_PIN, 1);
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
@@ -222,16 +227,17 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,uwb_phy_SHR_duration(udev)); 
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay))); 
 
-    uwb_set_rx_timeout(udev, 0xFFFF);
+    uwb_set_rx_timeout(udev, 0xfffff);
     uwb_rng_listen(rng, UWB_NONBLOCKING);
 
     os_callout_init(&tx_callout, os_eventq_dflt_get(), uwb_ev_cb, rng);
     os_callout_reset(&tx_callout, OS_TICKS_PER_SEC/25);
 
     dpl_event_init(&slot_event, slot_complete_cb, rng);
-    
+
     if ((udev->role&UWB_ROLE_ANCHOR)) {
         udev->my_short_address = MYNEWT_VAL(ANCHOR_ADDRESS);
+        uwb_set_uid(udev, udev->my_short_address);
     }
 #if MYNEWT_VAL(RNG_VERBOSE) > 1
     udev->config.rxdiag_enable = 1;

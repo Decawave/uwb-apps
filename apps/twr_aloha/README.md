@@ -103,23 +103,16 @@ See the ./matlab/stats.m script for an example of parsing json strings.
 
 7. Trying different ranging algorithms
 
-The method for ranging used is selected by including the corresponding package in the pkg.yml file.
-Note that only one of the twr_xx packages should be included at any one point in time. For instance,
-to use the double sided two way ranging change the pkg.yml as below:
+The method for ranging used is selected by modifying the mode variable in the uwb_ev_cb
+function in main.c. By default, it will use one of the modes available and setting the
+```mode``` variable accordingly. By editing main you can select another mode if that
+is available:
 
 ```
-<excerpt from pkg.yml>
+...// around line 166 in src/main.c
+        /* Uncomment the next line to force the range mode */
+        // mode = UWB_DATA_CODE_SS_TWR_ACK;
 ...
-    - "@apache-mynewt-core/encoding/json"
-    - "@decawave-uwb-core/hw/drivers/uwb"
-# Use only one of the twr pkgs below
-#    - "@decawave-uwb-core/lib/twr_ss"
-#    - "@decawave-uwb-core/lib/twr_ss_ext"
-     - "@decawave-uwb-core/lib/twr_ds"
-#    - "@decawave-uwb-core/lib/twr_ds_ext"
-    - "@decawave-uwb-core/sys/uwbcfg"
-    - "@apache-mynewt-core/boot/split"
-
 ```
 
 ## Using DW3000_B0 as a tag

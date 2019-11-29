@@ -144,6 +144,7 @@ newt target amend nucleo-f429zi_B0_twr_node_tdma syscfg=CONFIG_FCB_MAGIC=0x12345
 #newt target amend nucleo-f429zi_B0_twr_node_tdma syscfg=AOA_ANGLE_INVERT=1
 newt run nucleo-f429zi_B0_twr_node_tdma 0
 
+
 newt target create nucleo-f429zi_B0_twr_tag_tdma
 newt target set nucleo-f429zi_B0_twr_tag_tdma app=apps/twr_tag_tdma
 newt target set nucleo-f429zi_B0_twr_tag_tdma bsp=@decawave-uwb-core/hw/bsp/nucleo-f429zi_B0
