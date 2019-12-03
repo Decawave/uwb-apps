@@ -772,7 +772,6 @@ int main(int argc, char **argv){
     for(int i=0;i<N_DW_INSTANCES;i++) {
         udev[i] = uwb_dev_idx_lookup(i);
         udev[i]->config.rxdiag_enable = (local_conf.verbose&VERBOSE_RX_DIAG) != 0;
-        udev[i]->config.framefilter_enabled = 0;
         udev[i]->config.bias_correction_enable = 0;
         udev[i]->config.LDE_enable = 1;
         udev[i]->config.LDO_enable = 0;

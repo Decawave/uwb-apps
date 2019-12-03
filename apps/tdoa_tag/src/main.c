@@ -218,7 +218,6 @@ int main(int argc, char **argv){
 
     struct uwb_dev *udev = uwb_dev_idx_lookup(0);
     udev->config.dblbuffon_enabled = 0;
-    udev->config.framefilter_enabled = 0;
     udev->config.bias_correction_enable = 0;
     udev->config.LDE_enable = 1;
     udev->config.LDO_enable = 0;
