@@ -109,6 +109,21 @@ rx_timeout_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     return true;
 }
 
+static bool
+rx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
+{
+    struct uwb_rng_instance * rng = (struct uwb_rng_instance*)cbs->inst_ptr;
+    /* This should only be reached if we receive something else than a range request */
+    if (inst->role&UWB_ROLE_ANCHOR) {
+        uwb_phy_forcetrxoff(inst);
+        uwb_set_rx_timeout(inst, 0xfffff);
+        uwb_rng_listen(rng, UWB_NONBLOCKING);
+    } else {
+        /* Do nothing */
+    }
+    return true;
+}
+
 /*! 
  * @fn slot_complete_cb(struct os_event * ev)
  *
@@ -148,27 +163,32 @@ uwb_ev_cb(struct os_event *ev)
             uwb_rng_listen(rng, UWB_NONBLOCKING);
         }
     } else {
-        int mode = -1;
+        int mode_v[8] = {0}, mode_i=0, mode=-1;
+        static int last_used_mode = 0;
 #if MYNEWT_VAL(TWR_SS_ENABLED)
-        mode = UWB_DATA_CODE_SS_TWR;
-#elif MYNEWT_VAL(TWR_SS_ACK_ENABLED)
-        mode = UWB_DATA_CODE_SS_TWR_ACK;
-#elif MYNEWT_VAL(TWR_DS_ENABLED)
-        mode = UWB_DATA_CODE_DS_TWR;
-#elif MYNEWT_VAL(TWR_DS_EXT_ENABLED)
-        mode = UWB_DATA_CODE_DS_TWR_EXT;
-#elif MYNEWT_VAL(TWR_SS_ENABLED)
-        mode = UWB_DATA_CODE_SS_TWR;
-#elif MYNEWT_VAL(TWR_SS_EXT_ENABLED)
-        mode = UWB_DATA_CODE_SS_TWR_EXT;
+        mode_v[mode_i++] = UWB_DATA_CODE_SS_TWR;
 #endif
+#if MYNEWT_VAL(TWR_SS_ACK_ENABLED)
+        mode_v[mode_i++] = UWB_DATA_CODE_SS_TWR_ACK;
+#endif
+#if MYNEWT_VAL(TWR_SS_EXT_ENABLED)
+        mode_v[mode_i++] = UWB_DATA_CODE_SS_TWR_EXT;
+#endif
+#if MYNEWT_VAL(TWR_DS_ENABLED)
+        mode_v[mode_i++] = UWB_DATA_CODE_DS_TWR;
+#endif
+#if MYNEWT_VAL(TWR_DS_EXT_ENABLED)
+        mode_v[mode_i++] = UWB_DATA_CODE_DS_TWR_EXT;
+#endif
+        if (++last_used_mode >= mode_i) last_used_mode=0;
+        mode = mode_v[last_used_mode];
         /* Uncomment the next line to force the range mode */
-        // mode = UWB_DATA_CODE_SS_TWR_ACK;
+        //mode = UWB_DATA_CODE_SS_TWR_ACK;
         if (mode>0) {
             uwb_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), mode);
         }
     }
-    os_callout_reset(&tx_callout, OS_TICKS_PER_SEC/25);
+    os_callout_reset(&tx_callout, OS_TICKS_PER_SEC/60);
 }
 
 
@@ -212,8 +232,9 @@ int main(int argc, char **argv){
         .id = UWBEXT_APP0,
         .inst_ptr = rng,
         .complete_cb = complete_cb,
-        .rx_timeout_cb = rx_timeout_cb
-    };
+        .rx_timeout_cb = rx_timeout_cb,
+        .rx_complete_cb = rx_complete_cb
+   };
     uwb_mac_append_interface(udev, &cbs);
 
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
@@ -226,6 +247,11 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime, uwb_phy_frame_duration(udev, sizeof(twr_frame_final_t))); 
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,uwb_phy_SHR_duration(udev)); 
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay))); 
+
+#if MYNEWT_VAL(TWR_SS_ACK_ENABLED)
+    uwb_set_autoack(udev, true);
+    uwb_set_autoack_delay(udev, 12);
+#endif
 
     uwb_set_rx_timeout(udev, 0xfffff);
     uwb_rng_listen(rng, UWB_NONBLOCKING);
