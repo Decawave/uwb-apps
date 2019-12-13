@@ -248,6 +248,43 @@ where the real and imaginary (R and Q) vectors surrounding the leading edge. CIR
 the leading edge is placed in the vector respectively. Note that these values are normalised with the number of accumulated
 symbols to be comparable between different preamble lengths.
 
+11. Changing the configuration without recompiling the code
+
+The mynewt os offers a set of console config tools. To see what config parameters are available use the ```config dump``` command:
+
+```
+1786287 compat> config dump
+1788709 uwb/channel = 5
+1788709 uwb/prf = 64
+1788709 uwb/cipher_prf = 64
+1788709 uwb/datarate = 6m8
+1788709 uwb/rx_paclen = 8
+1788709 uwb/rx_pream_cidx = 9
+1788710 uwb/rx_sfdtype = 1
+1788710 uwb/rx_phrmode = e
+1788710 uwb/rx_cipher_mode = 1sdc
+1788710 uwb/rx_cipher_len = 256
+1788710 uwb/rx_pdoa_mode = 3
+1788710 uwb/tx_pream_cidx = 9
+1788712 uwb/tx_pream_len = 64
+1788712 uwb/txrf_power_coarse = 3
+1788713 uwb/txrf_power_fine = 31
+1788714 uwb/txrf_power_vcm_lo = 15
+1788714 uwb/rx_antdly = 0x4050
+1788715 uwb/tx_antdly = 0x4050
+1788716 uwb/ext_clkdly = 0
+1788716 uwb/role = 0x1
+1788717 uwb/frame_filter = 0xF
+```
+
+For example, to disable the cipher_mode so that DW3000 can interoperate with DW1000 do the following:
+
+```
+> config uwb/rx_cipher_mode 0   # change parameter "uwb/rx_cipher_mode" to the value "0"
+> config commit                 # make this change active
+> config save                   # save to flash so this new change is used even after reset
+```
+
 ### Visualisation
 
 If you have node-red installed you can import the flow in the node-red folder. Note that
