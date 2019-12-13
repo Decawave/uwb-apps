@@ -1,9 +1,9 @@
 syscfg.vals:
     # Route console to RTT
     CONSOLE_UART: 0
+    CONSOLE_RTT: 1
     CONSOLE_UART_BAUD: '460800'
     CONSOLE_UART_TX_BUF_SIZE: '1024'
-    CONSOLE_RTT: 1
     CONSOLE_HISTORY_SIZE: 8
 
     UWB_DEVICE_0: 1
@@ -14,7 +14,6 @@ syscfg.vals:
     RNG_VERBOSE: 2
     CIR_VERBOSE: 0
     UWB_CCP_VERBOSE: 0
-    UWBCFG_DEF_FRAME_FILTER: '"0x00F"'
 
     STATS_NAMES: 1
     STATS_CLI: 1
@@ -30,7 +29,9 @@ syscfg.vals:
     CONFIG_FCB: 1
 
     # Enable frame_filter by default to allow auto-ack to work
-    UWBCFG_DEF_FRAME_FILTER: '"0x00F"'
+    UWBCFG_DEF_FRAME_FILTER: '"0xF"'
+    # By default we're ccp(0x1)|anchor(0x4)
+    UWBCFG_DEF_ROLE: '"0x5"'
 
 syscfg.vals.BLE_ENABLED:
     BLE_PREFIX: '"twr-node"'

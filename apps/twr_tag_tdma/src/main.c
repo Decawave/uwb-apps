@@ -92,6 +92,8 @@ slot_cb(struct dpl_event *ev){
 
     /* Select single-sided or double sided twr every second slot */    
     int mode = UWB_DATA_CODE_SS_TWR_ACK;
+    //mode = UWB_DATA_CODE_SS_TWR_EXT;
+#if 0
     if ((slot->idx&7)==1) {
         mode = UWB_DATA_CODE_SS_TWR;
     }
@@ -104,6 +106,7 @@ slot_cb(struct dpl_event *ev){
     if ((slot->idx&7)==4) {
         mode = UWB_DATA_CODE_DS_TWR_EXT;
     }
+#endif
     uwb_rng_request_delay_start(rng, node_address, dx_time, mode);
 }
 

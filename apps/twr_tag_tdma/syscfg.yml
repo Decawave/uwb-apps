@@ -13,6 +13,8 @@ syscfg.vals:
     TDMA_NSLOTS: 160
     RNG_VERBOSE: 2
     WCS_VERBOSE: 1
+    UWB_CCP_VERBOSE: 0
+
     STATS_NAMES: 1
     STATS_CLI: 1
     CONFIG_CLI: 1
@@ -25,6 +27,9 @@ syscfg.vals:
     LOG_NEWTMGR: 1
     CONFIG_NEWTMGR: 1
     CONFIG_FCB: 1
+
+    # By default we're a tag
+    UWBCFG_DEF_ROLE: '"0x0"'
 
 syscfg.vals.BLE_ENABLED:
     BLE_PREFIX: '"twr-tag"'

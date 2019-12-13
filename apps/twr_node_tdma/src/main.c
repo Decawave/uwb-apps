@@ -267,8 +267,11 @@ slot_cb(struct dpl_event * ev)
 
     /* Only recalculate timeout if needed */
     if (!timeout) {
-        timeout = uwb_phy_frame_duration(inst, sizeof(ieee_rng_response_frame_t))
+        timeout = uwb_usecs_to_dwt_usecs(uwb_phy_frame_duration(inst, sizeof(ieee_rng_request_frame_t)))
             + rng->config.rx_timeout_delay;
+        printf("timeout: %d %d = %d\n",
+               uwb_phy_frame_duration(inst, sizeof(ieee_rng_request_frame_t)),
+               rng->config.rx_timeout_delay, timeout);
     }
 
 #if MYNEWT_VAL(UWB_DEVICE_0) && MYNEWT_VAL(UWB_DEVICE_1)
@@ -290,7 +293,8 @@ slot_cb(struct dpl_event * ev)
 }
 #else
     uwb_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
-    uwb_set_rx_timeout(inst, timeout);
+    /* XXX: Workaround as it seems the frame-length calculations when including cipher isn't quite right */
+    uwb_set_rx_timeout(inst, timeout*2);
     uwb_rng_listen(rng, UWB_BLOCKING);
 #endif
 

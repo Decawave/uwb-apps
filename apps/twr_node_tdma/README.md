@@ -130,40 +130,57 @@ newt run dwm1003_twr_tag_tdma 0
 
 ```no-highlight
 
+# Bootloader (used for both tag and node)
+newt target create nucleo-f429zi_B0_boot
+newt target set nucleo-f429zi_B0_boot app=@mcuboot/boot/mynewt
+newt target set nucleo-f429zi_B0_boot bsp=@decawave-uwb-core/hw/bsp/nucleo-f429zi_B0
+newt target set nucleo-f429zi_B0_boot build_profile=optimized
+newt build nucleo-f429zi_B0_boot
+newt load nucleo-f429zi_B0_boot
+
+# Node application
 newt target create nucleo-f429zi_B0_twr_node_tdma
 newt target set nucleo-f429zi_B0_twr_node_tdma app=apps/twr_node_tdma
 newt target set nucleo-f429zi_B0_twr_node_tdma bsp=@decawave-uwb-core/hw/bsp/nucleo-f429zi_B0
 newt target set nucleo-f429zi_B0_twr_node_tdma build_profile=debug
 newt target amend nucleo-f429zi_B0_twr_node_tdma syscfg=UWB_DEVICE_0=1:USE_DBLBUFFER=0:LOG_LEVEL=1:UWBCFG_DEF_ROLE='"0x1"'
-newt target amend nucleo-f429zi_B0_twr_node_tdma syscfg=UWBCFG_DEF_RX_PDOA_MODE='"3"':UWBCFG_DEF_RX_CIPHER_MODE='"1sdc"':UWBCFG_DEF_TX_PREAM_LEN='"64"':UWBCFG_DEF_RX_SFD_TYPE='"1"':TWR_DS_EXT_RX_TIMEOUT=0x40
+newt target amend nucleo-f429zi_B0_twr_node_tdma syscfg=UWBCFG_DEF_RX_PDOA_MODE='"3"':UWBCFG_DEF_RX_CIPHER_MODE='"1sdc"':UWBCFG_DEF_TX_PREAM_LEN='"64"':UWBCFG_DEF_RX_SFD_TYPE='"1"':UWBCFG_DEF_RX_CIPHER_LEN='"256"':UWBCFG_DEF_FRAME_FILTER='"0xF"'
 # If the config seems "stuck" you can force it to change with the line below. You may need a different (random) value at the end
 newt target amend nucleo-f429zi_B0_twr_node_tdma syscfg=CONFIG_FCB_MAGIC=0x12345678
 # Uncomment next line to use uart instead of rtt console
-#newt target amend nucleo-f429zi_B0_twr_node_tdma syscfg=CONSOLE_UART=1:CONSOLE_RTT=0
+#newt target amend nucleo-f429zi_B0_twr_node_tdma syscfg=CONSOLE_UART=1:CONSOLE_UART_BAUD=115200:CONSOLE_RTT=0
 # Uncomment next line if the aoa angle appears inverted (Antenna facing other way)
 #newt target amend nucleo-f429zi_B0_twr_node_tdma syscfg=AOA_ANGLE_INVERT=1
 newt run nucleo-f429zi_B0_twr_node_tdma 0
 
-
+# Tag application
 newt target create nucleo-f429zi_B0_twr_tag_tdma
 newt target set nucleo-f429zi_B0_twr_tag_tdma app=apps/twr_tag_tdma
 newt target set nucleo-f429zi_B0_twr_tag_tdma bsp=@decawave-uwb-core/hw/bsp/nucleo-f429zi_B0
 newt target set nucleo-f429zi_B0_twr_tag_tdma build_profile=debug
-newt target amend nucleo-f429zi_B0_twr_tag_tdma syscfg=UWBCFG_DEF_RX_CIPHER_MODE='"1sdc"':UWBCFG_DEF_TX_PREAM_LEN='"64"':UWBCFG_DEF_RX_SFD_TYPE='"1"':TWR_DS_EXT_RX_TIMEOUT=0x40
+newt target amend nucleo-f429zi_B0_twr_tag_tdma syscfg=UWBCFG_DEF_RX_CIPHER_MODE='"1sdc"':UWBCFG_DEF_TX_PREAM_LEN='"64"':UWBCFG_DEF_RX_SFD_TYPE='"1"':UWBCFG_DEF_RX_CIPHER_LEN='"256"'
 # If the config seems "stuck" you can force it to change with the line below. You may need a different (random) value at the end
 newt target amend nucleo-f429zi_B0_twr_tag_tdma syscfg=CONFIG_FCB_MAGIC=0x12345678
 # Uncomment next line to use uart instead of rtt console
-#newt target amend nucleo-f429zi_B0_twr_tag_tdma syscfg=CONSOLE_UART=1:CONSOLE_RTT=0
+#newt target amend nucleo-f429zi_B0_twr_tag_tdma syscfg=CONSOLE_UART=1:CONSOLE_UART_BAUD=115200:CONSOLE_RTT=0
 newt run nucleo-f429zi_B0_twr_tag_tdma 0
 
-minicom -D /dev/tty.usbmodem14403 -b 115200
+# On mac
+minicom -D /dev/tty.usbmodem* -b 115200
 
 ```
+
+Note for pdoa on the dw3000 to work (in this example) the cipher mode must be "1sdc",
+preamble_length should be "64", and the cipher preamble length should be 256. The node should also have pdoa_mode
+set to "3" for best accuracy (pdoa_mode "1" works too, but is less accurate).
+
+
 
 9. For non-PDOA on board with DW3000 on nRF52. 
 
 ```no-highlight
 
+# Bootloader (used for both tag and node)
 newt target create pca10056_dw3000_B0_boot
 newt target set pca10056_dw3000_B0_boot app=@mcuboot/boot/mynewt
 newt target set pca10056_dw3000_B0_boot bsp=@decawave-uwb-core/hw/bsp/pca10056_dw3000_B0
@@ -171,49 +188,65 @@ newt target set pca10056_dw3000_B0_boot build_profile=optimized
 newt build pca10056_dw3000_B0_boot
 newt load pca10056_dw3000_B0_boot
 
-
+# Node application
 newt target create pca10056_dw3000_B0_twr_node_tdma
 newt target set pca10056_dw3000_B0_twr_node_tdma app=apps/twr_node_tdma
 newt target set pca10056_dw3000_B0_twr_node_tdma bsp=@decawave-uwb-core/hw/bsp/pca10056_dw3000_B0
 newt target set pca10056_dw3000_B0_twr_node_tdma build_profile=debug
 newt target amend pca10056_dw3000_B0_twr_node_tdma syscfg=UWB_DEVICE_0=1:USE_DBLBUFFER=0:LOG_LEVEL=1:UWBCFG_DEF_ROLE='"0x1"'
-#newt target amend pca10056_dw3000_B0_twr_node_tdma syscfg=UWBCFG_DEF_RX_PDOA_MODE='"3"':UWBCFG_DEF_RX_CIPHER_MODE='"1sdc"':UWBCFG_DEF_TX_PREAM_LEN='"64"':UWBCFG_DEF_RX_SFD_MODE='"1"':TWR_DS_EXT_RX_TIMEOUT=0x40
+#newt target amend pca10056_dw3000_B0_twr_node_tdma syscfg=UWBCFG_DEF_RX_PDOA_MODE='"3"':UWBCFG_DEF_RX_CIPHER_MODE='"0"':UWBCFG_DEF_TX_PREAM_LEN='"64"'
 # Uncomment next line to use uart instead of rtt console
-newt target amend pca10056_dw3000_B0_twr_node_tdma syscfg=CONSOLE_UART_BAUD=115200:CONSOLE_UART=1:CONSOLE_RTT=0
+#newt target amend pca10056_dw3000_B0_twr_node_tdma syscfg=CONSOLE_UART_BAUD=115200:CONSOLE_UART=1:CONSOLE_RTT=0
 # Uncomment next line if the aoa angle appears inverted (Antenna facing other way)
 #newt target amend pca10056_dw3000_B0_twr_node_tdma syscfg=AOA_ANGLE_INVERT=1
 newt run pca10056_dw3000_B0_twr_node_tdma 0
 
+# Tag application
 newt target create pca10056_dw3000_B0_twr_tag_tdma
 newt target set pca10056_dw3000_B0_twr_tag_tdma app=apps/twr_tag_tdma
 newt target set pca10056_dw3000_B0_twr_tag_tdma bsp=@decawave-uwb-core/hw/bsp/pca10056_dw3000_B0
 newt target set pca10056_dw3000_B0_twr_tag_tdma build_profile=debug
-#newt target amend pca10056_dw3000_B0_twr_tag_tdma syscfg=UWBCFG_DEF_RX_CIPHER_MODE='"1sdc"':UWBCFG_DEF_TX_PREAM_LEN='"64"':UWBCFG_DEF_RX_SFD_MODE='"1"':TWR_DS_EXT_RX_TIMEOUT=0x40
+#newt target amend pca10056_dw3000_B0_twr_tag_tdma syscfg=UWBCFG_DEF_RX_CIPHER_MODE='"0"':UWBCFG_DEF_TX_PREAM_LEN='"64"'
 # Uncomment next line to use uart instead of rtt console
 newt target amend pca10056_dw3000_B0_twr_tag_tdma syscfg=CONSOLE_UART_BAUD=115200:CONSOLE_UART=1:CONSOLE_RTT=0
 newt run pca10056_dw3000_B0_twr_tag_tdma 0
 
-minicom -D /dev/tty.usbmodem14403 -b 115200
+# On mac
+minicom -D /dev/tty.usbmodem* -b 115200
 
 ```
-
-Note for pdoa on the dw3000 to work (in this example) the cipher mode must be "1sdc" and the
-preamble_length (and the cipher preamble length) should be "64". The node must also have pdoa_mode
-set to "1".
-
 
 9. Using TWR-SS-ACK range model on a board with long/irregular interrupt latency
 
 The TWR-SS-ACK range model uses the hardware auto-ack capability to speed up the
 initial respons to a request. A follow up frame is then sent with the tx-time
-of the ack itself. 
+of the ack itself.
 Auto-ack requires that the frame-filter is enabled:
 
 ```no-highlight
-newt target amend <target_name> syscfg=UWBCFG_DEF_FRAME_FILTER='"0x00F"'
+newt target amend <target_name> syscfg=UWBCFG_DEF_FRAME_FILTER='"0xF"'
 
 ```
 
+10. Viewing the CIR Accumulator data
+
+The accumulator is used to timestamp the incoming message by analysing the preamble received.
+This data can be printed to the console by adding the following syscfg options:
+```
+newt target amend <target> syscfg=CIR_ENABLED=1:CIR_VERBOSE=1:CIR_OFFSET=8:CIR_SIZE=16
+```
+
+Interleaved with the range results you should now also get lines like the one below:
+
+```no-highlight
+
+{"utime": 657021372,"cir": {"idx": 1144608512,"power": 3261357632,"real": [0,0,0,0,1,0,0,0,0,0,11,27,24,-11,-24,-2],"imag": [0,0,0,0,0,0,0,-2,-14,-47,-48,-42,6,45,40,8]}}
+{"utime": 657270997,"cir": {"idx": 1144516096,"power": 3261436783,"real": [0,0,0,0,0,1,0,-3,-30,-32,-20,11,33,15,7,7],"imag": [0,43,14,41,-44,-29,-34,14,273,860,544,-223,-1289,-444,343,12]}}
+```
+
+where the real and imaginary (R and Q) vectors surrounding the leading edge. CIR_SIZE and CIR_OFFSET controls the length and where
+the leading edge is placed in the vector respectively. Note that these values are normalised with the number of accumulated
+symbols to be comparable between different preamble lengths.
 
 ### Visualisation
 
@@ -240,7 +273,7 @@ Once the prerequisites are setup, in node-red, open up the menu in the top right
 clipboard, and select file to import.
 Navigate to the node-red directory and select the pdoa_viewer.json file. Or, simply drag and drop the file
 on the node-red webpage.
-Select deploy. Done. 
+Select deploy. Done.
 
 
 
