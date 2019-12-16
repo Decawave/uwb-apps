@@ -93,10 +93,9 @@ cir_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 #if MYNEWT_VAL(CIR_ENABLED)
         float pd = cir_get_pdoa(cir[1], cir[0]);
 #endif
-        g_angle.azimuth = cir_calc_aoa(pd, WAVELENGTH, ANTENNA_SEPERATION);
+        g_angle.azimuth = uwb_calc_aoa(pd, inst->config.channel, ANTENNA_SEPERATION);
    }
 
-   
 #endif
     return true;
 }
@@ -133,11 +132,9 @@ complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     twr_frame_t * frame = rng->frames[rng->idx_current];
 
     if (inst->capabilities.single_receiver_pdoa) {
-#if MYNEWT_VAL(CIR_ENABLED)
         float pd = uwb_calc_pdoa(inst, inst->rxdiag);
-        frame->spherical.azimuth = uwb_calc_aoa(
+        g_angle.azimuth = uwb_calc_aoa(
             pd, inst->config.channel, ANTENNA_SEPERATION);
-#endif
     }
 #if MYNEWT_VAL(AOA_ANGLE_INVERT)
     frame->spherical.azimuth = -g_angle.azimuth;
@@ -269,7 +266,7 @@ slot_cb(struct dpl_event * ev)
     if (!timeout) {
         timeout = uwb_usecs_to_dwt_usecs(uwb_phy_frame_duration(inst, sizeof(ieee_rng_request_frame_t)))
             + rng->config.rx_timeout_delay;
-        printf("timeout: %d %d = %d\n",
+        printf("# timeout set to: %d %d = %d\n",
                uwb_phy_frame_duration(inst, sizeof(ieee_rng_request_frame_t)),
                rng->config.rx_timeout_delay, timeout);
     }
