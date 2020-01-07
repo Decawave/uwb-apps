@@ -95,8 +95,14 @@ cir_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 #endif
         g_angle.azimuth = uwb_calc_aoa(pd, inst->config.channel, ANTENNA_SEPERATION);
    }
-
 #endif
+
+    struct uwb_rng_instance * rng = (struct uwb_rng_instance*)cbs->inst_ptr;
+    twr_frame_t * frame = rng->frames[rng->idx_current];
+    if (inst->capabilities.single_receiver_pdoa) {
+        frame->spherical.azimuth = uwb_calc_aoa(
+            frame->pdoa, inst->config.channel, ANTENNA_SEPERATION);
+    }
     return true;
 }
 

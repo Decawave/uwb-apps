@@ -84,11 +84,10 @@ complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     struct uwb_rng_instance * rng = (struct uwb_rng_instance*)cbs->inst_ptr;
     g_idx_latest = (rng->idx)%rng->nframes; // Store valid frame pointer
 
+    twr_frame_t * frame = rng->frames[rng->idx_current];
     if (inst->capabilities.single_receiver_pdoa) {
-        twr_frame_t * frame = rng->frames[rng->idx_current];
-        float pd = uwb_calc_pdoa(inst, inst->rxdiag);
         frame->spherical.azimuth = uwb_calc_aoa(
-            pd, inst->config.channel, ANTENNA_SEPERATION);
+            frame->pdoa, inst->config.channel, ANTENNA_SEPERATION);
     }
 
     dpl_eventq_put(dpl_eventq_dflt_get(), &slot_event);
@@ -183,7 +182,7 @@ uwb_ev_cb(struct os_event *ev)
         if (++last_used_mode >= mode_i) last_used_mode=0;
         mode = mode_v[last_used_mode];
         /* Uncomment the next line to force the range mode */
-        //mode = UWB_DATA_CODE_SS_TWR_ACK;
+        mode = UWB_DATA_CODE_SS_TWR;
         if (mode>0) {
             uwb_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), mode);
         }

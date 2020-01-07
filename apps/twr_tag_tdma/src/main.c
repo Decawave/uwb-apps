@@ -143,7 +143,6 @@ complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     struct uwb_rng_instance* rng = (struct uwb_rng_instance*)cbs->inst_ptr;
     g_idx_latest = (rng->idx)%rng->nframes; // Store valid frame pointer
     if (!dpl_event_is_queued(&slot_event)) {
-        dpl_event_init(&slot_event, slot_complete_cb, rng);
         dpl_eventq_put(dpl_eventq_dflt_get(), &slot_event);
     }
     return true;
@@ -265,6 +264,7 @@ int main(int argc, char **argv){
 #if MYNEWT_VAL(BLE_ENABLED)
     ble_init(udev->euid);
 #endif
+    dpl_event_init(&slot_event, slot_complete_cb, rng);
 
 #if MYNEWT_VAL(DW1000_DEVICE_0)
     // Using DW GPIO5 and GPIO6 to study timing.
