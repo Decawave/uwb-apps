@@ -175,41 +175,44 @@ preamble_length should be "64", and the cipher preamble length should be 256. Th
 set to "3" for best accuracy (pdoa_mode "1" works too, but is less accurate).
 
 
-
-9. For non-PDOA on board with DW3000 on nRF52. 
+9. For PDOA on board with DW3000 on nRF52. 
 
 ```no-highlight
 
 # Bootloader (used for both tag and node)
-newt target create pca10056_dw3000_B0_boot
-newt target set pca10056_dw3000_B0_boot app=@mcuboot/boot/mynewt
-newt target set pca10056_dw3000_B0_boot bsp=@decawave-uwb-core/hw/bsp/pca10056_dw3000_B0
-newt target set pca10056_dw3000_B0_boot build_profile=optimized 
-newt build pca10056_dw3000_B0_boot
-newt load pca10056_dw3000_B0_boot
+newt target create pca10056_dw3000_boot
+newt target set pca10056_dw3000_boot app=@mcuboot/boot/mynewt
+newt target set pca10056_dw3000_boot bsp=@decawave-uwb-core/hw/bsp/pca10056_dw3000
+newt target set pca10056_dw3000_boot build_profile=optimized 
+newt build pca10056_dw3000_boot
+newt load pca10056_dw3000_boot
 
 # Node application
-newt target create pca10056_dw3000_B0_twr_node_tdma
-newt target set pca10056_dw3000_B0_twr_node_tdma app=apps/twr_node_tdma
-newt target set pca10056_dw3000_B0_twr_node_tdma bsp=@decawave-uwb-core/hw/bsp/pca10056_dw3000_B0
-newt target set pca10056_dw3000_B0_twr_node_tdma build_profile=debug
-newt target amend pca10056_dw3000_B0_twr_node_tdma syscfg=UWB_DEVICE_0=1:USE_DBLBUFFER=0:LOG_LEVEL=1:UWBCFG_DEF_ROLE='"0x1"'
-#newt target amend pca10056_dw3000_B0_twr_node_tdma syscfg=UWBCFG_DEF_RX_PDOA_MODE='"3"':UWBCFG_DEF_RX_CIPHER_MODE='"0"':UWBCFG_DEF_TX_PREAM_LEN='"64"'
+newt target create pca10056_dw3000_twr_node_tdma
+newt target set pca10056_dw3000_twr_node_tdma app=apps/twr_node_tdma
+newt target set pca10056_dw3000_twr_node_tdma bsp=@decawave-uwb-core/hw/bsp/pca10056_dw3000
+newt target set pca10056_dw3000_twr_node_tdma build_profile=debug
+newt target amend pca10056_dw3000_twr_node_tdma syscfg=UWB_DEVICE_0=1:USE_DBLBUFFER=0:LOG_LEVEL=1:UWBCFG_DEF_ROLE='"0x1"'
+#newt target amend pca10056_dw3000_twr_node_tdma syscfg=UWBCFG_DEF_RX_PDOA_MODE='"3"':UWBCFG_DEF_RX_CIPHER_MODE='"0"':UWBCFG_DEF_TX_PREAM_LEN='"64"'
+# Uncomment next line to enable PDOA
+newt target amend pca10056_dw3000_twr_node_tdma syscfg=UWBCFG_DEF_RX_PDOA_MODE='"3"':UWBCFG_DEF_RX_CIPHER_MODE='"1sdc"':UWBCFG_DEF_TX_PREAM_LEN='"64"':UWBCFG_DEF_RX_SFD_TYPE='"1"':UWBCFG_DEF_RX_CIPHER_LEN='"256"':UWBCFG_DEF_FRAME_FILTER='"0xF"'
 # Uncomment next line to use uart instead of rtt console
-#newt target amend pca10056_dw3000_B0_twr_node_tdma syscfg=CONSOLE_UART_BAUD=115200:CONSOLE_UART=1:CONSOLE_RTT=0
+#newt target amend pca10056_dw3000_twr_node_tdma syscfg=CONSOLE_UART_BAUD=115200:CONSOLE_UART=1:CONSOLE_RTT=0
 # Uncomment next line if the aoa angle appears inverted (Antenna facing other way)
-#newt target amend pca10056_dw3000_B0_twr_node_tdma syscfg=AOA_ANGLE_INVERT=1
-newt run pca10056_dw3000_B0_twr_node_tdma 0
+#newt target amend pca10056_dw3000_twr_node_tdma syscfg=AOA_ANGLE_INVERT=1
+newt run pca10056_dw3000_twr_node_tdma 0
 
 # Tag application
-newt target create pca10056_dw3000_B0_twr_tag_tdma
-newt target set pca10056_dw3000_B0_twr_tag_tdma app=apps/twr_tag_tdma
-newt target set pca10056_dw3000_B0_twr_tag_tdma bsp=@decawave-uwb-core/hw/bsp/pca10056_dw3000_B0
-newt target set pca10056_dw3000_B0_twr_tag_tdma build_profile=debug
-#newt target amend pca10056_dw3000_B0_twr_tag_tdma syscfg=UWBCFG_DEF_RX_CIPHER_MODE='"0"':UWBCFG_DEF_TX_PREAM_LEN='"64"'
+newt target create pca10056_dw3000_twr_tag_tdma
+newt target set pca10056_dw3000_twr_tag_tdma app=apps/twr_tag_tdma
+newt target set pca10056_dw3000_twr_tag_tdma bsp=@decawave-uwb-core/hw/bsp/pca10056_dw3000
+newt target set pca10056_dw3000_twr_tag_tdma build_profile=debug
+#newt target amend pca10056_dw3000_twr_tag_tdma syscfg=UWBCFG_DEF_RX_CIPHER_MODE='"0"':UWBCFG_DEF_TX_PREAM_LEN='"64"'
+# Uncomment next line to enable PDOA
+newt target amend pca10056_dw3000_twr_tag_tdma syscfg=UWBCFG_DEF_RX_CIPHER_MODE='"1sdc"':UWBCFG_DEF_TX_PREAM_LEN='"64"':UWBCFG_DEF_RX_SFD_TYPE='"1"':UWBCFG_DEF_RX_CIPHER_LEN='"256"'
 # Uncomment next line to use uart instead of rtt console
-newt target amend pca10056_dw3000_B0_twr_tag_tdma syscfg=CONSOLE_UART_BAUD=115200:CONSOLE_UART=1:CONSOLE_RTT=0
-newt run pca10056_dw3000_B0_twr_tag_tdma 0
+newt target amend pca10056_dw3000_twr_tag_tdma syscfg=CONSOLE_UART_BAUD=115200:CONSOLE_UART=1:CONSOLE_RTT=0
+newt run pca10056_dw3000_twr_tag_tdma 0
 
 # On mac
 minicom -D /dev/tty.usbmodem* -b 115200
