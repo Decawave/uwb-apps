@@ -59,7 +59,7 @@ newt run twr_tag 0
 
 ```
 
-5. On the console you should see the following expected result. 
+4. On the console you should see the following expected result. 
 
 Use telnet or nc if you are using CONSOLE_RTT: 1 in syscfg.yml
 Or screen or socat if you are using CONSOLE_UART: 1 in syscfg.yml
@@ -84,24 +84,9 @@ telnet localhost 19021
 ```
 
 
-6. Making sense of the results. 
-
-The sentense above are JSON strings. The underlying library does not support floating point printf so instead we choose to case the IEEE 754 floating-point type to a UINT32 and encapulate this within the JSON string. The decoder reverses the cast and retores the floating point representation without loss of precision.
-
-In matlab for example:
-You can use: 
-```no-highlight
-
->> tcp = tcpclient('127.0.0.1', 19021); % to open the socket.
->> line = read(tcp); % to read the json lines
->> line = jsondecode(line); % to parse the json string
->> range = typecast(uint32(line.range,'single'); % to restore range quantity to floating point. Note all units are SI units for so the range quantity is in meters.
-
-```
-
 See the ./matlab/stats.m script for an example of parsing json strings.
 
-7. Trying different ranging algorithms
+5. Trying different ranging algorithms
 
 The method for ranging used is selected by modifying the mode variable in the uwb_ev_cb
 function in main.c. By default, it will use one of the modes available and setting the
@@ -115,13 +100,13 @@ is available:
 ...
 ```
 
-## Using DW3000_B0 as a tag
+## Using DW3000 as a tag
 
 ```no-highlight
-newt target create nucleo-f429zi_B0_twr_aloha_tag
-newt target set nucleo-f429zi_B0_twr_aloha_tag app=apps/twr_aloha
-newt target set nucleo-f429zi_B0_twr_aloha_tag bsp=@decawave-uwb-core/hw/bsp/nucleo-f429zi_B0
-newt target set nucleo-f429zi_B0_twr_aloha_tag build_profile=debug
-newt target amend nucleo-f429zi_B0_twr_aloha_tag syscfg=TWR_DS_EXT_RX_TIMEOUT=0x40:TWR_SS_RX_TIMEOUT=0x40:BLE_ENABLED=0:CONSOLE_UART=1:CONSOLE_RTT=0
-newt run nucleo-f429zi_B0_twr_aloha_tag 0
+newt target create nucleo-f429zi_twr_aloha_tag
+newt target set nucleo-f429zi_twr_aloha_tag app=apps/twr_aloha
+newt target set nucleo-f429zi_twr_aloha_tag bsp=@decawave-uwb-core/hw/bsp/nucleo-f429zi
+newt target set nucleo-f429zi_twr_aloha_tag build_profile=debug
+newt target amend nucleo-f429zi_twr_aloha_tag syscfg=BLE_ENABLED=0:CONSOLE_UART=1:CONSOLE_RTT=0
+newt run nucleo-f429zi_twr_aloha_tag 0
 ```

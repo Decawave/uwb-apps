@@ -126,44 +126,47 @@ newt run dwm1003_twr_tag_tdma 0
 
 ```
 
-8. For PDOA on board with DW3000 module. 
+8. For PDOA with DW3000 module on STM. 
 
 ```no-highlight
 
 # Bootloader (used for both tag and node)
-newt target create nucleo-f429zi_B0_boot
-newt target set nucleo-f429zi_B0_boot app=@mcuboot/boot/mynewt
-newt target set nucleo-f429zi_B0_boot bsp=@decawave-uwb-core/hw/bsp/nucleo-f429zi_B0
-newt target set nucleo-f429zi_B0_boot build_profile=optimized
-newt build nucleo-f429zi_B0_boot
-newt load nucleo-f429zi_B0_boot
+newt target create nucleo-f429zi_boot
+newt target set nucleo-f429zi_boot app=@mcuboot/boot/mynewt
+newt target set nucleo-f429zi_boot bsp=@decawave-uwb-core/hw/bsp/nucleo-f429zi
+newt target set nucleo-f429zi_boot build_profile=optimized
+newt build nucleo-f429zi_boot
+newt load nucleo-f429zi_boot
 
 # Node application
-newt target create nucleo-f429zi_B0_twr_node_tdma
-newt target set nucleo-f429zi_B0_twr_node_tdma app=apps/twr_node_tdma
-newt target set nucleo-f429zi_B0_twr_node_tdma bsp=@decawave-uwb-core/hw/bsp/nucleo-f429zi_B0
-newt target set nucleo-f429zi_B0_twr_node_tdma build_profile=debug
-newt target amend nucleo-f429zi_B0_twr_node_tdma syscfg=UWB_DEVICE_0=1:USE_DBLBUFFER=0:LOG_LEVEL=1:UWBCFG_DEF_ROLE='"0x1"'
-newt target amend nucleo-f429zi_B0_twr_node_tdma syscfg=UWBCFG_DEF_RX_PDOA_MODE='"3"':UWBCFG_DEF_RX_CIPHER_MODE='"1sdc"':UWBCFG_DEF_TX_PREAM_LEN='"64"':UWBCFG_DEF_RX_SFD_TYPE='"1"':UWBCFG_DEF_RX_CIPHER_LEN='"256"':UWBCFG_DEF_FRAME_FILTER='"0xF"'
+newt target create nucleo-f429zi_twr_node_tdma
+newt target set nucleo-f429zi_twr_node_tdma app=apps/twr_node_tdma
+newt target set nucleo-f429zi_twr_node_tdma bsp=@decawave-uwb-core/hw/bsp/nucleo-f429zi
+newt target set nucleo-f429zi_twr_node_tdma build_profile=debug
+newt target amend nucleo-f429zi_twr_node_tdma syscfg=UWB_DEVICE_0=1:USE_DBLBUFFER=0:LOG_LEVEL=1:UWBCFG_DEF_ROLE='"0x1"'
+newt target amend nucleo-f429zi_twr_node_tdma syscfg=UWBCFG_DEF_RX_PDOA_MODE='"3"':UWBCFG_DEF_RX_CIPHER_MODE='"1sdc"':UWBCFG_DEF_TX_PREAM_LEN='"64"':UWBCFG_DEF_RX_SFD_TYPE='"1"':UWBCFG_DEF_RX_CIPHER_LEN='"256"':UWBCFG_DEF_FRAME_FILTER='"0xF"'
 # If the config seems "stuck" you can force it to change with the line below. You may need a different (random) value at the end
-newt target amend nucleo-f429zi_B0_twr_node_tdma syscfg=CONFIG_FCB_MAGIC=0x12345678
+newt target amend nucleo-f429zi_twr_node_tdma syscfg=CONFIG_FCB_MAGIC=0x12345678
 # Uncomment next line to use uart instead of rtt console
-#newt target amend nucleo-f429zi_B0_twr_node_tdma syscfg=CONSOLE_UART=1:CONSOLE_UART_BAUD=115200:CONSOLE_RTT=0
+#newt target amend nucleo-f429zi_twr_node_tdma syscfg=CONSOLE_UART=1:CONSOLE_UART_BAUD=115200:CONSOLE_RTT=0
 # Uncomment next line if the aoa angle appears inverted (Antenna facing other way)
-#newt target amend nucleo-f429zi_B0_twr_node_tdma syscfg=AOA_ANGLE_INVERT=1
-newt run nucleo-f429zi_B0_twr_node_tdma 0
+#newt target amend nucleo-f429zi_twr_node_tdma syscfg=AOA_ANGLE_INVERT=1
+# Uncomment next line to enable the RXTX GPIO masks.
+newt target amend nucleo-f429zi_twr_node_tdma syscfg=DW3000_RXTX_GPIO=1
+
+newt run nucleo-f429zi_twr_node_tdma 0
 
 # Tag application
-newt target create nucleo-f429zi_B0_twr_tag_tdma
-newt target set nucleo-f429zi_B0_twr_tag_tdma app=apps/twr_tag_tdma
-newt target set nucleo-f429zi_B0_twr_tag_tdma bsp=@decawave-uwb-core/hw/bsp/nucleo-f429zi_B0
-newt target set nucleo-f429zi_B0_twr_tag_tdma build_profile=debug
-newt target amend nucleo-f429zi_B0_twr_tag_tdma syscfg=UWBCFG_DEF_RX_CIPHER_MODE='"1sdc"':UWBCFG_DEF_TX_PREAM_LEN='"64"':UWBCFG_DEF_RX_SFD_TYPE='"1"':UWBCFG_DEF_RX_CIPHER_LEN='"256"'
+newt target create nucleo-f429zi_twr_tag_tdma
+newt target set nucleo-f429zi_twr_tag_tdma app=apps/twr_tag_tdma
+newt target set nucleo-f429zi_twr_tag_tdma bsp=@decawave-uwb-core/hw/bsp/nucleo-f429zi
+newt target set nucleo-f429zi_twr_tag_tdma build_profile=debug
+newt target amend nucleo-f429zi_twr_tag_tdma syscfg=UWBCFG_DEF_RX_STS_MODE='"1sdc"':UWBCFG_DEF_TX_PREAM_LEN='"64"':UWBCFG_DEF_RX_SFD_TYPE='"1"':UWBCFG_DEF_RX_STS_LEN='"256"'
 # If the config seems "stuck" you can force it to change with the line below. You may need a different (random) value at the end
-newt target amend nucleo-f429zi_B0_twr_tag_tdma syscfg=CONFIG_FCB_MAGIC=0x12345678
+newt target amend nucleo-f429zi_twr_tag_tdma syscfg=CONFIG_FCB_MAGIC=0x12345678
 # Uncomment next line to use uart instead of rtt console
-#newt target amend nucleo-f429zi_B0_twr_tag_tdma syscfg=CONSOLE_UART=1:CONSOLE_UART_BAUD=115200:CONSOLE_RTT=0
-newt run nucleo-f429zi_B0_twr_tag_tdma 0
+newt target amend nucleo-f429zi_twr_tag_tdma syscfg=CONSOLE_UART=1:CONSOLE_UART_BAUD=115200:CONSOLE_RTT=0
+newt run nucleo-f429zi_twr_tag_tdma 0
 
 # On mac
 minicom -D /dev/tty.usbmodem* -b 115200
@@ -175,7 +178,7 @@ preamble_length should be "64", and the cipher preamble length should be 256. Th
 set to "3" for best accuracy (pdoa_mode "1" works too, but is less accurate).
 
 
-9. For PDOA on board with DW3000 on nRF52. 
+9. For PDOA with DWM3020 on nRF52. 
 
 ```no-highlight
 
@@ -193,13 +196,16 @@ newt target set pca10056_dw3000_twr_node_tdma app=apps/twr_node_tdma
 newt target set pca10056_dw3000_twr_node_tdma bsp=@decawave-uwb-core/hw/bsp/pca10056_dw3000
 newt target set pca10056_dw3000_twr_node_tdma build_profile=debug
 newt target amend pca10056_dw3000_twr_node_tdma syscfg=UWB_DEVICE_0=1:USE_DBLBUFFER=0:LOG_LEVEL=1:UWBCFG_DEF_ROLE='"0x1"'
-#newt target amend pca10056_dw3000_twr_node_tdma syscfg=UWBCFG_DEF_RX_PDOA_MODE='"3"':UWBCFG_DEF_RX_CIPHER_MODE='"0"':UWBCFG_DEF_TX_PREAM_LEN='"64"'
+#newt target amend pca10056_dw3000_twr_node_tdma syscfg=UWBCFG_DEF_RX_PDOA_MODE='"3"':UWBCFG_DEF_RX_STS_MODE='"0"':UWBCFG_DEF_TX_PREAM_LEN='"64"'
 # Uncomment next line to enable PDOA
-newt target amend pca10056_dw3000_twr_node_tdma syscfg=UWBCFG_DEF_RX_PDOA_MODE='"3"':UWBCFG_DEF_RX_CIPHER_MODE='"1sdc"':UWBCFG_DEF_TX_PREAM_LEN='"64"':UWBCFG_DEF_RX_SFD_TYPE='"1"':UWBCFG_DEF_RX_CIPHER_LEN='"256"':UWBCFG_DEF_FRAME_FILTER='"0xF"'
+newt target amend pca10056_dw3000_twr_node_tdma syscfg=UWBCFG_DEF_RX_PDOA_MODE='"3"':UWBCFG_DEF_RX_STS_MODE='"1sdc"':UWBCFG_DEF_TX_PREAM_LEN='"64"':UWBCFG_DEF_RX_SFD_TYPE='"1"':UWBCFG_DEF_RX_STS_LEN='"256"':UWBCFG_DEF_FRAME_FILTER='"0xF"'
 # Uncomment next line to use uart instead of rtt console
-#newt target amend pca10056_dw3000_twr_node_tdma syscfg=CONSOLE_UART_BAUD=115200:CONSOLE_UART=1:CONSOLE_RTT=0
+newt target amend pca10056_dw3000_twr_node_tdma syscfg=CONSOLE_UART_BAUD=115200:CONSOLE_UART=1:CONSOLE_RTT=0
 # Uncomment next line if the aoa angle appears inverted (Antenna facing other way)
 #newt target amend pca10056_dw3000_twr_node_tdma syscfg=AOA_ANGLE_INVERT=1
+# Uncomment next line to enable the RXTX GPIO masks.
+newt target amend pca10056_dw3000_twr_node_tdma syscfg=DW3000_RXTX_GPIO=1
+newt target amend pca10056_dw3000_twr_node_tdma syscfg=RNG_VERBOSE=0
 newt run pca10056_dw3000_twr_node_tdma 0
 
 # Tag application
@@ -207,11 +213,13 @@ newt target create pca10056_dw3000_twr_tag_tdma
 newt target set pca10056_dw3000_twr_tag_tdma app=apps/twr_tag_tdma
 newt target set pca10056_dw3000_twr_tag_tdma bsp=@decawave-uwb-core/hw/bsp/pca10056_dw3000
 newt target set pca10056_dw3000_twr_tag_tdma build_profile=debug
-#newt target amend pca10056_dw3000_twr_tag_tdma syscfg=UWBCFG_DEF_RX_CIPHER_MODE='"0"':UWBCFG_DEF_TX_PREAM_LEN='"64"'
+#newt target amend pca10056_dw3000_twr_tag_tdma syscfg=UWBCFG_DEF_RX_STS_MODE='"0"':UWBCFG_DEF_TX_PREAM_LEN='"64"'
 # Uncomment next line to enable PDOA
-newt target amend pca10056_dw3000_twr_tag_tdma syscfg=UWBCFG_DEF_RX_CIPHER_MODE='"1sdc"':UWBCFG_DEF_TX_PREAM_LEN='"64"':UWBCFG_DEF_RX_SFD_TYPE='"1"':UWBCFG_DEF_RX_CIPHER_LEN='"256"'
+newt target amend pca10056_dw3000_twr_tag_tdma syscfg=UWBCFG_DEF_RX_STS_MODE='"1sdc"':UWBCFG_DEF_TX_PREAM_LEN='"64"':UWBCFG_DEF_RX_SFD_TYPE='"1"':UWBCFG_DEF_RX_STS_LEN='"256"'
 # Uncomment next line to use uart instead of rtt console
 newt target amend pca10056_dw3000_twr_tag_tdma syscfg=CONSOLE_UART_BAUD=115200:CONSOLE_UART=1:CONSOLE_RTT=0
+newt target amend pca10056_dw3000_twr_tag_tdma syscfg=DW3000_RXTX_GPIO=1
+newt target amend pca10056_dw3000_twr_tag_tdma syscfg=RNG_VERBOSE=0
 newt run pca10056_dw3000_twr_tag_tdma 0
 
 # On mac
@@ -258,15 +266,13 @@ The mynewt os offers a set of console config tools. To see what config parameter
 ```
 1786287 compat> config dump
 1788709 uwb/channel = 5
-1788709 uwb/prf = 64
-1788709 uwb/cipher_prf = 64
 1788709 uwb/datarate = 6m8
 1788709 uwb/rx_paclen = 8
 1788709 uwb/rx_pream_cidx = 9
 1788710 uwb/rx_sfdtype = 1
 1788710 uwb/rx_phrmode = e
-1788710 uwb/rx_cipher_mode = 1sdc
-1788710 uwb/rx_cipher_len = 256
+1788710 uwb/rx_sts_mode = 1sdc
+1788710 uwb/rx_sts_len = 256
 1788710 uwb/rx_pdoa_mode = 3
 1788710 uwb/tx_pream_cidx = 9
 1788712 uwb/tx_pream_len = 64
