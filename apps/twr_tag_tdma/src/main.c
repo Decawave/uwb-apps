@@ -92,8 +92,6 @@ slot_cb(struct dpl_event *ev){
 
     /* Select single-sided or double sided twr every second slot */    
     int mode = UWB_DATA_CODE_SS_TWR_ACK;
-    //mode = UWB_DATA_CODE_SS_TWR_EXT;
-#if 0
     if ((slot->idx&7)==1) {
         mode = UWB_DATA_CODE_SS_TWR;
     }
@@ -106,7 +104,7 @@ slot_cb(struct dpl_event *ev){
     if ((slot->idx&7)==4) {
         mode = UWB_DATA_CODE_DS_TWR_EXT;
     }
-#endif
+
     uwb_rng_request_delay_start(rng, node_address, dx_time, mode);
 }
 
@@ -266,12 +264,6 @@ int main(int argc, char **argv){
 #endif
     dpl_event_init(&slot_event, slot_complete_cb, rng);
 
-#if MYNEWT_VAL(DW1000_DEVICE_0)
-    // Using DW GPIO5 and GPIO6 to study timing.
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    dw1000_gpio5_config_ext_txe( inst);
-    dw1000_gpio6_config_ext_rxe( inst);
-#endif
     /* Slot 0:ccp, 1+ twr */
     for (uint16_t i = 1; i < MYNEWT_VAL(TDMA_NSLOTS); i++) {
         tdma_assign_slot(tdma, slot_cb,  i, (void*)rng);
