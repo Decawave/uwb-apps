@@ -182,7 +182,7 @@ uwb_ev_cb(struct os_event *ev)
         if (++last_used_mode >= mode_i) last_used_mode=0;
         mode = mode_v[last_used_mode];
         /* Uncomment the next line to force the range mode */
-        mode = UWB_DATA_CODE_SS_TWR;
+        // mode = UWB_DATA_CODE_SS_TWR;
         if (mode>0) {
             uwb_rng_request(rng, MYNEWT_VAL(ANCHOR_ADDRESS), mode);
         }
@@ -201,10 +201,19 @@ int
 uwb_config_updated()
 {
     struct uwb_dev *inst = uwb_dev_idx_lookup(0);
+    struct uwb_rng_instance * rng = (struct uwb_rng_instance*)uwb_mac_find_cb_inst_ptr(
+        inst, UWBEXT_RNG);
+    assert(rng);
     uwb_mac_config(inst, NULL);
     uwb_txrf_config(inst, &inst->config.txrf);
-    //uwb_phy_set_rx_antennadelay(inst, inst->rx_antenna_delay);
-    //uwb_phy_set_tx_antennadelay(inst, inst->tx_antenna_delay);
+
+    if (inst->role&UWB_ROLE_ANCHOR) {
+        uwb_phy_forcetrxoff(inst);
+        uwb_set_rx_timeout(inst, 0xfffff);
+        uwb_rng_listen(rng, UWB_NONBLOCKING);
+    } else {
+        /* Do nothing */
+    }
     return 0;
 }
 
