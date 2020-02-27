@@ -331,27 +331,31 @@ main(int argc, char **argv)
     assert(pan);
 
     if (udev->role & UWB_ROLE_CCP_MASTER) {
-        printf("{\"role\"=\"ccp_master\"}\n");
+        printf("{\"role\":\"ccp_master\"}\n");
         uwb_ccp_start(ccp, CCP_ROLE_MASTER);
 
         struct image_version fw_ver;
         struct panmaster_node *node;
-        panmaster_find_node(udev->my_long_address, NETWORK_ROLE_ANCHOR, &node);
+        panmaster_idx_find_node(udev->euid, NETWORK_ROLE_ANCHOR, &node);
         assert(node);
         imgr_my_version(&fw_ver);
-        panmaster_add_version(udev->my_long_address, &fw_ver);
+        node->fw_ver.iv_major = fw_ver.iv_major;
+        node->fw_ver.iv_minor = fw_ver.iv_minor;
+        node->fw_ver.iv_revision = fw_ver.iv_revision;
+        node->fw_ver.iv_build_num = fw_ver.iv_build_num;
         udev->my_short_address = node->addr;
         udev->slot_id = node->slot_id;
+        panmaster_postprocess();
         uwb_pan_start(pan, UWB_PAN_ROLE_MASTER, NETWORK_ROLE_ANCHOR);
     } else {
         uwb_ccp_start(ccp, CCP_ROLE_RELAY);
         uwb_pan_start(pan, UWB_PAN_ROLE_RELAY, NETWORK_ROLE_ANCHOR);
     }
-    printf("{\"device_id\"=\"%lX\"",udev->device_id);
-    printf(",\"panid=\"%X\"",udev->pan_id);
-    printf(",\"addr\"=\"%X\"",udev->uid);
-    printf(",\"part_id\"=\"%lX\"",(uint32_t)(udev->euid&0xffffffff));
-    printf(",\"lot_id\"=\"%lX\"}\n",(uint32_t)(udev->euid>>32));
+    printf("{\"device_id\":\"%lX\"",udev->device_id);
+    printf(",\"panid\":\"%X\"",udev->pan_id);
+    printf(",\"addr\":\"%X\"",udev->uid);
+    printf(",\"part_id\":\"%lX\"",(uint32_t)(udev->euid&0xffffffff));
+    printf(",\"lot_id\":\"%lX\"}\n",(uint32_t)(udev->euid>>32));
 
     tdma_instance_t * tdma = (tdma_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_TDMA);
     assert(tdma);

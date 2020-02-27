@@ -57,6 +57,7 @@
 #if MYNEWT_VAL(UWB_PAN_ENABLED)
 #include <uwb_pan/uwb_pan.h>
 #include <panmaster/panmaster.h>
+#include <bootutil/image.h>
 
 #endif
 
@@ -285,14 +286,16 @@ int main(int argc, char **argv){
         /* As pan-master, first lookup our address and slot_id */
         struct image_version fw_ver;
         struct panmaster_node *node;
-        panmaster_find_node(udev->euid, NETWORK_ROLE_ANCHOR, &node);
+        panmaster_idx_find_node(udev->euid, NETWORK_ROLE_ANCHOR, &node);
         assert(node);
-        /* Update my fw-version in the panmaster db */
         imgr_my_version(&fw_ver);
-        panmaster_add_version(udev->euid, &fw_ver);
-        /* Set short address and slot id */
-        udev->uid = node->addr;
+        node->fw_ver.iv_major = fw_ver.iv_major;
+        node->fw_ver.iv_minor = fw_ver.iv_minor;
+        node->fw_ver.iv_revision = fw_ver.iv_revision;
+        node->fw_ver.iv_build_num = fw_ver.iv_build_num;
+        udev->my_short_address = node->addr;
         udev->slot_id = node->slot_id;
+        panmaster_postprocess();
         uwb_pan_start(pan, UWB_PAN_ROLE_MASTER, NETWORK_ROLE_ANCHOR);
     } else {
         uwb_pan_set_postprocess(pan, pan_complete_cb);
@@ -303,11 +306,11 @@ int main(int argc, char **argv){
     
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
     printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 
-    printf("{\"device_id\"=\"%lX\"",udev->device_id);
-    printf(",\"panid=\"%X\"",udev->pan_id);
-    printf(",\"addr\"=\"%X\"",udev->uid);
-    printf(",\"part_id\"=\"%lX\"",(uint32_t)(udev->euid&0xffffffff));
-    printf(",\"lot_id\"=\"%lX\"}\n",(uint32_t)(udev->euid>>32));
+    printf("{\"device_id\":\"%lX\"",udev->device_id);
+    printf(",\"panid\":\"%X\"",udev->pan_id);
+    printf(",\"addr\":\"%X\"",udev->uid);
+    printf(",\"part_id\":\"%lX\"",(uint32_t)(udev->euid&0xffffffff));
+    printf(",\"lot_id\":\"%lX\"}\n",(uint32_t)(udev->euid>>32));
     printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime, uwb_phy_frame_duration(udev, sizeof(twr_frame_final_t))); 
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime, uwb_phy_SHR_duration(udev)); 
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay))); 
