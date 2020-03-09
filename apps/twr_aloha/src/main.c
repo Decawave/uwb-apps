@@ -108,21 +108,6 @@ rx_timeout_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     return true;
 }
 
-static bool
-rx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
-{
-    struct uwb_rng_instance * rng = (struct uwb_rng_instance*)cbs->inst_ptr;
-    /* This should only be reached if we receive something else than a range request */
-    if (inst->role&UWB_ROLE_ANCHOR) {
-        uwb_phy_forcetrxoff(inst);
-        uwb_set_rx_timeout(inst, 0xfffff);
-        uwb_rng_listen(rng, UWB_NONBLOCKING);
-    } else {
-        /* Do nothing */
-    }
-    return true;
-}
-
 /*! 
  * @fn slot_complete_cb(struct os_event * ev)
  *
@@ -241,7 +226,6 @@ int main(int argc, char **argv){
         .inst_ptr = rng,
         .complete_cb = complete_cb,
         .rx_timeout_cb = rx_timeout_cb,
-        .rx_complete_cb = rx_complete_cb
    };
     uwb_mac_append_interface(udev, &cbs);
 
