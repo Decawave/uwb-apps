@@ -56,8 +56,8 @@ Prerequisites: You should follow the generic tutorials at http://mynewt.apache.o
 2. Download the DW1000 Mynewt apps.
 
 ```no-highlight
-    git clone git@github.com:Decawave/decawave-uwb-apps.git
-    cd decawave-uwb-apps
+    git clone git@github.com:Decawave/uwb-apps.git
+    cd uwb-apps
 ```
 
 3. Running the newt install command downloads the apache-mynewt-core, decawave-uwb-core, and mynewt-timescale-lib packages, these are dependent repos of the decawave-uwb-apps project and are automatically checked-out by the newt tools.
