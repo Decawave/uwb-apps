@@ -83,13 +83,14 @@ complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     }
     struct uwb_rng_instance * rng = (struct uwb_rng_instance*)cbs->inst_ptr;
     g_idx_latest = (rng->idx)%rng->nframes; // Store valid frame pointer
-
     twr_frame_t * frame = rng->frames[rng->idx_current];
-    if (inst->capabilities.single_receiver_pdoa) {
-        frame->spherical.azimuth = uwb_calc_aoa(
-            frame->pdoa, inst->config.channel, ANTENNA_SEPERATION);
-    }
 
+    if (inst->capabilities.single_receiver_pdoa) {
+        float tmp_aoa = uwb_calc_aoa(
+            frame->pdoa, inst->config.channel, ANTENNA_SEPERATION);
+        if (!isnan(tmp_aoa))
+            frame->spherical.azimuth = tmp_aoa;
+    }
     dpl_eventq_put(dpl_eventq_dflt_get(), &slot_event);
     return true;
 }
@@ -100,8 +101,7 @@ rx_timeout_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     struct uwb_rng_instance * rng = (struct uwb_rng_instance*)cbs->inst_ptr;
     if (inst->role&UWB_ROLE_ANCHOR) {
         uwb_phy_forcetrxoff(inst);
-        uwb_set_rx_timeout(inst, 0xfffff);
-        uwb_rng_listen(rng, UWB_NONBLOCKING);
+        uwb_rng_listen(rng, 0xfffff, UWB_NONBLOCKING);
     } else {
         /* Do nothing */
     }
@@ -131,7 +131,7 @@ static void slot_complete_cb(struct dpl_event *ev)
     struct uwb_dev * inst = rng->dev_inst;
 
     if (inst->role&UWB_ROLE_ANCHOR) {
-        uwb_rng_listen(rng, UWB_NONBLOCKING);
+        uwb_rng_listen(rng, 0xfffff, UWB_NONBLOCKING);
     }
 }
 
@@ -143,8 +143,7 @@ uwb_ev_cb(struct os_event *ev)
 
     if (inst->role&UWB_ROLE_ANCHOR) {
         if(dpl_sem_get_count(&rng->sem) == 1){
-            uwb_set_rx_timeout(inst, 0xfffff);
-            uwb_rng_listen(rng, UWB_NONBLOCKING);
+            uwb_rng_listen(rng, 0xfffff, UWB_NONBLOCKING);
         }
     } else {
         int mode_v[8] = {0}, mode_i=0, mode=-1;
@@ -194,8 +193,7 @@ uwb_config_updated()
 
     if (inst->role&UWB_ROLE_ANCHOR) {
         uwb_phy_forcetrxoff(inst);
-        uwb_set_rx_timeout(inst, 0xfffff);
-        uwb_rng_listen(rng, UWB_NONBLOCKING);
+        uwb_rng_listen(rng, 0xfffff, UWB_NONBLOCKING);
     } else {
         /* Do nothing */
     }
@@ -244,9 +242,6 @@ int main(int argc, char **argv){
     uwb_set_autoack(udev, true);
     uwb_set_autoack_delay(udev, 12);
 #endif
-
-    uwb_set_rx_timeout(udev, 0xfffff);
-    uwb_rng_listen(rng, UWB_NONBLOCKING);
 
     os_callout_init(&tx_callout, os_eventq_dflt_get(), uwb_ev_cb, rng);
     os_callout_reset(&tx_callout, OS_TICKS_PER_SEC/25);
