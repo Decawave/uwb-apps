@@ -424,22 +424,22 @@ process_rx_data_queue(struct os_event *ev)
             if (isnan(pdoa)) {
                 /* Json can't handle Nan, but it can handle null */
                 mprintf(m,"%snull", (j==0)?"":",");
-                continue;
+            } else {
+                mprintf(m,(pdoa < 0)?"%s-%d.%03d":"%s%d.%03d",
+                        (j==0)?"":",",
+                        abs((int)pdoa), abs((int)(1000*(pdoa-(int)pdoa))));
             }
-            mprintf(m,(pdoa < 0)?"%s-%d.%03d":"%s%d.%03d",
-                   (j==0)?"":",",
-                   abs((int)pdoa), abs((int)(1000*(pdoa-(int)pdoa))));
         }
 
         for(int j=0;j<n_instances-1;j++) {
             if (isnan(hdr->pd[j])) {
                 /* Json can't handle Nan, but it can handle null */
                 mprintf(m,"%snull", (j==0)?"":",");
-                continue;
+            } else {
+                mprintf(m,(hdr->pd[j] < 0)?"%s-%d.%03d":"%s%d.%03d",
+                        (j==0)?"":",",
+                        abs((int)hdr->pd[j]), abs((int)(1000*(hdr->pd[j]-(int)hdr->pd[j]))));
             }
-            mprintf(m,(hdr->pd[j] < 0)?"%s-%d.%03d":"%s%d.%03d",
-                   (j==0)?"":",",
-                   abs((int)hdr->pd[j]), abs((int)(1000*(hdr->pd[j]-(int)hdr->pd[j]))));
         }
 
         mprintf(m,"],\"dlen\":%d", hdr->dlen);
@@ -563,106 +563,107 @@ rx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 
     om = os_mbuf_get_pkthdr(&g_mbuf_pool,
                             sizeof(struct uwb_msg_hdr));
-    if (om) {
-        struct uwb_msg_hdr *hdr = (struct uwb_msg_hdr*)OS_MBUF_USRHDR(om);
-        memset(hdr, 0, sizeof(struct uwb_msg_hdr));
-        hdr->dlen = inst->frame_len;
-        hdr->utime = os_cputime_ticks_to_usecs(os_cputime_get32());
-        hdr->carrier_integrator = inst->carrier_integrator;
+    if (!om) {
+        /* Not enough memory to handle incoming packet, drop it */
+        return true;
+    }
+
+    struct uwb_msg_hdr *hdr = (struct uwb_msg_hdr*)OS_MBUF_USRHDR(om);
+    memset(hdr, 0, sizeof(struct uwb_msg_hdr));
+    hdr->dlen = inst->frame_len;
+    hdr->utime = os_cputime_ticks_to_usecs(os_cputime_get32());
+    hdr->carrier_integrator = inst->carrier_integrator;
 
 #ifdef MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
-        for(int i=0;i<MYNEWT_VAL(PDOA_SPI_NUM_INSTANCES);i++) {
-            struct pdoa_cir_data *pdata = hal_bsp_get_pdoa_cir_data(i);
-            memcpy(&hdr->diag[i], &pdata->rxdiag, sizeof(hdr->diag[i]));
-            hdr->ts[i] = pdata->ts;
-        }
+    for(int i=0;i<MYNEWT_VAL(PDOA_SPI_NUM_INSTANCES);i++) {
+        struct pdoa_cir_data *pdata = hal_bsp_get_pdoa_cir_data(i);
+        memcpy(&hdr->diag[i], &pdata->rxdiag, sizeof(hdr->diag[i]));
+        hdr->ts[i] = pdata->ts;
+    }
 #else
-        for(int i=0;i<N_DW_INSTANCES;i++) {
-            struct uwb_dev * udev = uwb_dev_idx_lookup(i);
-            memcpy(&hdr->diag[i], udev->rxdiag, udev->rxdiag->rxd_len);
-            if (!udev->status.lde_error) {
-                hdr->ts[i] = udev->rxtimestamp;
-            }
+    for(int i=0;i<N_DW_INSTANCES;i++) {
+        struct uwb_dev * udev = uwb_dev_idx_lookup(i);
+        memcpy(&hdr->diag[i], udev->rxdiag, udev->rxdiag->rxd_len);
+        if (!udev->status.lde_error) {
+            hdr->ts[i] = udev->rxtimestamp;
         }
+    }
 #endif
-        rc = os_mbuf_copyinto(om, 0, inst->rxbuf, hdr->dlen);
-        if (rc != 0) {
-            return true;
-        }
+    rc = os_mbuf_copyinto(om, 0, inst->rxbuf, hdr->dlen);
+    if (rc != 0) {
+        return true;
+    }
 
 #if MYNEWT_VAL(CIR_ENABLED)
 
 #ifdef MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
-        struct pdoa_cir_data *pdata0 = hal_bsp_get_pdoa_cir_data(0);
-        for(int j=1;j<MYNEWT_VAL(PDOA_SPI_NUM_INSTANCES);j++) {
-            struct pdoa_cir_data *pdata = hal_bsp_get_pdoa_cir_data(j);
-            /* Verify crc and data length */
-            if (pdata0->rxbuf_crc16 != pdata->rxbuf_crc16 || pdata0->rx_length != pdata->rx_length) {
-                hdr->pd[j-1] = nanf("");
-                continue;
-            }
-
-            /* Verify that we're measuring the same leading edge */
-            int raw_ts_diff = (pdata->cir.raw_ts - cir[0]->raw_ts)/64;
-            float fp_diff = roundf(pdata->cir.fp_idx) - roundf(cir[0]->fp_idx) + raw_ts_diff;
-            if (fabsf(fp_diff) > 1.0) {
-                hdr->pd[j-1] = nanf("");
-                continue;
-            }
-
-            if (cir[0]->status.valid && pdata->cir.status.valid) {
-                hdr->pd[j-1] = cir_get_pdoa(cir[0], &pdata->cir);
-            }
+    struct pdoa_cir_data *pdata0 = hal_bsp_get_pdoa_cir_data(0);
+    for(int j=1;j<MYNEWT_VAL(PDOA_SPI_NUM_INSTANCES);j++) {
+        struct pdoa_cir_data *pdata = hal_bsp_get_pdoa_cir_data(j);
+        /* Verify crc and data length */
+        if (pdata0->rxbuf_crc16 != pdata->rxbuf_crc16 || pdata0->rx_length != pdata->rx_length) {
+            hdr->pd[j-1] = nanf("");
+            continue;
         }
+
+        /* Verify that we're measuring the same leading edge */
+        int raw_ts_diff = (pdata->cir.raw_ts - cir[0]->raw_ts)/64;
+        float fp_diff = roundf(pdata->cir.fp_idx) - roundf(cir[0]->fp_idx) + raw_ts_diff;
+        if (fabsf(fp_diff) > 1.0) {
+            hdr->pd[j-1] = nanf("");
+            continue;
+        }
+
+        if (cir[0]->status.valid && pdata->cir.status.valid) {
+            hdr->pd[j-1] = cir_get_pdoa(cir[0], &pdata->cir);
+        }
+    }
 #else
-        if (N_DW_INSTANCES == 2) {
-            if (cir[0]->status.valid && cir[1]->status.valid) {
-                hdr->pd[0] = cir_get_pdoa(cir[0], cir[1]);
-            }
+    if (N_DW_INSTANCES == 2) {
+        if (cir[0]->status.valid && cir[1]->status.valid) {
+            hdr->pd[0] = cir_get_pdoa(cir[0], cir[1]);
         }
+    }
 #endif
 
-        /* Do we need to load accumulator data */
-        if (local_conf.acc_samples_to_load) {
+    /* Do we need to load accumulator data */
+    if (local_conf.acc_samples_to_load) {
 #if MYNEWT_VAL(DW1000_DEVICE_0)
-            struct cir_dw1000_instance *src;
+        struct cir_dw1000_instance *src;
 #endif
 #if MYNEWT_VAL(DW3000_DEVICE_0)
-            struct cir_dw3000_instance *src;
+        struct cir_dw3000_instance *src;
 #endif
 #ifdef MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
-            for(int i=0;i<MYNEWT_VAL(PDOA_SPI_NUM_INSTANCES);i++) {
-                if (i==0) {
-                    src = hal_dw1000_inst(i)->cir;
-                } else {
-                    struct pdoa_cir_data *pdata = hal_bsp_get_pdoa_cir_data(i);
-                    src = &pdata->cir;
-                }
-#else
-            for(int i=0;i<N_DW_INSTANCES;i++) {
-#if MYNEWT_VAL(DW1000_DEVICE_0)
+        for(int i=0;i<MYNEWT_VAL(PDOA_SPI_NUM_INSTANCES);i++) {
+            if (i==0) {
                 src = hal_dw1000_inst(i)->cir;
+            } else {
+                struct pdoa_cir_data *pdata = hal_bsp_get_pdoa_cir_data(i);
+                src = &pdata->cir;
+            }
+#else // MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
+        for(int i=0;i<N_DW_INSTANCES;i++) {
+
+#if MYNEWT_VAL(DW1000_DEVICE_0)
+            src = hal_dw1000_inst(i)->cir;
 #endif
 #if MYNEWT_VAL(DW3000_DEVICE_0)
-                src = hal_dw3000_inst(i)->cir;
+            src = hal_dw3000_inst(i)->cir;
 #endif
 
-#endif
-                rc = os_mbuf_copyinto(om, hdr->dlen + i*sizeof(*src),
-                                      src, sizeof(*src));
-                assert(rc == 0);
-            }
+#endif // MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
+            rc = os_mbuf_copyinto(om, hdr->dlen + i*sizeof(*src),
+                                  src, sizeof(*src));
+            assert(rc == 0);
         }
+    }
 #endif // CIR_ENABLED
 
-        rc = os_mqueue_put(&rxpkt_q, os_eventq_dflt_get(), om);
-        if (rc != 0) {
-            return true;
-        }
-    } else {
-        /* Not enough memory to handle incoming packet, drop it */
+    rc = os_mqueue_put(&rxpkt_q, os_eventq_dflt_get(), om);
+    if (rc != 0) {
+        return true;
     }
-
     return true;
 }
 

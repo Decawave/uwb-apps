@@ -15,6 +15,7 @@ syscfg.vals:
     CONSOLE_UART_TX_BUF_SIZE: 1024
     CONSOLE_UART_RX_BUF_SIZE: 256
     CONSOLE_HISTORY_SIZE: 8
+    LOG_LEVEL: 2
 
     # Shell
     SHELL_TASK: 1
@@ -23,7 +24,8 @@ syscfg.vals:
     STATS_CLI: 1
     STATS_NAMES: 1
     STATS_NEWTMGR: 1
-    DW1000_CLI: 1
+    UWB_CLI: 1
+    UWB_CLI_BACKTRACE: 0
 
     # Enable DWx000
     UWB_DEVICE_0: 1
