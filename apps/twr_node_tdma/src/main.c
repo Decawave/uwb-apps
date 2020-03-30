@@ -89,20 +89,16 @@ cir_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     twr_frame_t * frame0 = (twr_frame_t *) udev[0]->rxbuf;
     twr_frame_t * frame1 = (twr_frame_t *) udev[1]->rxbuf;
 
+    struct uwb_rng_instance * rng = (struct uwb_rng_instance*)cbs->inst_ptr;
+    twr_frame_t * frame = rng->frames[rng->idx_current];
     if ((cir[0]->status.valid && cir[1]->status.valid) && (frame0->seq_num == frame1->seq_num)){ 
 #if MYNEWT_VAL(CIR_ENABLED)
         float pd = cir_get_pdoa(cir[1], cir[0]);
 #endif
-        g_angle.azimuth = uwb_calc_aoa(pd, inst->config.channel, ANTENNA_SEPERATION);
+        frame->local.spherical.azimuth = uwb_calc_aoa(pd, inst->config.channel, ANTENNA_SEPERATION);
    }
 #endif
 
-    struct uwb_rng_instance * rng = (struct uwb_rng_instance*)cbs->inst_ptr;
-    twr_frame_t * frame = rng->frames[rng->idx_current];
-    if (inst->capabilities.single_receiver_pdoa) {
-        frame->spherical.azimuth = uwb_calc_aoa(
-            frame->pdoa, inst->config.channel, ANTENNA_SEPERATION);
-    }
     return true;
 }
 
@@ -143,11 +139,11 @@ complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
             pd, inst->config.channel, ANTENNA_SEPERATION);
     }
 #if MYNEWT_VAL(AOA_ANGLE_INVERT)
-    frame->spherical.azimuth = -g_angle.azimuth;
+    frame->local.spherical.azimuth = -g_angle.azimuth;
 #else
-    frame->spherical.azimuth = g_angle.azimuth;
+    frame->local.spherical.azimuth = g_angle.azimuth;
 #endif
-    frame->spherical.zenith = g_angle.zenith;
+    frame->local.spherical.zenith = g_angle.zenith;
 
     dpl_eventq_put(dpl_eventq_dflt_get(), &slot_event);
     return true;
