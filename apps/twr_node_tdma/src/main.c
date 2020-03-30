@@ -89,20 +89,16 @@ cir_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     twr_frame_t * frame0 = (twr_frame_t *) udev[0]->rxbuf;
     twr_frame_t * frame1 = (twr_frame_t *) udev[1]->rxbuf;
 
+    struct uwb_rng_instance * rng = (struct uwb_rng_instance*)cbs->inst_ptr;
+    twr_frame_t * frame = rng->frames[rng->idx_current];
     if ((cir[0]->status.valid && cir[1]->status.valid) && (frame0->seq_num == frame1->seq_num)){ 
 #if MYNEWT_VAL(CIR_ENABLED)
         float pd = cir_get_pdoa(cir[1], cir[0]);
 #endif
-        g_angle.azimuth = uwb_calc_aoa(pd, inst->config.channel, ANTENNA_SEPERATION);
+        frame->local.spherical.azimuth = uwb_calc_aoa(pd, inst->config.channel, ANTENNA_SEPERATION);
    }
 #endif
 
-    struct uwb_rng_instance * rng = (struct uwb_rng_instance*)cbs->inst_ptr;
-    twr_frame_t * frame = rng->frames[rng->idx_current];
-    if (inst->capabilities.single_receiver_pdoa) {
-        frame->spherical.azimuth = uwb_calc_aoa(
-            frame->pdoa, inst->config.channel, ANTENNA_SEPERATION);
-    }
     return true;
 }
 
@@ -143,11 +139,11 @@ complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
             pd, inst->config.channel, ANTENNA_SEPERATION);
     }
 #if MYNEWT_VAL(AOA_ANGLE_INVERT)
-    frame->spherical.azimuth = -g_angle.azimuth;
+    frame->local.spherical.azimuth = -g_angle.azimuth;
 #else
-    frame->spherical.azimuth = g_angle.azimuth;
+    frame->local.spherical.azimuth = g_angle.azimuth;
 #endif
-    frame->spherical.zenith = g_angle.zenith;
+    frame->local.spherical.zenith = g_angle.zenith;
 
     dpl_eventq_put(dpl_eventq_dflt_get(), &slot_event);
     return true;
@@ -278,27 +274,22 @@ slot_cb(struct dpl_event * ev)
     }
 
 #if MYNEWT_VAL(UWB_DEVICE_0) && MYNEWT_VAL(UWB_DEVICE_1)
-{   
+{
     struct uwb_dev * inst = uwb_dev_idx_lookup(0);
     uwb_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
     uwb_set_rx_timeout(inst, timeout);
     cir_enable(uwb_dev_idx_lookup(0)->cir, true);
     uwb_set_rxauto_disable(inst, true);
-    uwb_start_rx(inst);  // RX enabled but frames handled as unsolicited inbound          
+    uwb_start_rx(inst);  // RX enabled but frames handled as unsolicited inbound
 }
-{   
+{
     struct uwb_dev * inst = uwb_dev_idx_lookup(1);
     struct uwb_rng_instance * rng = (struct uwb_rng_instance*)uwb_mac_find_cb_inst_ptr(inst, UWBEXT_RNG);
-    uwb_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
-    uwb_set_rx_timeout(inst, timeout);  
     cir_enable(uwb_dev_idx_lookup(1)->cir, true);
-    uwb_rng_listen(rng, UWB_BLOCKING);
+    uwb_rng_listen_delay_start(rng, tdma_rx_slot_start(tdma, idx), timeout, UWB_BLOCKING);
 }
 #else
-    uwb_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
-    /* XXX: Workaround as it seems the frame-length calculations when including cipher isn't quite right */
-    uwb_set_rx_timeout(inst, timeout*2);
-    uwb_rng_listen(rng, UWB_BLOCKING);
+    uwb_rng_listen_delay_start(rng, tdma_rx_slot_start(tdma, idx), timeout, UWB_BLOCKING);
 #endif
 
 }

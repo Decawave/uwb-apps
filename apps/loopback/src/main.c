@@ -90,9 +90,8 @@ master_slot_ev_cb(struct dpl_event * ev){
     uwb_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
     uint16_t timeout = uwb_phy_frame_duration(inst, sizeof(ieee_rng_response_frame_t))
                             + rng->config.tx_holdoff_delay;  // Remote side turn around time.
-                            
-    uwb_set_rx_timeout(inst, timeout);
-    uwb_rng_listen(rng, UWB_BLOCKING);
+
+    uwb_rng_listen(rng, timeout, UWB_BLOCKING);
 }
 
 
