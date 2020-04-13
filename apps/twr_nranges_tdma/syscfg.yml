@@ -8,9 +8,9 @@ syscfg.vals:
     CONSOLE_HISTORY_SIZE: 8
 
     LOG_LEVEL: 0
-    
+
     CONFIG_FCB: 1
-    
+
     UWB_DEVICE_0: 1
     FS_XTALT_AUTOTUNE_ENABLED: 0
     TDMA_NSLOTS: 160
@@ -33,14 +33,14 @@ syscfg.vals:
 
     NRNG_VERBOSE: 1
     NRNG_DEVICE_TYPE: 1
-    
+
     # Pan related parameters, lease in s, lease exp margin in ms
     UWB_PAN_ENABLED: 1
     UWB_PAN_RX_TIMEOUT: ((uint16_t){4000})
     UWB_PAN_LEASE_TIME: 3600
     UWB_PAN_LEASE_EXP_MARGIN: 60000
-    
-    ## Panmaster    
+
+    ## Panmaster
     PANMASTER_FCB: 1
     PANMASTER_FCB_FLASH_AREA: FLASH_AREA_REBOOT_LOG
     REBOOT_LOG_FLASH_AREA: ""
@@ -91,12 +91,13 @@ syscfg.defs:
         description: 'z-location of this node in relation to the ccp master'
         value: ((float){0.0})
 
+    APP_USE_WCS:
+        description: 'Whether to use WCS or not, setting this to 0 removes the WCS pkg'
+        value: 1
+
 syscfg.vals.PANMASTER_ISSUER:
     UWBCFG_DEF_ROLE: '"0x7"'
 
 syscfg.vals.NRANGES_ANCHOR:
     UWBCFG_DEF_ROLE: '"0x4"'
     NRNG_DEVICE_TYPE: 1
-
-
-

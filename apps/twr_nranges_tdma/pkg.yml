@@ -41,8 +41,6 @@ pkg.deps:
     - "@decawave-uwb-core/lib/dsp"
     - "@decawave-uwb-core/lib/tdma"
     - "@decawave-uwb-core/lib/uwb_ccp"
-    - "@decawave-uwb-core/lib/uwb_wcs"
-    - "@mynewt-timescale-lib/lib/timescale"
     - "@decawave-uwb-core/lib/survey"
     - "@decawave-uwb-core/lib/nmgr_uwb"
     - "@decawave-uwb-core/mgmt/bcast_ota"
@@ -50,6 +48,9 @@ pkg.deps:
     - "@mcuboot/boot/bootutil"
 #    - "@decawave-uwb-apps/lib/bleprph"
 
+pkg.deps.APP_USE_WCS:
+    - "@decawave-uwb-core/lib/uwb_wcs"
+    - "@mynewt-timescale-lib/lib/timescale"
 
 pkg.cflags:
     - "-std=gnu11"
