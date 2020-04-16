@@ -591,6 +591,7 @@ rx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 #endif
     rc = os_mbuf_copyinto(om, 0, inst->rxbuf, hdr->dlen);
     if (rc != 0) {
+        os_mbuf_free_chain(om);
         return true;
     }
 
