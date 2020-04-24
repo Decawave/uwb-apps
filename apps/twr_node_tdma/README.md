@@ -110,7 +110,7 @@ newt run dwm1003_twr_tag_tdma 0
 
 ```
 
-7. On the console you should see the following expected result. 
+7. On the console you should see the following expected result.
 
 ```no-highlight
 
@@ -126,9 +126,13 @@ newt run dwm1003_twr_tag_tdma 0
 
 ```
 
-8. For PDOA with DW3000 module on STM. 
+8. For PDOA with DW3000 module on STM.
 
 ```no-highlight
+
+# Erase flash
+#sudo apt-get install stlink-tools
+st-flash erase
 
 # Bootloader (used for both tag and node)
 newt target create nucleo-f429zi_boot
@@ -144,16 +148,15 @@ newt target set nucleo-f429zi_twr_node_tdma app=apps/twr_node_tdma
 newt target set nucleo-f429zi_twr_node_tdma bsp=@decawave-uwb-core/hw/bsp/nucleo-f429zi
 newt target set nucleo-f429zi_twr_node_tdma build_profile=debug
 newt target amend nucleo-f429zi_twr_node_tdma syscfg=UWB_DEVICE_0=1:USE_DBLBUFFER=0:LOG_LEVEL=1:UWBCFG_DEF_ROLE='"0x1"'
-newt target amend nucleo-f429zi_twr_node_tdma syscfg=UWBCFG_DEF_RX_PDOA_MODE='"3"':UWBCFG_DEF_RX_CIPHER_MODE='"1sdc"':UWBCFG_DEF_TX_PREAM_LEN='"64"':UWBCFG_DEF_RX_SFD_TYPE='"1"':UWBCFG_DEF_RX_CIPHER_LEN='"256"':UWBCFG_DEF_FRAME_FILTER='"0xF"'
+newt target amend nucleo-f429zi_twr_node_tdma syscfg=UWBCFG_DEF_RX_PDOA_MODE='"3"':UWBCFG_DEF_RX_STS_MODE='"1sdc"':UWBCFG_DEF_TX_PREAM_LEN='"64"':UWBCFG_DEF_RX_SFD_TYPE='"1"':UWBCFG_DEF_RX_CIPHER_LEN='"256"':UWBCFG_DEF_FRAME_FILTER='"0xF"'
 # If the config seems "stuck" you can force it to change with the line below. You may need a different (random) value at the end
 newt target amend nucleo-f429zi_twr_node_tdma syscfg=CONFIG_FCB_MAGIC=0x12345678
 # Uncomment next line to use uart instead of rtt console
-#newt target amend nucleo-f429zi_twr_node_tdma syscfg=CONSOLE_UART=1:CONSOLE_UART_BAUD=115200:CONSOLE_RTT=0
+newt target amend nucleo-f429zi_twr_node_tdma syscfg=CONSOLE_UART=1:CONSOLE_UART_BAUD=115200:CONSOLE_RTT=0
 # Uncomment next line if the aoa angle appears inverted (Antenna facing other way)
 #newt target amend nucleo-f429zi_twr_node_tdma syscfg=AOA_ANGLE_INVERT=1
 # Uncomment next line to enable the RXTX GPIO masks.
 newt target amend nucleo-f429zi_twr_node_tdma syscfg=DW3000_RXTX_GPIO=1
-
 newt run nucleo-f429zi_twr_node_tdma 0
 
 # Tag application
@@ -178,7 +181,7 @@ preamble_length should be "64", and the cipher preamble length should be 256. Th
 set to "3" for best accuracy (pdoa_mode "1" works too, but is less accurate).
 
 
-9. For PDOA with DWM3020 on nRF52. 
+9. For PDOA with DWM3020 on nRF52.
 
 ```no-highlight
 
@@ -186,7 +189,7 @@ set to "3" for best accuracy (pdoa_mode "1" works too, but is less accurate).
 newt target create pca10056_dw3000_boot
 newt target set pca10056_dw3000_boot app=@mcuboot/boot/mynewt
 newt target set pca10056_dw3000_boot bsp=@decawave-uwb-core/hw/bsp/pca10056_dw3000
-newt target set pca10056_dw3000_boot build_profile=optimized 
+newt target set pca10056_dw3000_boot build_profile=optimized
 newt build pca10056_dw3000_boot
 newt load pca10056_dw3000_boot
 
