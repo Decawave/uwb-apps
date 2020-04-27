@@ -35,7 +35,7 @@ J-Link>exit
 $ 
 ```
 
-2. On 1st dwm1001-dev board build the mesh node (twr_node_tdma) application for the DWM1001 module. 
+2. On 1st dwm1001-dev board build the mesh node (twr_node_tdma) application for the DWM1001 module.
 
 ```no-highlight
 
@@ -50,7 +50,7 @@ newt load node_tdma
 
 ```
 
-3. On 2nd dwm1001-dev board build the mesh tag (tag_mesh) applications for the DWM1001 module. 
+3. On 2nd dwm1001-dev board build the mesh tag (tag_mesh) applications for the DWM1001 module.
 
 ```no-highlight
 
