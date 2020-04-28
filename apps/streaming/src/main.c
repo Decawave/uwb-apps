@@ -173,6 +173,7 @@ static void
 stream_slot_cb(struct dpl_event * ev)
 {
     uint64_t dxtime, dxtime_end;
+    uint64_t preamble_duration;
     assert(ev);
     tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
     tdma_instance_t * tdma = slot->parent;
@@ -193,14 +194,15 @@ stream_slot_cb(struct dpl_event * ev)
         return;
     }
 #endif
+    preamble_duration = (uint64_t) ceilf(uwb_usecs_to_dwt_usecs(uwb_phy_SHR_duration(tdma->dev_inst)));
     dxtime = tdma_tx_slot_start(tdma, idx);
     dxtime_end = (tdma_tx_slot_start(tdma, idx+1) -
-                  (MYNEWT_VAL(OS_LATENCY)<<16)) & UWB_DTU_40BMASK;
+                  ((preamble_duration + MYNEWT_VAL(OS_LATENCY))<<16)) & UWB_DTU_40BMASK;
     dxtime_end &= UWB_DTU_40BMASK;
     if (uwb_transport_dequeue_tx(uwb_transport, dxtime, dxtime_end) == false) {
         dxtime = tdma_rx_slot_start(tdma, idx);
         dxtime_end = (tdma_rx_slot_start(tdma, idx+1) -
-                      (MYNEWT_VAL(OS_LATENCY)<<16)) & UWB_DTU_40BMASK;
+                      ((preamble_duration + MYNEWT_VAL(OS_LATENCY))<<16)) & UWB_DTU_40BMASK;
         dxtime_end &= UWB_DTU_40BMASK;
         uwb_transport_listen(uwb_transport, UWB_BLOCKING, dxtime, dxtime_end);
     }
@@ -276,6 +278,19 @@ int main(int argc, char **argv){
 
     sysinit();
 
+    struct uwb_dev * udev = uwb_dev_idx_lookup(0);
+
+#if MYNEWT_VAL(USE_DBLBUFFER)
+    /* Make sure to enable double buffring */
+    udev->config.dblbuffon_enabled = 1;
+    udev->config.rxauto_enable = 0;
+    uwb_set_dblrxbuff(udev, true);
+#else
+    udev->config.dblbuffon_enabled = 0;
+    udev->config.rxauto_enable = 1;
+    uwb_set_dblrxbuff(udev, false);
+#endif
+
 #if MYNEWT_VAL(UWBCFG_ENABLED)
     /* Register callback for UWB configuration changes */
     struct uwbcfg_cbs uwb_cb = {
@@ -290,25 +305,11 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
 
-    struct uwb_dev * udev = uwb_dev_idx_lookup(0);
-
-#if MYNEWT_VAL(USE_DBLBUFFER)
-        /* Make sure to enable double buffring */
-        udev->config.dblbuffon_enabled = 1;
-        udev->config.rxauto_enable = 0;
-        uwb_set_dblrxbuff(udev, true);
-#else
-        udev->config.dblbuffon_enabled = 0;
-        udev->config.rxauto_enable = 1;
-        uwb_set_dblrxbuff(udev, false);
-#endif
-
     struct _uwb_transport_instance * uwb_transport = (struct _uwb_transport_instance *)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_TRANSPORT);
     assert(uwb_transport);
 
     struct _uwb_transport_extension extension = {
         .tsp_code = 0xDEAD,
-        .uwb_transport = uwb_transport,
         .extension_cb = uwb_transport_cb
     };
 
@@ -359,7 +360,7 @@ int main(int argc, char **argv){
             tdma_assign_slot(tdma, stream_slot_cb,  i, (void*)uwb_transport);
     }
 #else
-    /* Slot 0:ccp, 1-160 stream */
+/* Slot 0:ccp, 1-160 stream */
     for (uint16_t i = 1; i < MYNEWT_VAL(TDMA_NSLOTS) - 1; i++)
             tdma_assign_slot(tdma, stream_slot_cb,  i, (void*)uwb_transport);
 #endif
