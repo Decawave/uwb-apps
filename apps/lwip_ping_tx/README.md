@@ -22,7 +22,7 @@
 # Decawave DW1000 Application lwip_ping_tx
 
 ## Overview
-The Decawave DW1000 Application lwip_ping_tx showcases the ability of lwIP driver to send and receive 
+The Decawave DW1000 Application lwip_ping_tx showcases the ability of lwIP driver to send and receive
 payloads to and from a node. In this sample application, we are sending a ping from Node A to NODE B.
 
 ## Building

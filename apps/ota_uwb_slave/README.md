@@ -33,10 +33,10 @@ To run the below applications which are configured with UART, change the pins in
 $ JLinkExe -device nRF52 -speed 4000 -if SWD
 J-Link>erase
 J-Link>exit
-$ 
+$
 ```
 ```no-highlight
-2. On 1st dwm1001-dev board build the ota_uwb_master applications for the DWM1001 module. 
+2. On 1st dwm1001-dev board build the ota_uwb_master applications for the DWM1001 module.
 
 newt target create master
 newt target set master app=apps/ota_uwb_master
@@ -48,7 +48,7 @@ newt create-image master 1.0.0
 newt load master
 ```
 ```no-highlight
-3. On 2nd dwm1001-dev board build the ota_uwb_slave applications for the DWM1001 module. 
+3. On 2nd dwm1001-dev board build the ota_uwb_slave applications for the DWM1001 module.
 
 newt target create slave
 newt target set slave app=apps/ota_uwb_slave
@@ -76,7 +76,7 @@ newtmgr image list -c ble
 ```
 With the above command, you get the image slots of the device
 
-## Create a the image of interest 
+## Create a the image of interest
 ```
 newt create-image slave 2.0.0
 ```
@@ -85,22 +85,22 @@ newt create-image slave 2.0.0
 newtmgr image upload -c ble /path of the image created in bin file/
 
 ```
-## check for image status 
+## check for image status
 ```
 newtmgr image list -c ble
 
 ```
 Now, you get status of primary and secondary slots with 2 different versioned images.
 
-2. Once the required image has been uploaded in the second slot start the upload of this image to slave node 
+2. Once the required image has been uploaded in the second slot start the upload of this image to slave node
 ### check whether master can talk to slave
 ```
 img_list 0x1234 (Slave node address)
 Should get some logs like this
-slot = 0 
-Version = 0.0.0 
-bootable : true 
-Flags : active confirmed 
+slot = 0
+Version = 0.0.0
+bootable : true
+Flags : active confirmed
 7b6af13ca48f82fe22e009393779a3100458c2dc99e4e86ea38922c0aec5380a
 
 With the above commands, you get the image slots of both the devices.
@@ -110,20 +110,20 @@ With the above commands, you get the image slots of both the devices.
 img_upload slot2 0x1234 (Slave node address)
 
 ```
-### check for image status 
+### check for image status
 ```
 img_list 0x1234 (Slave node address)
 Should get some logs like this
-Slot = 0 
-Version = 1.0.0 
-bootable : true 
-Flags : active confirmed 
+Slot = 0
+Version = 1.0.0
+bootable : true
+Flags : active confirmed
 6479df5a957bf7fa2e9b45e075788fd91e3fb15895affee06ff3b9cb4e546645
 
-Slot = 1 
-Version = 1.0.0 
-bootable : true 
-Flags : 
+Slot = 1
+Version = 1.0.0
+bootable : true
+Flags :
 76609ae104fd47f74413d1c39501569605a12c2d17f17922cc3e417448244ab7
 ```
 Now, you get status of primary and secondary slots with 2 different versioned images.
@@ -131,16 +131,16 @@ Now, you get status of primary and secondary slots with 2 different versioned im
 ```
 img_set_state test 76609ae104fd47f74413d1c39501569605a12c2d17f17922cc3e417448244ab7(32 byte hash of testing image) 0x1234(Slave node address)
 Should get some logs like this
-Slot = 0 
-Version = 1.0.0 
-bootable : true 
-Flags : active confirmed 
+Slot = 0
+Version = 1.0.0
+bootable : true
+Flags : active confirmed
 6479df5a957bf7fa2e9b45e075788fd91e3fb15895affee06ff3b9cb4e546645
 
-Slot = 1 
-Version = 1.0.0 
-bootable : true 
-Flags : pending 
+Slot = 1
+Version = 1.0.0
+bootable : true
+Flags : pending
 76609ae104fd47f74413d1c39501569605a12c2d17f17922cc3e417448244ab7
 ```
 Now the images of secondary slot goes to pending state.
@@ -151,16 +151,16 @@ Once the device boots up
 ## Check for image status
 ```
 img_list 0x1234 (Slave node address)
-Slot = 0 
-Version = 1.0.0 
-bootable : true 
-Flags : active 
+Slot = 0
+Version = 1.0.0
+bootable : true
+Flags : active
 76609ae104fd47f74413d1c39501569605a12c2d17f17922cc3e417448244ab7
 
-Slot = 1 
-Version = 1.0.0 
-bootable : true 
-Flags : confirmed 
+Slot = 1
+Version = 1.0.0
+bootable : true
+Flags : confirmed
 6479df5a957bf7fa2e9b45e075788fd91e3fb15895affee06ff3b9cb4e546645
 ```
 After this, the uploaded image becomes active and will be running in primary slot.
@@ -171,16 +171,16 @@ img_set_state confirm 0x1234 (Slave node address)
 Should get some logs like this
 
 ```
-Slot = 0 
-Version = 1.0.0 
-bootable : true 
-Flags : active confirmed 
+Slot = 0
+Version = 1.0.0
+bootable : true
+Flags : active confirmed
 76609ae104fd47f74413d1c39501569605a12c2d17f17922cc3e417448244ab7
 
-Slot = 1 
-Version = 1.0.0 
-bootable : true 
-Flags : 
+Slot = 1
+Version = 1.0.0
+bootable : true
+Flags :
 6479df5a957bf7fa2e9b45e075788fd91e3fb15895affee06ff3b9cb4e546645
 ```
 

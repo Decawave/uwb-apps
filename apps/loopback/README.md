@@ -19,10 +19,10 @@
 #
 -->
 
-# Decawave DWM1002 Loopback Example 
+# Decawave DWM1002 Loopback Example
 
 ## Overview
-The DW1002 contains two instances of the DW1000 on a single board. The board is initially intended for PDOA applicaiton, but here is use to test WCS performance. 
+The DW1002 contains two instances of the DW1000 on a single board. The board is initially intended for PDOA applicaiton, but here is use to test WCS performance.
 
 1. Default boot loader.
 
@@ -30,7 +30,7 @@ The DW1002 contains two instances of the DW1000 on a single board. The board is 
 newt target create dwm1002_boot
 newt target set dwm1002_boot app=@mcuboot/boot/mynewt
 newt target set dwm1002_boot bsp=@decawave-uwb-core/hw/bsp/dwm1002
-newt target set dwm1002_boot build_profile=optimized 
+newt target set dwm1002_boot build_profile=optimized
 newt build dwm1002_boot
 newt create-image dwm1002_boot 1.0.0
 newt load dwm1002_boot
@@ -45,13 +45,13 @@ newt load dwm1002_boot
 newt target create loopback
 newt target set loopback app=apps/loopback
 newt target set loopback bsp=@decawave-uwb-core/hw/bsp/dwm1002
-newt target set loopback build_profile=debug 
+newt target set loopback build_profile=debug
 newt run loopback 0
 
 newt target create listener
 newt target set listener app=apps/listener
 newt target set listener bsp=@decawave-uwb-core/hw/bsp/dwm1002
-newt target set listener build_profile=debug 
+newt target set listener build_profile=debug
 newt run listener 0
 
 ```

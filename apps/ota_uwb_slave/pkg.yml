@@ -31,7 +31,6 @@ pkg.deps:
     - "@apache-mynewt-core/sys/console/full"
     - "@apache-mynewt-core/sys/shell"
     - "@apache-mynewt-core/sys/stats/full"
-    - "@apache-mynewt-core/encoding/json"
     - "@decawave-uwb-core/hw/drivers/uwb"
     - "@mynewt-timescale-lib/lib/timescale"
     - "@decawave-uwb-core/lib/twr_ss"

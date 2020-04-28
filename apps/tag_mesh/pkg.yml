@@ -29,9 +29,8 @@ pkg.keywords:
 pkg.deps:
     - "@apache-mynewt-core/kernel/os"
     - "@apache-mynewt-core/hw/hal"
-    - "@apache-mynewt-core/sys/console/full" 
+    - "@apache-mynewt-core/sys/console/full"
     - "@apache-mynewt-core/sys/shell"
-    - "@apache-mynewt-core/encoding/json"
     - "@decawave-uwb-core/hw/drivers/uwb"
     - "@decawave-uwb-core/lib/tdma"
     - "@decawave-uwb-core/lib/uwb_ccp"
@@ -40,7 +39,7 @@ pkg.deps:
     - "@decawave-uwb-core/lib/twr_ss"
     - "@decawave-uwb-core/lib/twr_ds"
     - "@decawave-uwb-core/lib/twr_ds_ext"
-#    - "@decawave-uwb-core/sys/uwbcfg"   
+#    - "@decawave-uwb-core/sys/uwbcfg"
     - "@apache-mynewt-nimble/nimble/controller"
     - "@apache-mynewt-nimble/nimble/host"
     - "@apache-mynewt-nimble/nimble/host/services/gap"
@@ -50,7 +49,6 @@ pkg.deps:
     - "@apache-mynewt-core/sys/log/full"
     - "@apache-mynewt-core/sys/stats/full"
 
-    
 pkg.cflags:
     - "-std=gnu11"
     - "-fms-extensions"
