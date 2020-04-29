@@ -262,18 +262,14 @@ lstnr_export(void (*export_func)(char *name, char *val),
 struct uwb_msg_hdr {
     uint32_t utime;
     uint16_t dlen;
+    uint16_t diag_offset;
+    uint16_t cir_offset;
     int32_t  carrier_integrator;
 #ifdef MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
     uint64_t ts[MYNEWT_VAL(PDOA_SPI_NUM_INSTANCES)];
     struct _dw1000_dev_rxdiag_t diag[MYNEWT_VAL(PDOA_SPI_NUM_INSTANCES)];
 #else
     uint64_t ts[N_DW_INSTANCES];
-    struct {
-        union {
-            struct uwb_dev_rxdiag diag;
-            uint8_t diag_storage[MYNEWT_VAL(UWB_DEV_RXDIAG_MAXLEN)];
-        };
-    } diag[N_DW_INSTANCES];
 #endif
 #ifdef MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
     float    pd[MYNEWT_VAL(PDOA_SPI_NUM_INSTANCES)-1];
@@ -281,6 +277,15 @@ struct uwb_msg_hdr {
     float    pd[1];
 #endif
 };
+
+#ifndef MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
+static struct {
+    union {
+        struct uwb_dev_rxdiag diag;
+        uint8_t diag_storage[MYNEWT_VAL(UWB_DEV_RXDIAG_MAXLEN)];
+    };
+} tmp_diag[N_DW_INSTANCES];
+#endif
 
 #define MBUF_PKTHDR_OVERHEAD    sizeof(struct os_mbuf_pkthdr) + sizeof(struct uwb_msg_hdr)
 #define MBUF_MEMBLOCK_OVERHEAD  sizeof(struct os_mbuf) + MBUF_PKTHDR_OVERHEAD
@@ -385,10 +390,28 @@ process_rx_data_queue(struct os_event *ev)
         }
         mprintf(m,"]");
 
+#ifndef MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
+        rc = os_mbuf_copydata(om, hdr->dlen + hdr->diag_offset, sizeof(struct uwb_dev_rxdiag), &tmp_diag);
+        struct uwb_dev_rxdiag *diag = (struct uwb_dev_rxdiag *)&tmp_diag;
+        int offset = 0;
+        for(int j=0;j<n_instances;j++) {
+            rc = os_mbuf_copydata(om, hdr->dlen + hdr->diag_offset + offset, diag->rxd_len, &tmp_diag[j]);
+            offset += diag->rxd_len;
+        }
+#endif
+
         if ((local_conf.verbose&VERBOSE_RX_DIAG)) {
             mprintf(m,",\"rssi\":[");
             for(int j=0;j<n_instances;j++) {
-                float rssi = uwb_calc_rssi(udev, &hdr->diag[j].diag);
+#ifdef MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
+                struct uwb_dev_rxdiag *diag = &hdr->diag[j].diag;
+#else
+                rc = os_mbuf_copydata(om, hdr->dlen + hdr->diag_offset + j*MYNEWT_VAL(UWB_DEV_RXDIAG_MAXLEN), sizeof(struct uwb_dev_rxdiag), print_buffer);
+                struct uwb_dev_rxdiag *diag = (struct uwb_dev_rxdiag *)print_buffer;
+                rc = os_mbuf_copydata(om, hdr->dlen + hdr->diag_offset + j*diag->rxd_len, diag->rxd_len, print_buffer);
+#endif
+
+                float rssi = uwb_calc_rssi(udev, diag);
                 if (rssi > -200 && rssi < 100) {
                     mprintf(m,"%s%d.%01d", (j==0)?"":",",
                            (int)rssi, abs((int)(10*(rssi-(int)rssi))));
@@ -398,7 +421,14 @@ process_rx_data_queue(struct os_event *ev)
             }
             mprintf(m,"],\"fppl\":[");
             for(int j=0;j<n_instances;j++) {
-                float fppl = uwb_calc_fppl(udev, &hdr->diag[j].diag);
+#ifdef MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
+                struct uwb_dev_rxdiag *diag = &hdr->diag[j].diag;
+#else
+                rc = os_mbuf_copydata(om, hdr->dlen + hdr->diag_offset + j*MYNEWT_VAL(UWB_DEV_RXDIAG_MAXLEN), sizeof(struct uwb_dev_rxdiag), print_buffer);
+                struct uwb_dev_rxdiag *diag = (struct uwb_dev_rxdiag *)print_buffer;
+                rc = os_mbuf_copydata(om, hdr->dlen + hdr->diag_offset + j*diag->rxd_len, diag->rxd_len, print_buffer);
+#endif
+                float fppl = uwb_calc_fppl(udev, diag);
                 if (fppl > -200 && fppl < 100) {
                     mprintf(m,"%s%d.%01d", (j==0)?"":",",
                            (int)fppl, abs((int)(10*(fppl-(int)fppl))));
@@ -420,7 +450,15 @@ process_rx_data_queue(struct os_event *ev)
         mprintf(m,",\"pd\":[");
         if (udev->capabilities.single_receiver_pdoa) {
             int j=0;
-            float pdoa = uwb_calc_pdoa(udev, &hdr->diag[j].diag);
+#ifdef MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
+                struct uwb_dev_rxdiag *diag = &hdr->diag[j].diag;
+#else
+                rc = os_mbuf_copydata(om, hdr->dlen + hdr->diag_offset + j*MYNEWT_VAL(UWB_DEV_RXDIAG_MAXLEN), sizeof(struct uwb_dev_rxdiag), print_buffer);
+                struct uwb_dev_rxdiag *diag = (struct uwb_dev_rxdiag *)print_buffer;
+                rc = os_mbuf_copydata(om, hdr->dlen + hdr->diag_offset + j*diag->rxd_len, diag->rxd_len, print_buffer);
+#endif
+
+            float pdoa = uwb_calc_pdoa(udev, diag);
             if (isnan(pdoa)) {
                 /* Json can't handle Nan, but it can handle null */
                 mprintf(m,"%snull", (j==0)?"":",");
@@ -561,8 +599,7 @@ rx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     }
 #endif
 
-    om = os_mbuf_get_pkthdr(&g_mbuf_pool,
-                            sizeof(struct uwb_msg_hdr));
+    om = os_mbuf_get_pkthdr(&g_mbuf_pool, sizeof(struct uwb_msg_hdr));
     if (!om) {
         /* Not enough memory to handle incoming packet, drop it */
         return true;
@@ -573,6 +610,14 @@ rx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     hdr->dlen = inst->frame_len;
     hdr->utime = os_cputime_ticks_to_usecs(os_cputime_get32());
     hdr->carrier_integrator = inst->carrier_integrator;
+    uint16_t offset = 0;
+    rc = os_mbuf_copyinto(om, offset, inst->rxbuf, hdr->dlen);
+    if (rc != 0) {
+        os_mbuf_free_chain(om);
+        return true;
+    }
+    offset += hdr->dlen;
+    hdr->diag_offset = offset;
 
 #ifdef MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
     for(int i=0;i<MYNEWT_VAL(PDOA_SPI_NUM_INSTANCES);i++) {
@@ -583,19 +628,22 @@ rx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 #else
     for(int i=0;i<N_DW_INSTANCES;i++) {
         struct uwb_dev * udev = uwb_dev_idx_lookup(i);
-        memcpy(&hdr->diag[i], udev->rxdiag, udev->rxdiag->rxd_len);
+
+        rc = os_mbuf_copyinto(om, offset, udev->rxdiag, udev->rxdiag->rxd_len);
+        if (rc != 0) {
+            os_mbuf_free_chain(om);
+            return true;
+        }
+        offset += udev->rxdiag->rxd_len;
+
         if (!udev->status.lde_error) {
             hdr->ts[i] = udev->rxtimestamp;
         }
     }
 #endif
-    rc = os_mbuf_copyinto(om, 0, inst->rxbuf, hdr->dlen);
-    if (rc != 0) {
-        os_mbuf_free_chain(om);
-        return true;
-    }
 
 #if MYNEWT_VAL(CIR_ENABLED)
+    hdr->cir_offset = offset;
 
 #ifdef MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
     struct pdoa_cir_data *pdata0 = hal_bsp_get_pdoa_cir_data(0);
