@@ -217,8 +217,8 @@ lstnr_commit(void)
     conf_value_from_str(lstnr_config.acc_samples, CONF_INT16,
                         (void*)&(local_conf.acc_samples_to_load), 0);
 #if MYNEWT_VAL(CIR_ENABLED)
-    if (local_conf.acc_samples_to_load > MYNEWT_VAL(CIR_SIZE)) {
-        local_conf.acc_samples_to_load = MYNEWT_VAL(CIR_SIZE);
+    if (local_conf.acc_samples_to_load > MYNEWT_VAL(CIR_MAX_SIZE)) {
+        local_conf.acc_samples_to_load = MYNEWT_VAL(CIR_MAX_SIZE);
     }
 #endif
     conf_value_from_str(lstnr_config.verbose, CONF_INT16,
@@ -347,6 +347,7 @@ static struct cir_dw3000_instance tmp_cir;
 #endif
 #endif
 static uint8_t print_buffer[1024];
+static uint8_t diag_buffer[1024];
 static void
 process_rx_data_queue(struct os_event *ev)
 {
@@ -406,9 +407,9 @@ process_rx_data_queue(struct os_event *ev)
 #ifdef MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
                 struct uwb_dev_rxdiag *diag = &hdr->diag[j].diag;
 #else
-                rc = os_mbuf_copydata(om, hdr->dlen + hdr->diag_offset + j*MYNEWT_VAL(UWB_DEV_RXDIAG_MAXLEN), sizeof(struct uwb_dev_rxdiag), print_buffer);
-                struct uwb_dev_rxdiag *diag = (struct uwb_dev_rxdiag *)print_buffer;
-                rc = os_mbuf_copydata(om, hdr->dlen + hdr->diag_offset + j*diag->rxd_len, diag->rxd_len, print_buffer);
+                rc = os_mbuf_copydata(om, hdr->dlen + hdr->diag_offset + j*MYNEWT_VAL(UWB_DEV_RXDIAG_MAXLEN), sizeof(struct uwb_dev_rxdiag), diag_buffer);
+                struct uwb_dev_rxdiag *diag = (struct uwb_dev_rxdiag *)diag_buffer;
+                rc = os_mbuf_copydata(om, hdr->dlen + hdr->diag_offset + j*diag->rxd_len, diag->rxd_len, diag_buffer);
 #endif
 
                 float rssi = uwb_calc_rssi(udev, diag);
@@ -424,9 +425,9 @@ process_rx_data_queue(struct os_event *ev)
 #ifdef MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
                 struct uwb_dev_rxdiag *diag = &hdr->diag[j].diag;
 #else
-                rc = os_mbuf_copydata(om, hdr->dlen + hdr->diag_offset + j*MYNEWT_VAL(UWB_DEV_RXDIAG_MAXLEN), sizeof(struct uwb_dev_rxdiag), print_buffer);
-                struct uwb_dev_rxdiag *diag = (struct uwb_dev_rxdiag *)print_buffer;
-                rc = os_mbuf_copydata(om, hdr->dlen + hdr->diag_offset + j*diag->rxd_len, diag->rxd_len, print_buffer);
+                rc = os_mbuf_copydata(om, hdr->dlen + hdr->diag_offset + j*MYNEWT_VAL(UWB_DEV_RXDIAG_MAXLEN), sizeof(struct uwb_dev_rxdiag), diag_buffer);
+                struct uwb_dev_rxdiag *diag = (struct uwb_dev_rxdiag *)diag_buffer;
+                rc = os_mbuf_copydata(om, hdr->dlen + hdr->diag_offset + j*diag->rxd_len, diag->rxd_len, diag_buffer);
 #endif
                 float fppl = uwb_calc_fppl(udev, diag);
                 if (fppl > -200 && fppl < 100) {
@@ -453,9 +454,9 @@ process_rx_data_queue(struct os_event *ev)
 #ifdef MYNEWT_VAL_PDOA_SPI_NUM_INSTANCES
                 struct uwb_dev_rxdiag *diag = &hdr->diag[j].diag;
 #else
-                rc = os_mbuf_copydata(om, hdr->dlen + hdr->diag_offset + j*MYNEWT_VAL(UWB_DEV_RXDIAG_MAXLEN), sizeof(struct uwb_dev_rxdiag), print_buffer);
-                struct uwb_dev_rxdiag *diag = (struct uwb_dev_rxdiag *)print_buffer;
-                rc = os_mbuf_copydata(om, hdr->dlen + hdr->diag_offset + j*diag->rxd_len, diag->rxd_len, print_buffer);
+                rc = os_mbuf_copydata(om, hdr->dlen + hdr->diag_offset + j*MYNEWT_VAL(UWB_DEV_RXDIAG_MAXLEN), sizeof(struct uwb_dev_rxdiag), diag_buffer);
+                struct uwb_dev_rxdiag *diag = (struct uwb_dev_rxdiag *)diag_buffer;
+                rc = os_mbuf_copydata(om, hdr->dlen + hdr->diag_offset + j*diag->rxd_len, diag->rxd_len, diag_buffer);
 #endif
 
             float pdoa = uwb_calc_pdoa(udev, diag);
@@ -505,7 +506,7 @@ process_rx_data_queue(struct os_event *ev)
                     float ph = cirp->rcphase;
                     float an = cirp->angle;
                     mprintf(m,"%s{\"o\":%d,\"fp_idx\":%d.%03d,\"rcphase\":%d.%03d,\"angle\":%d.%03d,\"rts\":%lld",
-                           (j==0)?"":",", MYNEWT_VAL(CIR_OFFSET), (int)idx, (int)(1000*(idx-(int)idx)),
+                           (j==0)?"":",", cirp->offset, (int)idx, (int)(1000*(idx-(int)idx)),
                            (int)ph, (int)fabsf((1000*(ph-(int)ph))),
                            (int)an, (int)fabsf((1000*(an-(int)an))),
                            cirp->raw_ts
@@ -713,6 +714,7 @@ rx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     if (rc != 0) {
         return true;
     }
+
     return true;
 }
 
