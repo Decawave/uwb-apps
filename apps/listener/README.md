@@ -14,6 +14,17 @@ newt target amend dwm1001_listener syscfg=CONSOLE_UART_BAUD=115200
 newt run dwm1001_listener 0
 ```
 
+### Building listener for dwm3120 on ST nucleo
+
+```no-highlight
+newt target create dwm3120_listener
+newt target set dwm3120_listener app=apps/listener
+newt target set dwm3120_listener bsp=@decawave-uwb-core/hw/bsp/nucleo-f429zi
+newt target amend dwm3120_listener syscfg=CONSOLE_UART_BAUD=115200:BLE_ENABLED=0
+newt run dwm3120_listener 0
+```
+
+
 If you connect to the virtual serial port, on linux /dev/ttyACMx where x is a number assigned by your computer, you should
 see json packaged coming similar to the ones below if you have UWB traffic within range of the dwm1001:
 ```

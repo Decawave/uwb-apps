@@ -86,7 +86,7 @@ newt run twr_tag_tdma 0
 
 ```
 
-6. For PDOA on DWM1002 module. 
+6. For PDOA on DWM1002 module.
 
 ```no-highlight
 
@@ -180,6 +180,43 @@ Note for pdoa on the dw3000 to work (in this example) the cipher mode must be "1
 preamble_length should be "64", and the cipher preamble length should be 256. The node should also have pdoa_mode
 set to "3" for best accuracy (pdoa_mode "1" works too, but is less accurate).
 
+9. For non-PDOA on DW3000 module on STM.
+
+```no-highlight
+
+# Erase flash
+#sudo apt-get install stlink-tools
+st-flash erase
+
+# Bootloader (used for both tag and node)
+newt target create nucleo-f429zi_boot
+newt target set nucleo-f429zi_boot app=@mcuboot/boot/mynewt
+newt target set nucleo-f429zi_boot bsp=@decawave-uwb-core/hw/bsp/nucleo-f429zi
+newt target set nucleo-f429zi_boot build_profile=optimized
+newt build nucleo-f429zi_boot
+newt load nucleo-f429zi_boot
+
+# Node application
+newt target create nucleo-f429zi_twr_node_tdma
+newt target set nucleo-f429zi_twr_node_tdma app=apps/twr_node_tdma
+newt target set nucleo-f429zi_twr_node_tdma bsp=@decawave-uwb-core/hw/bsp/nucleo-f429zi
+newt target set nucleo-f429zi_twr_node_tdma build_profile=debug
+newt target amend nucleo-f429zi_twr_node_tdma syscfg=UWB_DEVICE_0=1:USE_DBLBUFFER=0:LOG_LEVEL=1:UWBCFG_DEF_ROLE='"0x1"'
+newt target amend nucleo-f429zi_twr_node_tdma syscfg=CONSOLE_UART=1:CONSOLE_UART_BAUD=115200:CONSOLE_RTT=0
+newt run nucleo-f429zi_twr_node_tdma 0
+
+# Tag application
+newt target create nucleo-f429zi_twr_tag_tdma
+newt target set nucleo-f429zi_twr_tag_tdma app=apps/twr_tag_tdma
+newt target set nucleo-f429zi_twr_tag_tdma bsp=@decawave-uwb-core/hw/bsp/nucleo-f429zi
+newt target set nucleo-f429zi_twr_tag_tdma build_profile=debug
+newt target amend nucleo-f429zi_twr_tag_tdma syscfg=CONSOLE_UART=1:CONSOLE_UART_BAUD=115200:CONSOLE_RTT=0
+newt run nucleo-f429zi_twr_tag_tdma 0
+
+# On mac
+minicom -D /dev/tty.usbmodem* -b 115200
+
+```
 
 9. For PDOA with DWM3020 on nRF52.
 

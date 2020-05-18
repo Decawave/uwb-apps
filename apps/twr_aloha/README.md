@@ -100,7 +100,7 @@ is available:
 ...
 ```
 
-## Using DW3000 as a tag
+## Using DW3000 as node and tag on ST nucleo
 
 ```no-highlight
 newt target create nucleo-f429zi_twr_aloha_tag
@@ -109,4 +109,12 @@ newt target set nucleo-f429zi_twr_aloha_tag bsp=@decawave-uwb-core/hw/bsp/nucleo
 newt target set nucleo-f429zi_twr_aloha_tag build_profile=debug
 newt target amend nucleo-f429zi_twr_aloha_tag syscfg=BLE_ENABLED=0:CONSOLE_UART=1:CONSOLE_RTT=0
 newt run nucleo-f429zi_twr_aloha_tag 0
+```
+```no-highlight
+newt target create nucleo-f429zi_twr_aloha_node
+newt target set nucleo-f429zi_twr_aloha_node app=apps/twr_aloha
+newt target set nucleo-f429zi_twr_aloha_node bsp=@decawave-uwb-core/hw/bsp/nucleo-f429zi
+newt target set nucleo-f429zi_twr_aloha_node build_profile=debug
+newt target amend nucleo-f429zi_twr_aloha_node syscfg=LBLE_ENABLED=0:LOG_LEVEL=1:UWBCFG_DEF_ROLE='"0x4"':CONSOLE_UART=1:CONSOLE_RTT=0
+newt run nucleo-f429zi_twr_aloha_node 0
 ```
