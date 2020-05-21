@@ -28,7 +28,7 @@ pkg.keywords:
 pkg.deps:
     - "@apache-mynewt-core/kernel/os"
     - "@apache-mynewt-core/hw/hal"
-    - "@apache-mynewt-core/sys/console/full" 
+    - "@apache-mynewt-core/sys/console/full"
     - "@apache-mynewt-core/sys/shell"
     - "@apache-mynewt-core/sys/stats/full"
     - "@decawave-uwb-core/hw/drivers/uwb"
@@ -38,6 +38,7 @@ pkg.deps:
     - "@decawave-uwb-core/lib/twr_ds"
     - "@decawave-uwb-core/lib/twr_ds_ext"
     - "@decawave-uwb-core/sys/uwbcfg"
+    - "@decawave-uwb-core/lib/cir"
     - "@apache-mynewt-core/boot/split"
     - "@mcuboot/boot/bootutil"
     - "@apache-mynewt-core/kernel/os"
