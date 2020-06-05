@@ -249,6 +249,7 @@ stream_timer(struct dpl_event *ev)
 
     for (uint8_t i = 0; i < 18; i++){
         uint16_t destination_uid = ccp->frames[0]->short_address;
+        if (!destination_uid) break;
         struct dpl_mbuf * mbuf;
         if (uwb_transport->config.os_msys_mpool){
             mbuf = dpl_msys_get_pkthdr(sizeof(test), sizeof(uwb_transport_user_header_t));
@@ -310,7 +311,7 @@ int main(int argc, char **argv){
 
     struct _uwb_transport_extension extension = {
         .tsp_code = 0xDEAD,
-        .extension_cb = uwb_transport_cb
+        .receive_cb = uwb_transport_cb
     };
 
     uwb_transport_append_extension(uwb_transport, &extension);
