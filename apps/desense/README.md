@@ -54,12 +54,22 @@ see other readmes
 
 For other bsps just replace the bsp variable below. All roles use the same application.
 
+#### MDEK platform
 ```no-highlight
 newt target create dwm1001_desense
 newt target set dwm1001_desense app=apps/desense
 newt target set dwm1001_desense bsp=@decawave-uwb-core/hw/bsp/dwm1001
 newt target set dwm1001_desense build_profile=debug
 newt run dwm1001_desense 0 --extrajtagcmd '-select usb=<serial of respective jtag>'
+```
+
+#### STM + DWM3120 shield platform
+```no-highlight
+newt target create nucleo_dwm3120_desense
+newt target set nucleo_dwm3120_desense app=apps/desense
+newt target set nucleo_dwm3120_desense bsp=@decawave-uwb-core/hw/bsp/nucleo-f429zi
+newt target set nucleo_dwm3120_desense build_profile=debug
+newt run nucleo_dwm3120_desense 0
 ```
 
 ## Run a test
@@ -77,7 +87,7 @@ Use screen, socat, minicom or similar. The parameters are 115200-8-n-1.
 ```
 
 Note the address given, in this case 0x0CA8. This command has to be issued before
-each test is started. 
+each test is started.
 
 3. On the Aggressor console:
 
