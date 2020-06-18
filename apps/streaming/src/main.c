@@ -263,7 +263,7 @@ stream_timer(struct dpl_event *ev)
             /* First byte stores crc */
             test[0] = crc8_calc(0, test+1, sizeof(test)-1);
             dpl_mbuf_copyinto(mbuf, 0, test, sizeof(test));
-            uwb_transport_enqueue_tx(uwb_transport, destination_uid, 0xDEAD, mbuf);
+            uwb_transport_enqueue_tx(uwb_transport, destination_uid, 0xDEAD, 8, mbuf);
         }else{
             break;
         }
