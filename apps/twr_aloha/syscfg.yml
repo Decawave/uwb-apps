@@ -7,7 +7,7 @@ syscfg.vals:
     CONSOLE_HISTORY_SIZE: 8
 
     CONFIG_FCB: 1
-    
+
     UWB_DEVICE_0: 1
     FS_XTALT_AUTOTUNE_ENABLED: 0
     HARDFLOAT: 1
@@ -25,7 +25,7 @@ syscfg.vals:
     STATS_NEWTMGR: 1
     LOG_NEWTMGR: 1
     CONFIG_NEWTMGR: 1
-    
+
 syscfg.defs:
     ANCHOR_ADDRESS:
         description: 'Address of anchor'

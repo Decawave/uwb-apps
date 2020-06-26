@@ -55,5 +55,3 @@ syscfg.defs:
         description: >
             Slot ID till which the nodes should respond
         value: 7
-
-

@@ -30,7 +30,7 @@ syscfg.vals:
     # Enable DWx000
     UWB_DEVICE_0: 1
     UWBCFG_APPLY_AT_INIT: 1
-    
+
     # ST Mems
     I2C_1: 0
     LSM6DSL_ONB: 0
@@ -38,16 +38,16 @@ syscfg.vals:
     LPS22HB_ONB: 0
     SENSOR_OIC: 0
 
-    ## Where to store config 
+    ## Where to store config
     CONFIG_FCB: 1
     CONFIG_NEWTMGR: 1
     CONFIG_FCB_FLASH_AREA: FLASH_AREA_NFFS
-    
+
     # BLE Disable central and observer roles.
     BLE_ROLE_BROADCASTER: 1
     BLE_ROLE_CENTRAL: 0
     BLE_ROLE_OBSERVER: 0
     BLE_ROLE_PERIPHERAL: 1
-    
+
 syscfg.vals.CONSOLE_UART:
     UART_0: 1

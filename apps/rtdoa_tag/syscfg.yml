@@ -6,7 +6,7 @@ syscfg.vals:
     FLOAT_USER: 0
     OS_SYSVIEW: 0
     LOG_LEVEL: 2
-    
+
     # Route console to RTT
     CONSOLE_UART: 1
     CONSOLE_RTT: 0
@@ -27,7 +27,7 @@ syscfg.vals:
     STATS_NEWTMGR: 1
     DW1000_CLI: 1
     BCAST_OTA_CLI: 0
-    
+
 
     # UWB
     UWB_DEVICE_0: 1
@@ -44,7 +44,7 @@ syscfg.vals:
     TDMA_ENABLED: 1
     TDMA_SANITY_INTERVAL: 10
     TDMA_STATS: 1
-    
+
     UWB_WCS_ENABLED: 1
     TIMESCALE_PROCESSING_ENABLED: 1
     ADAPTIVE_TIMESCALE_ENABLED: 1
@@ -64,11 +64,11 @@ syscfg.vals:
     ADC_0: 1
     LSM6DSL_ONB: 1
     LIS2MDL_ONB: 1
-    LPS22HB_ONB: 1    
-    
+    LPS22HB_ONB: 1
+
     NCBWIFI_ESP_PASSTHROUGH: 0
     ESP12F_ENABLED: 0
-        
+
     BLEPRPH_LOG_ENABLE: 0
     BLE_ROLE_BROADCASTER: 1
     BLE_ROLE_CENTRAL: 0

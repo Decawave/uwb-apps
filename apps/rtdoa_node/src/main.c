@@ -1,6 +1,4 @@
 /**
- * Copyright (C) 2017-2018, Decawave Limited, All Rights Reserved
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -47,13 +45,13 @@
 #include <config/config.h>
 
 #if MYNEWT_VAL(NMGR_UWB_ENABLED)
-#include <nmgr_uwb/nmgr_uwb.h> 
+#include <nmgr_uwb/nmgr_uwb.h>
 #endif
 
 #include <tdma/tdma.h>
 #include <uwb_ccp/uwb_ccp.h>
 #include <uwb_wcs/uwb_wcs.h>
-#include <timescale/timescale.h> 
+#include <timescale/timescale.h>
 #if MYNEWT_VAL(UWB_RNG_ENABLED)
 #include <uwb_rng/uwb_rng.h>
 #endif
@@ -81,7 +79,7 @@ static bool uwb_config_updated = false;
 int
 uwb_config_upd_cb()
 {
-    /* Workaround in case we're stuck waiting for ccp with the 
+    /* Workaround in case we're stuck waiting for ccp with the
      * wrong radio settings */
     struct uwb_dev * inst = uwb_dev_idx_lookup(0);
     struct uwb_ccp_instance *ccp = (struct uwb_ccp_instance*)uwb_mac_find_cb_inst_ptr(inst, UWBEXT_CCP);
@@ -117,7 +115,7 @@ nrng_slot_timer_cb(struct dpl_event *ev)
     struct uwb_dev * inst = tdma->dev_inst;
     struct uwb_ccp_instance * ccp = tdma->ccp;
     struct nrng_instance * nrng = (struct nrng_instance *) uwb_mac_find_cb_inst_ptr(inst, UWBEXT_NRNG);
-    
+
     uint16_t idx = slot->idx;
 
     /* Avoid colliding with the ccp */
@@ -185,7 +183,7 @@ static bool complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
  * @brief RTDoA Emission slot
  *
  */
-static void 
+static void
 rtdoa_slot_timer_cb(struct dpl_event *ev)
 {
     assert(ev);
@@ -235,7 +233,7 @@ rtdoa_slot_timer_cb(struct dpl_event *ev)
     }
 }
 
-static void 
+static void
 nmgr_slot_timer_cb(struct dpl_event * ev)
 {
     assert(ev);
@@ -279,7 +277,7 @@ tdma_allocate_slots(tdma_instance_t * tdma)
     assert(nmgruwb);
     struct rtdoa_instance* rtdoa = (struct rtdoa_instance*)uwb_mac_find_cb_inst_ptr(inst, UWBEXT_RTDOA);
     assert(rtdoa);
-    
+
     for (i=2;i < MYNEWT_VAL(TDMA_NSLOTS);i++) {
         if (i==31) {
             continue;
@@ -307,7 +305,7 @@ main(int argc, char **argv)
         .id =  UWBEXT_APP0,
         .complete_cb = complete_cb
     };
-    
+
     struct uwb_dev *udev = uwb_dev_idx_lookup(0);
     uwb_mac_append_interface(udev, &cbs);
     struct nrng_instance * nrng = (struct nrng_instance *)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_NRNG);
@@ -371,4 +369,3 @@ main(int argc, char **argv)
     assert(0);
     return rc;
 }
-

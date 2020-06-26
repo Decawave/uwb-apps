@@ -1,6 +1,4 @@
 /**
- * Copyright (C) 2017-2018, Decawave Limited, All Rights Reserved
- * 
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -8,7 +6,7 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * 
+ *
  *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
@@ -34,7 +32,7 @@
 
 #include <uwb/uwb.h>
 #include <uwb/uwb_ftypes.h>
-#include <nmgr_uwb/nmgr_uwb.h> 
+#include <nmgr_uwb/nmgr_uwb.h>
 #include <uwb_rng/uwb_rng.h>
 #include <mgmt/mgmt.h>
 #include <nmgr_os/nmgr_os.h>
@@ -45,8 +43,8 @@
 #endif
 
 #ifndef TICTOC
-#undef TICTOC 
-#endif 
+#undef TICTOC
+#endif
 
 static struct os_callout uwb_callout;
 
@@ -97,4 +95,3 @@ int main(int argc, char **argv){
     assert(0);
     return rc;
 }
-

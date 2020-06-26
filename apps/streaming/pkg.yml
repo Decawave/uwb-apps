@@ -20,7 +20,7 @@
 pkg.name: apps/streaming
 pkg.type: app
 pkg.description: "Basic reverse superres anchor node"
-pkg.author: "Paul Kettle <paul.kettle@decawave.com>"
+pkg.author: "UWB Core <uwbcore@gmail.com>"
 pkg.homepage: "http://www.decawave.com/"
 pkg.keywords:
 
@@ -59,4 +59,3 @@ pkg.cflags:
     - "-std=gnu11"
     - "-fms-extensions"
     - "-Wno-strict-aliasing"
-

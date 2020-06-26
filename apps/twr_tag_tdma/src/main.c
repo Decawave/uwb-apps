@@ -1,6 +1,4 @@
 /**
- * Copyright (C) 2017-2018, Decawave Limited, All Rights Reserved
- * 
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -8,7 +6,7 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * 
+ *
  *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
@@ -57,25 +55,25 @@
 static bool error_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs);
 static void slot_complete_cb(struct dpl_event * ev);
 
-/*! 
+/*!
  * @fn slot_cb(struct os_event * ev)
  *
- * @brief In this example slot_cb is used to initiate a range request. The slot_cb is scheduled 
- * MYNEWT_VAL(OS_LATENCY) in advance of the transmit epoch and a delayed start request is issued in advance of 
- * the required epoch. The transmission timing is controlled precisely by the DW1000 with the transmission time 
- * defined by the value of the dw_time variable. If the OS_LATENCY value is set too small the range request 
- * function will report a start_tx_error. In a synchronized network, the node device switches the transceiver 
- * to receiver mode for the same epoch; and will either receive the inbound frame or timeout after the frame 
- * duration as elapsed. This ensures that the transceiver is in receive mode for the minimum time required.   
+ * @brief In this example slot_cb is used to initiate a range request. The slot_cb is scheduled
+ * MYNEWT_VAL(OS_LATENCY) in advance of the transmit epoch and a delayed start request is issued in advance of
+ * the required epoch. The transmission timing is controlled precisely by the DW1000 with the transmission time
+ * defined by the value of the dw_time variable. If the OS_LATENCY value is set too small the range request
+ * function will report a start_tx_error. In a synchronized network, the node device switches the transceiver
+ * to receiver mode for the same epoch; and will either receive the inbound frame or timeout after the frame
+ * duration as elapsed. This ensures that the transceiver is in receive mode for the minimum time required.
  *
  * input parameters
- * @param inst - struct dpl_event *  
+ * @param inst - struct dpl_event *
  *
  * output parameters
  *
- * returns none 
+ * returns none
  */
-static void 
+static void
 slot_cb(struct dpl_event *ev){
     assert(ev);
     tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
@@ -83,14 +81,14 @@ slot_cb(struct dpl_event *ev){
     uint16_t idx = slot->idx;
     struct uwb_rng_instance *rng = (struct uwb_rng_instance*)slot->arg;
 
-    hal_gpio_toggle(LED_BLINK_PIN);  
+    hal_gpio_toggle(LED_BLINK_PIN);
     uint64_t dx_time = tdma_tx_slot_start(tdma, idx) & 0xFFFFFFFFFE00UL;
-  
+
     /* Range with the clock master by default */
     struct uwb_ccp_instance *ccp = tdma->ccp;
     uint16_t node_address = ccp->frames[ccp->idx%ccp->nframes]->short_address;
 
-    /* Select single-sided or double sided twr every second slot */    
+    /* Select single-sided or double sided twr every second slot */
     int mode = UWB_DATA_CODE_SS_TWR_ACK;
     if ((slot->idx&7)==1) {
         mode = UWB_DATA_CODE_SS_TWR;
@@ -109,16 +107,16 @@ slot_cb(struct dpl_event *ev){
 }
 
 
-/*! 
+/*!
  * @fn complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
  *
- * @brief This callback is part of the  struct uwb_mac_interface extension interface and invoked of the completion of a range request 
- * in the context of this example. The struct uwb_mac_interface is in the interrupt context and is used to schedule events an event queue. 
- * Processing should be kept to a minimum giving the interrupt context. All algorithms activities should be deferred to a thread on an event queue. 
- * The callback should return true if and only if it can determine if it is the sole recipient of this event. 
- * 
- * NOTE: The MAC extension interface is a link-list of callbacks, subsequent callbacks on the list will be not be called in the 
- * event of returning true. 
+ * @brief This callback is part of the  struct uwb_mac_interface extension interface and invoked of the completion of a range request
+ * in the context of this example. The struct uwb_mac_interface is in the interrupt context and is used to schedule events an event queue.
+ * Processing should be kept to a minimum giving the interrupt context. All algorithms activities should be deferred to a thread on an event queue.
+ * The callback should return true if and only if it can determine if it is the sole recipient of this event.
+ *
+ * NOTE: The MAC extension interface is a link-list of callbacks, subsequent callbacks on the list will be not be called in the
+ * event of returning true.
  *
  * @param inst  - struct uwb_dev *
  * @param cbs   - struct uwb_mac_interface *
@@ -146,41 +144,41 @@ complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     return true;
 }
 
-/*! 
+/*!
  * @fn slot_complete_cb(struct os_event * ev)
  *
- * @brief In the example this function represents the event context processing of the received range request. 
- * In this case, a JSON string is constructed and written to stdio. See the ./apps/matlab or ./apps/python folders for examples on 
- * how to parse and render these results. 
- * 
+ * @brief In the example this function represents the event context processing of the received range request.
+ * In this case, a JSON string is constructed and written to stdio. See the ./apps/matlab or ./apps/python folders for examples on
+ * how to parse and render these results.
+ *
  * input parameters
- * @param inst - struct os_event *  
+ * @param inst - struct os_event *
  * output parameters
- * returns none 
+ * returns none
  */
-static void 
+static void
 slot_complete_cb(struct dpl_event * ev){
     assert(ev != NULL);
-  
+
     hal_gpio_toggle(LED_BLINK_PIN);
 }
 
-/*! 
+/*!
  * @fn error_cb(struct os_event *ev)
  *
  * @brief This callback is in the interrupt context and is called on error event.
- * In this example just log event. 
+ * In this example just log event.
  * Note: interrupt context so overlapping IO is possible
  * input parameters
  * @param inst - struct uwb_dev * inst
  *
  * output parameters
  *
- * returns none 
+ * returns none
  */
 static bool
 error_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
-{ 
+{
     if (inst->fctrl != FCNTL_IEEE_RANGE_16 &&
         inst->fctrl != (FCNTL_IEEE_RANGE_16|UWB_FCTRL_ACK_REQUESTED)) {
         return false;
@@ -199,7 +197,7 @@ error_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 
 /**
  * @fn uwb_config_update
- * 
+ *
  * Called from the main event queue as a result of the uwbcfg packet
  * having received a commit/load of new uwb configuration.
  */
@@ -230,7 +228,7 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_BLINK_PIN, 1);
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
-    
+
     struct uwb_dev *udev = uwb_dev_idx_lookup(0);
     struct uwb_rng_instance* rng = (struct uwb_rng_instance*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_RNG);
     assert(rng);
@@ -243,21 +241,21 @@ int main(int argc, char **argv){
         .complete_cb = complete_cb
     };
     uwb_mac_append_interface(udev, &cbs);
-    
+
     tdma_instance_t * tdma = (tdma_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_TDMA);
     assert(tdma);
     uwb_ccp_start(tdma->ccp, CCP_ROLE_SLAVE);
 
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
-    printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 
+    printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__);
     printf("{\"device_id\"=\"%lX\"",udev->device_id);
     printf(",\"panid=\"%X\"",udev->pan_id);
     printf(",\"addr\"=\"%X\"",udev->uid);
     printf(",\"part_id\"=\"%lX\"",(uint32_t)(udev->euid&0xffffffff));
     printf(",\"lot_id\"=\"%lX\"}\n",(uint32_t)(udev->euid>>32));
-    printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime, uwb_phy_frame_duration(udev, sizeof(twr_frame_final_t))); 
-    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime, uwb_phy_SHR_duration(udev)); 
-    printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay))); 
+    printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime, uwb_phy_frame_duration(udev, sizeof(twr_frame_final_t)));
+    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime, uwb_phy_SHR_duration(udev));
+    printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay)));
 
 #if MYNEWT_VAL(BLE_ENABLED)
     ble_init(udev->euid);
@@ -281,4 +279,3 @@ int main(int argc, char **argv){
     assert(0);
     return rc;
 }
-

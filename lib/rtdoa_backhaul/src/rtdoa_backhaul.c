@@ -187,13 +187,13 @@ update_range_stats(int anchor, int32_t range, float rssi)
         RTDOABH_STATS_INCN(a00_range, range);
         RTDOABH_STATS_CLEAR(a00_rssi);
         RTDOABH_STATS_INCN(a00_rssi, abs(floor(rssi)));
-        break; 
+        break;
     case(1):
         RTDOABH_STATS_CLEAR(a01_range);
         RTDOABH_STATS_INCN(a01_range, range);
         RTDOABH_STATS_CLEAR(a01_rssi);
         RTDOABH_STATS_INCN(a01_rssi, abs(floor(rssi)));
-        break; 
+        break;
     case(2):
         RTDOABH_STATS_CLEAR(a02_range);
         RTDOABH_STATS_INCN(a02_range, range);
@@ -344,7 +344,7 @@ process_rx_data_queue(struct os_event *ev)
     int payload_len;
     struct rtdoabh_tag_results_pkg pkg;
 
-    while ((om = os_mqueue_get(&rxpkt_q)) != NULL) { 
+    while ((om = os_mqueue_get(&rxpkt_q)) != NULL) {
         hdr = (struct rtdoabh_msg_hdr*)(OS_MBUF_USRHDR(om));
         hdr->dlen = hdr->dlen;
 
@@ -370,9 +370,9 @@ process_rx_data_queue(struct os_event *ev)
  *
  * @param inst Pointer to struct uwb_dev.
  *
- * @return struct uwb_dev_status 
+ * @return struct uwb_dev_status
  */
-struct uwb_dev_status 
+struct uwb_dev_status
 rtdoa_backhaul_listen(struct uwb_dev * inst, uint64_t dx_time, uint16_t timeout_uus)
 {
     os_error_t err = os_sem_pend(&g_sem,  OS_TIMEOUT_NEVER);
@@ -397,7 +397,7 @@ rtdoa_backhaul_listen(struct uwb_dev * inst, uint64_t dx_time, uint16_t timeout_
     return inst->status;
 }
 
-static bool 
+static bool
 tx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 {
     if(inst->fctrl != FCNTL_IEEE_RTDOABH){
@@ -414,7 +414,7 @@ tx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     return true;
 }
 
-static bool 
+static bool
 rx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 {
     static uint16_t last_address = 0;
@@ -438,7 +438,7 @@ rx_complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
 
     if ((frame->dst_address != inst->my_short_address &&
         frame->dst_address != UWB_BROADCAST_ADDRESS) ||
-        g_role == RTDOABH_ROLE_INVALID || g_role == RTDOABH_ROLE_PRODUCER) { 
+        g_role == RTDOABH_ROLE_INVALID || g_role == RTDOABH_ROLE_PRODUCER) {
 
         if(os_sem_get_count(&g_sem) == 0) {
             os_error_t err = os_sem_release(&g_sem);

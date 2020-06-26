@@ -1,6 +1,4 @@
 /**
- * Copyright (C) 2017-2018, Decawave Limited, All Rights Reserved
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -40,7 +38,7 @@
 #include <uwb_ccp/uwb_ccp.h>
 #include <nrng/nrng.h>
 #if MYNEWT_VAL(TIMESCALE)
-#include <timescale/timescale.h> 
+#include <timescale/timescale.h>
 #endif
 #if MYNEWT_VAL(UWB_WCS_ENABLED)
 #include <uwb_wcs/uwb_wcs.h>
@@ -49,7 +47,7 @@
 #include <survey/survey.h>
 #endif
 #if MYNEWT_VAL(NMGR_UWB_ENABLED)
-#include <nmgr_uwb/nmgr_uwb.h> 
+#include <nmgr_uwb/nmgr_uwb.h>
 #endif
 #if MYNEWT_VAL(BLEPRPH_ENABLED)
 #include "bleprph/bleprph.h"
@@ -65,7 +63,7 @@ static bool uwb_config_updated = false;
 int
 uwb_config_updated_cb()
 {
-    /* Workaround in case we're stuck waiting for ccp with the 
+    /* Workaround in case we're stuck waiting for ccp with the
      * wrong radio settings */
     struct uwb_dev * udev = uwb_dev_idx_lookup(0);
     struct uwb_ccp_instance *ccp = (struct uwb_ccp_instance*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_CCP);
@@ -118,21 +116,21 @@ static bool complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     return true;
 }
 
-/*! 
+/*!
  * @fn slot_timer_cb(struct os_event * ev)
  *
  * @brief In this example this timer callback is used to start_rx.
  *
  * input parameters
- * @param inst - struct os_event *  
+ * @param inst - struct os_event *
  *
  * output parameters
  *
- * returns none 
+ * returns none
  */
 
-    
-static void 
+
+static void
 slot_cb(struct dpl_event * ev){
     assert(ev);
 
@@ -207,7 +205,7 @@ pan_complete_cb(struct dpl_event * ev)
     assert(ev != NULL);
     assert(dpl_event_get_arg(ev) != NULL);
     struct uwb_pan_instance *pan = (struct uwb_pan_instance*) dpl_event_get_arg(ev);
-    
+
     if (pan->dev_inst->slot_id != 0xffff) {
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
         printf("{\"utime\": %lu,\"msg\": \"slot_id = %d\"}\n", utime, pan->dev_inst->slot_id);
@@ -216,12 +214,12 @@ pan_complete_cb(struct dpl_event * ev)
 }
 
 /* This function allows the ccp to compensate for the time of flight
- * from the master anchor to the current anchor. 
- * Ideally this should use a map generated and make use of the euid in case 
+ * from the master anchor to the current anchor.
+ * Ideally this should use a map generated and make use of the euid in case
  * the ccp packet is relayed through another node.
  */
-static uint32_t 
-tof_comp_cb(uint16_t short_addr) 
+static uint32_t
+tof_comp_cb(uint16_t short_addr)
 {
     float x = MYNEWT_VAL(UWB_CCP_TOF_COMP_LOCATION_X);
     float y = MYNEWT_VAL(UWB_CCP_TOF_COMP_LOCATION_Y);
@@ -273,7 +271,7 @@ int main(int argc, char **argv){
     assert(pan);
     struct uwb_rng_instance* rng = (struct uwb_rng_instance*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_RNG);
     assert(rng);
-    
+
     if (udev->role&UWB_ROLE_CCP_MASTER) {
         /* Start as clock-master */
         uwb_ccp_start(ccp, CCP_ROLE_MASTER);
@@ -303,27 +301,27 @@ int main(int argc, char **argv){
             NETWORK_ROLE_ANCHOR : NETWORK_ROLE_TAG;
         uwb_pan_start(pan, UWB_PAN_ROLE_RELAY, role);
     }
-    
+
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
-    printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 
+    printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__);
     printf("{\"device_id\":\"%lX\"",udev->device_id);
     printf(",\"panid\":\"%X\"",udev->pan_id);
     printf(",\"addr\":\"%X\"",udev->uid);
     printf(",\"part_id\":\"%lX\"",(uint32_t)(udev->euid&0xffffffff));
     printf(",\"lot_id\":\"%lX\"}\n",(uint32_t)(udev->euid>>32));
-    printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime, uwb_phy_frame_duration(udev, sizeof(twr_frame_final_t))); 
-    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime, uwb_phy_SHR_duration(udev)); 
-    printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay))); 
+    printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime, uwb_phy_frame_duration(udev, sizeof(twr_frame_final_t)));
+    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime, uwb_phy_SHR_duration(udev));
+    printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay)));
 
     /* Pan is slots 1&2 */
     tdma_instance_t * tdma = (tdma_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_TDMA);
     assert(tdma);
     tdma_assign_slot(tdma, uwb_pan_slot_timer_cb, 1, (void*)pan);
     tdma_assign_slot(tdma, uwb_pan_slot_timer_cb, 2, (void*)pan);
-    
+
 #if MYNEWT_VAL(SURVEY_ENABLED)
     survey_instance_t *survey = (survey_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_SURVEY);
-    
+
     tdma_assign_slot(tdma, survey_slot_range_cb, MYNEWT_VAL(SURVEY_RANGE_SLOT), (void*)survey);
     tdma_assign_slot(tdma, survey_slot_broadcast_cb, MYNEWT_VAL(SURVEY_BROADCAST_SLOT), (void*)survey);
     for (uint16_t i = 6; i < MYNEWT_VAL(TDMA_NSLOTS); i++)
@@ -339,4 +337,3 @@ int main(int argc, char **argv){
     assert(0);
     return rc;
 }
-

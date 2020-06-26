@@ -1,6 +1,4 @@
 /**
- * Copyright (C) 2017-2018, Decawave Limited, All Rights Reserved
- * 
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -8,7 +6,7 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * 
+ *
  *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
@@ -139,7 +137,7 @@ uwb_sleep(void)
 }
 
 /*
- * Event callback function for timer events. 
+ * Event callback function for timer events.
 */
 static ieee_blink_frame_t tdoa_blink_frame = {
     .fctrl = 0xC5,  /* frame type (0xC5 for a blink) using 64-bit addressing */
@@ -175,7 +173,7 @@ void tdoa_timer_ev_cb(struct dpl_event *ev) {
         uwb_write_tx(udev, tdoa_blink_frame.array, 0, sizeof(ieee_blink_frame_t));
     }
     hal_gpio_write(LED_BLINK_PIN, 0);
-    
+
     tdoa_blink_frame.seq_num++;
     if (g_blink_rate) {
         dpl_callout_reset(&tdoa_callout, DPL_TICKS_PER_SEC/g_blink_rate);
@@ -226,7 +224,7 @@ int main(int argc, char **argv){
     udev->config.rxauto_enable = 0;
 
     uwb_sleep();
-    
+
     printf("{\"device_id\"=\"%lX\"",udev->device_id);
     printf(",\"panid=\"%X\"",udev->pan_id);
     printf(",\"addr\"=\"%X\"",udev->uid);
@@ -236,16 +234,15 @@ int main(int argc, char **argv){
     tdoa_blink_frame.long_address = udev->my_long_address;
 #if MYNEWT_VAL(BLE_ENABLED)
     ble_init(udev->my_long_address);
-#endif    
+#endif
 
     init_timer();
     hal_gpio_init_out(LED_BLINK_PIN, 0);
 
     while (1) {
-        dpl_eventq_run(dpl_eventq_dflt_get());   
+        dpl_eventq_run(dpl_eventq_dflt_get());
     }
 
     assert(0);
     return rc;
 }
-

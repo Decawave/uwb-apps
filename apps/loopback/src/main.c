@@ -1,6 +1,4 @@
 /**
- * Copyright (C) 2017-2018, Decawave Limited, All Rights Reserved
- * 
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -8,7 +6,7 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * 
+ *
  *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
@@ -49,7 +47,7 @@
 #include <uwb_wcs/uwb_wcs.h>
 #endif
 #if MYNEWT_VAL(TIMESCALE)
-#include <timescale/timescale.h> 
+#include <timescale/timescale.h>
 #endif
 
 static void master_slot_ev_cb(struct dpl_event * ev);
@@ -57,7 +55,7 @@ static void slave_slot_ev_cb(struct dpl_event * ev);
 
 #define NINST 2
 
-static void 
+static void
 clk_sync(dw1000_dev_instance_t * inst[], uint8_t n){
 
     for (uint8_t i = 0; i < n; i++ )
@@ -72,12 +70,12 @@ clk_sync(dw1000_dev_instance_t * inst[], uint8_t n){
 
     hal_gpio_write(MYNEWT_VAL(DW1000_PDOA_SYNC_CLR), 0);
     hal_gpio_write(MYNEWT_VAL(DW1000_PDOA_SYNC_EN), 0);
-    
+
     for (uint8_t i = 0; i < n; i++ )
         dw1000_phy_external_sync(inst[i],0, false);
 }
-   
-static void 
+
+static void
 master_slot_ev_cb(struct dpl_event * ev){
     assert(ev);
 
@@ -95,7 +93,7 @@ master_slot_ev_cb(struct dpl_event * ev){
 }
 
 
-static void 
+static void
 slave_slot_ev_cb(struct dpl_event *ev){
     assert(ev);
 
@@ -104,10 +102,10 @@ slave_slot_ev_cb(struct dpl_event *ev){
     struct uwb_rng_instance * rng = (struct uwb_rng_instance *)slot->arg;
 
     uint16_t idx = slot->idx;
-    
+
     uint64_t dx_time = tdma_tx_slot_start(tdma, idx);
     dx_time = dx_time & 0xFFFFFFFFFE00UL;
-  
+
     switch (idx%4){
         case 0:uwb_rng_request_delay_start(rng, 0x4321, dx_time, UWB_DATA_CODE_SS_TWR);
         break;
@@ -127,7 +125,7 @@ slave_slot_ev_cb(struct dpl_event *ev){
 
 int main(int argc, char **argv){
     int rc;
-    
+
     dw1000_dev_instance_t * inst[] = {
         hal_dw1000_inst(0),
         hal_dw1000_inst(1)
@@ -142,7 +140,7 @@ int main(int argc, char **argv){
                     .BOOSTNORM = dw1000_power_value(DW1000_txrf_config_0db, 0.5),
                     .BOOSTP500 = dw1000_power_value(DW1000_txrf_config_0db, 0.5),
                     .BOOSTP250 = dw1000_power_value(DW1000_txrf_config_0db, 0.5),
-                    .BOOSTP125 = dw1000_power_value(DW1000_txrf_config_0db, 0.5)   
+                    .BOOSTP125 = dw1000_power_value(DW1000_txrf_config_0db, 0.5)
                 };
     sysinit();
 
@@ -151,14 +149,14 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_3, 1);
 
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
-    printf("{\"utime\": %lu,\"msg\": \"request_duration = %d usec\"}\n", utime, uwb_phy_frame_duration(udev[0], sizeof(ieee_rng_request_frame_t) )); 
-    printf("{\"utime\": %lu,\"msg\": \"response_duration = %d usec\"}\n",utime, uwb_phy_frame_duration(udev[0], sizeof(ieee_rng_response_frame_t) )); 
-    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime, uwb_phy_SHR_duration(udev[0])); 
+    printf("{\"utime\": %lu,\"msg\": \"request_duration = %d usec\"}\n", utime, uwb_phy_frame_duration(udev[0], sizeof(ieee_rng_request_frame_t) ));
+    printf("{\"utime\": %lu,\"msg\": \"response_duration = %d usec\"}\n",utime, uwb_phy_frame_duration(udev[0], sizeof(ieee_rng_response_frame_t) ));
+    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime, uwb_phy_SHR_duration(udev[0]));
 
     struct uwb_rng_instance * rng0 = (struct uwb_rng_instance *) uwb_mac_find_cb_inst_ptr(udev[0], UWBEXT_RNG);
     struct uwb_rng_instance * rng1 = (struct uwb_rng_instance *) uwb_mac_find_cb_inst_ptr(udev[1], UWBEXT_RNG);
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime, (uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng0->config.tx_holdoff_delay) ));
-    
+
     uwb_ccp_start(uwb_mac_find_cb_inst_ptr(udev[0], UWBEXT_CCP), CCP_ROLE_MASTER);
     uwb_ccp_start(uwb_mac_find_cb_inst_ptr(udev[1], UWBEXT_CCP), CCP_ROLE_SLAVE);
 
@@ -175,7 +173,7 @@ int main(int argc, char **argv){
         tdma_assign_slot(tdma0, master_slot_ev_cb, i, (void*)rng0);
         tdma_assign_slot(tdma1, slave_slot_ev_cb, i, (void*)rng1);
     }
-    
+
     clk_sync(inst, 2);
     while (1) {
         os_eventq_run(os_eventq_dflt_get());
@@ -183,4 +181,3 @@ int main(int argc, char **argv){
     assert(0);
     return rc;
 }
-

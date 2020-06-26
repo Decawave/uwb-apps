@@ -19,7 +19,7 @@
 
 pkg.name: lib/bleprph
 pkg.description: "Base BLE Peripheral lib"
-pkg.author: "Niklas Casaril <niklas@>"
+pkg.author: "UWB Core <uwbcore@gmail.com>"
 pkg.homepage: "http://decawave.com/"
 pkg.keywords:
     - ble

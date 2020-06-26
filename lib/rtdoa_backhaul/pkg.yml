@@ -19,7 +19,7 @@
 
 pkg.name: "lib/rtdoa_backhaul"
 pkg.description: "Backhaul for rtdoa"
-pkg.author: "Niklas Casaril <niklas@>"
+pkg.author: "UWB Core <uwbcore@gmail.com>"
 pkg.homepage: "http://decawave.com/"
 pkg.keywords:
 

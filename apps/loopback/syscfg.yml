@@ -12,7 +12,7 @@ syscfg.vals:
     STATS_NAMES: 1
     DW1000_CLI: 1
     WCS_VERBOSE: 0
-    CIR_VERBOSE: 1     
+    CIR_VERBOSE: 1
     CIR_SIZE: 64
 
     #Need to supersize to allow for CIR read
@@ -33,4 +33,3 @@ syscfg.vals:
 
     DW_DEVICE_ID_0: (0x4321U)
     DW_DEVICE_ID_1: (0x1234U)
-

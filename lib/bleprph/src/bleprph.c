@@ -54,7 +54,7 @@ struct ble_gatt_register_ctxt;
 #define GATT_SVR_CHR_UNR_ALERT_STAT_UUID      0x2A45
 #define GATT_SVR_CHR_ALERT_NOT_CTRL_PT        0x2A44
 
-void gatt_svr_register_cb(struct ble_gatt_register_ctxt *ctxt, void *arg);		
+void gatt_svr_register_cb(struct ble_gatt_register_ctxt *ctxt, void *arg);
 int gatt_svr_init(void);
 
 static int bleprph_gap_event(struct ble_gap_event *event, void *arg);
@@ -110,16 +110,16 @@ bleprph_advertise(void)
     fields.name_len = strlen(name);
     fields.name_is_complete = 1;
 
-    fields.uuids16 = (ble_uuid16_t[]){		
-         BLE_UUID16_INIT(GATT_SVR_SVC_ALERT_UUID)		
-    };		
-    fields.num_uuids16 = 1;		
-    fields.uuids16_is_complete = 1;		
-    
-    rc = ble_gap_adv_set_fields(&fields);		
-    if (rc != 0) {		
-        BLEPRPH_LOG(ERROR, "error setting advertisement data; rc=%d\n", rc);		
-        return;		
+    fields.uuids16 = (ble_uuid16_t[]){
+         BLE_UUID16_INIT(GATT_SVR_SVC_ALERT_UUID)
+    };
+    fields.num_uuids16 = 1;
+    fields.uuids16_is_complete = 1;
+
+    rc = ble_gap_adv_set_fields(&fields);
+    if (rc != 0) {
+        BLEPRPH_LOG(ERROR, "error setting advertisement data; rc=%d\n", rc);
+        return;
     }
 
     /* Begin advertising. */
@@ -271,9 +271,9 @@ ble_init(uint64_t ble_id)
     ble_hs_cfg.gatts_register_cb = gatt_svr_register_cb;
     ble_hs_cfg.store_status_cb = ble_store_util_status_rr;
 
-    rc = gatt_svr_init();		
+    rc = gatt_svr_init();
     assert(rc == 0);
-    
+
     /* Set the default device name. */
     char ble_name[32];
     snprintf(ble_name, sizeof(ble_name), "%s-%04lX", MYNEWT_VAL(BLE_PREFIX),

@@ -19,7 +19,7 @@
 #
 -->
 
-# Decawave UWB Applications 
+# Decawave UWB Applications
 [![Build Status](https://travis-ci.com/Decawave/uwb-apps.svg?token=Qc1ARRCEWyUvYoAtFTkY&branch=master)](https://travis-ci.com/Decawave/uwb-apps)
 
 ## Overview
@@ -39,9 +39,7 @@ Project discussion board, http://decawave.slack.com
 * DWM1001   from https://www.decawave.com/products/dwm1001-module
 * DWM1002   from https://decawave.com (coming soon)
 * DWM1003   from https://decawave.com (coming soon)
-* locomo    from http://www.ubitraq.com
-* lps2mini  from https://loligoelectronics.com
-* lps2nano  from https://loligoelectronics.com
+* lps2mini  from https://lohmega.com
 
 ## Getting started
 
@@ -49,7 +47,7 @@ The remainder of this README.md shows how to bring up the elementary twr_node/tw
 
 1. Download and install Apache Newt.
 
-You will need to download the Apache Newt tool, as documented in the [Getting Started Guide](http://mynewt.apache.org/latest/get_started/index.html). 
+You will need to download the Apache Newt tool, as documented in the [Getting Started Guide](http://mynewt.apache.org/latest/get_started/index.html).
 
 Prerequisites: You should follow the generic tutorials at http://mynewt.apache.org/latest/tutorials/tutorials.html, particularly the basic Blinky example that will guide you through the basic setup.
 
@@ -60,10 +58,20 @@ Prerequisites: You should follow the generic tutorials at http://mynewt.apache.o
     cd uwb-apps
 ```
 
-3. Running the newt install command downloads the apache-mynewt-core, decawave-uwb-core, and mynewt-timescale-lib packages, these are dependent repos of the decawave-uwb-apps project and are automatically checked-out by the newt tools.
+3. Running the ```newt upgrade``` command downloads the apache-mynewt-core, decawave-uwb-core, decawave-uwb-dwXXXX driver(s) repo, and mynewt-timescale-lib packages,
+these are dependent repos of the decawave-uwb-apps project and are automatically checked-out by the newt tools.
 
 ```no-highlight
-    $ newt install
+    $ newt upgrade
+```
+
+To see if you have access to other driver repos, run the setup.sh
+script under repos/decawave-uwb-core like so:
+
+```
+repos/decawave-uwb-core/setup.sh
+# Rerun newt upgrade
+newt upgrade
 ```
 
 4. To erase the default flash image that shipped with the DWM1001.
@@ -75,6 +83,13 @@ J-Link>exit
 $ 
 ```
 
+or if you have nrfjprog ([Nordic Cmd Tools](https://www.nordicsemi.com/Software-and-tools/Development-Tools/nRF-Command-Line-Tools/Download)) installed:
+
+```
+    $ nrfjprog -f NRF52 -e
+```
+
+
 5. Build the new bootloader applicaiton for the DWM1001 target.
 
 (executed from the mynewt-dw1000-app directory).
@@ -84,7 +99,7 @@ $
 newt target create dwm1001_boot
 newt target set dwm1001_boot app=@mcuboot/boot/mynewt
 newt target set dwm1001_boot bsp=@decawave-uwb-core/hw/bsp/dwm1001
-newt target set dwm1001_boot build_profile=optimized 
+newt target set dwm1001_boot build_profile=optimized
 newt build dwm1001_boot
 newt load dwm1001_boot
 
@@ -99,21 +114,21 @@ newt load dwm1001_boot
 newt target create twr_tag_tdma
 newt target set twr_tag_tdma app=apps/twr_tag_tdma
 newt target set twr_tag_tdma bsp=@decawave-uwb-core/hw/bsp/dwm1001
-newt target set twr_tag_tdma build_profile=debug 
+newt target set twr_tag_tdma build_profile=debug
 newt run twr_tag_tdma 0
 
 ```
 
-7. On a second DWM1001-DEV board build the node side of the Two-Way-Ranging (twr_node_tdma) application as follows. 
+7. On a second DWM1001-DEV board build the node side of the Two-Way-Ranging (twr_node_tdma) application as follows.
 
 (executed from the decawave-uwb-apps directory).
 
 ```no-highlight
 
-newt target create twr_node_tdma 
+newt target create twr_node_tdma
 newt target set twr_node_tdma app=apps/twr_node_tdma
 newt target set twr_node_tdma bsp=@decawave-uwb-core/hw/bsp/dwm1001
-newt target set twr_node_tdma build_profile=debug 
+newt target set twr_node_tdma build_profile=debug
 newt target amend twr_node_tdma syscfg=LOG_LEVEL=1:UWBCFG_DEF_ROLE='"0x1"'
 newt run twr_node_tdma 0
 

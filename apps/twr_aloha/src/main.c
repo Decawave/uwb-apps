@@ -1,6 +1,4 @@
 /**
- * Copyright (C) 2017-2018, Decawave Limited, All Rights Reserved
- * 
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -8,7 +6,7 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * 
+ *
  *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
@@ -49,16 +47,16 @@
 
 static void slot_complete_cb(struct dpl_event *ev);
 
-/*! 
+/*!
  * @fn complete_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
  *
- * @brief This callback is part of the  struct uwb_mac_interface extension interface and invoked of the completion of a range request. 
- * The struct uwb_mac_interface is in the interrupt context and is used to schedule events an event queue. Processing should be kept 
- * to a minimum giving the interrupt context. All algorithms activities should be deferred to a thread on an event queue. 
- * The callback should return true if and only if it can determine if it is the sole recipient of this event. 
+ * @brief This callback is part of the  struct uwb_mac_interface extension interface and invoked of the completion of a range request.
+ * The struct uwb_mac_interface is in the interrupt context and is used to schedule events an event queue. Processing should be kept
+ * to a minimum giving the interrupt context. All algorithms activities should be deferred to a thread on an event queue.
+ * The callback should return true if and only if it can determine if it is the sole recipient of this event.
  *
- * NOTE: The MAC extension interface is a link-list of callbacks, subsequent callbacks on the list will be not be called in the 
- * event of returning true. 
+ * NOTE: The MAC extension interface is a link-list of callbacks, subsequent callbacks on the list will be not be called in the
+ * event of returning true.
  *
  * @param inst  - dw1000_dev_instance_t *
  * @param cbs   - struct uwb_mac_interface *
@@ -98,25 +96,25 @@ rx_timeout_cb(struct uwb_dev * inst, struct uwb_mac_interface * cbs)
     return true;
 }
 
-/*! 
+/*!
  * @fn slot_complete_cb(struct os_event * ev)
  *
- * @brief In the example this function represents the event context processing of the received range request. 
- * In this case, a JSON string is constructed and written to stdio. See the ./apps/matlab or ./apps/python folders for examples on 
- * how to parse and render these results. 
- * 
+ * @brief In the example this function represents the event context processing of the received range request.
+ * In this case, a JSON string is constructed and written to stdio. See the ./apps/matlab or ./apps/python folders for examples on
+ * how to parse and render these results.
+ *
  * input parameters
- * @param inst - struct os_event *  
+ * @param inst - struct os_event *
  * output parameters
- * returns none 
+ * returns none
  */
 
 static void slot_complete_cb(struct dpl_event *ev)
 {
     assert(ev != NULL);
-  
+
     hal_gpio_toggle(LED_BLINK_PIN);
-    
+
     struct uwb_rng_instance * rng = (struct uwb_rng_instance *)dpl_event_get_arg(ev);
     struct uwb_dev * inst = rng->dev_inst;
 
@@ -167,7 +165,7 @@ uwb_ev_cb(struct os_event *ev)
 
 /**
  * @fn uwb_config_update
- * 
+ *
  * Called from the main event queue as a result of the uwbcfg packet
  * having received a commit/load of new uwb configuration.
  */
@@ -218,15 +216,15 @@ int main(int argc, char **argv){
     uwb_mac_append_interface(udev, &cbs);
 
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
-    printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 
+    printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__);
     printf("{\"device_id\"=\"%lX\"",udev->device_id);
     printf(",\"panid=\"%X\"",udev->pan_id);
     printf(",\"addr\"=\"%X\"",udev->uid);
     printf(",\"part_id\"=\"%lX\"",(uint32_t)(udev->euid&0xffffffff));
     printf(",\"lot_id\"=\"%lX\"}\n",(uint32_t)(udev->euid>>32));
-    printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime, uwb_phy_frame_duration(udev, sizeof(twr_frame_final_t))); 
-    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,uwb_phy_SHR_duration(udev)); 
-    printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay))); 
+    printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime, uwb_phy_frame_duration(udev, sizeof(twr_frame_final_t)));
+    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,uwb_phy_SHR_duration(udev));
+    printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay)));
 
 #if MYNEWT_VAL(TWR_SS_ACK_ENABLED)
     uwb_set_autoack(udev, true);
@@ -253,4 +251,3 @@ int main(int argc, char **argv){
     assert(0);
     return rc;
 }
-

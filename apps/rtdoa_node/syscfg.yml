@@ -4,8 +4,8 @@ syscfg.vals:
     MSYS_1_BLOCK_SIZE: 128
     HARDFLOAT: 1
     LOG_LEVEL: 2
-    
-    # Route console 
+
+    # Route console
     CONSOLE_UART: 1
     CONSOLE_RTT: 0
     CONSOLE_UART_BAUD: 115200
@@ -25,7 +25,7 @@ syscfg.vals:
     STATS_NEWTMGR: 1
     DW1000_CLI: 1
     BCAST_OTA_CLI: 1
-    
+
     # UWB
     UWB_DEVICE_0: 1
     DW1000_DEV_TASK_STACK_SZ: 256
@@ -44,7 +44,7 @@ syscfg.vals:
     TDMA_ENABLED: 1
     TDMA_SANITY_INTERVAL: 10
     TDMA_STATS: 1
-    
+
     WCS_ENABLED: 1
     TIMESCALE_PROCESSING_ENABLED: 1
     ADAPTIVE_TIMESCALE_ENABLED: 1
@@ -61,7 +61,7 @@ syscfg.vals:
     UWB_PAN_LEASE_TIME: 1800
     UWB_PAN_LEASE_EXP_MARGIN: 60500
 
-    ## Panmaster    
+    ## Panmaster
     PANMASTER_FCB: 1
     PANMASTER_FCB_FLASH_AREA: FLASH_AREA_REBOOT_LOG
     REBOOT_LOG_FLASH_AREA: ""
@@ -90,7 +90,7 @@ syscfg.vals:
 
     NCBWIFI_ESP_PASSTHROUGH: 0
     ESP12F_ENABLED: 0
-    
+
     # BLE
     BLEPRPH_LOG_ENABLE: 0
     BLE_ROLE_BROADCASTER: 1

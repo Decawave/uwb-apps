@@ -1,6 +1,4 @@
 /**
- * Copyright (C) 2017-2018, Decawave Limited, All Rights Reserved
- * 
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -8,7 +6,7 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * 
+ *
  *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
@@ -121,8 +119,8 @@ lwip_nif_up(const char *name)
 #include <cir_dw1000/cir_dw1000.h>
 #endif
 #if MYNEWT_VAL(DW3000_DEVICE_0)
-#include "dw3000/dw3000_hal.h"
-#include <cir_dw3000/cir_dw3000.h>
+#include "dw3000-c0/dw3000_hal.h"
+#include <cir_dw3000-c0/cir_dw3000.h>
 #endif
 
 #endif
@@ -365,7 +363,7 @@ process_rx_data_queue(struct os_event *ev)
 #endif
 
     hal_gpio_init_out(LED_BLINK_PIN, 0);
-    while ((om = os_mqueue_get(&rxpkt_q)) != NULL) { 
+    while ((om = os_mqueue_get(&rxpkt_q)) != NULL) {
         hdr = (struct uwb_msg_hdr*)(OS_MBUF_USRHDR(om));
 
         payload_len = OS_MBUF_PKTLEN(om);
@@ -861,7 +859,7 @@ int main(int argc, char **argv){
         }
         printf("\"}\n");
     }
-    
+
 #if MYNEWT_VAL(BLE_ENABLED)
     ble_init(udev[0]->euid);
 #endif
@@ -870,25 +868,24 @@ int main(int argc, char **argv){
     for (int i=0;i<sizeof(g_mbuf_buffer)/sizeof(g_mbuf_buffer[0]);i++) {
         g_mbuf_buffer[i] = 0xdeadbeef;
     }
-    create_mbuf_pool();    
+    create_mbuf_pool();
     os_mqueue_init(&rxpkt_q, process_rx_data_queue, NULL);
     dpl_callout_init(&rx_reenable_callout, dpl_eventq_dflt_get(), rx_reenable_ev_cb, NULL);
-    
+
     /* Start timeout-free rx on all devices */
     for(int i=0;i<N_DW_INSTANCES;i++) {
         uwb_set_rx_timeout(udev[i], 0);
 #if N_DW_INSTANCES > 1
         uwb_set_rxauto_disable(udev[i], MYNEWT_VAL(CIR_ENABLED));
-#endif        
+#endif
         uwb_start_rx(udev[i]);
     }
 
     while (1) {
-        os_eventq_run(os_eventq_dflt_get());   
+        os_eventq_run(os_eventq_dflt_get());
     }
 
     assert(0);
 
     return rc;
 }
-

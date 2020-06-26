@@ -20,7 +20,7 @@
 pkg.name: apps/rtdoa_node
 pkg.type: app
 pkg.description: "Rtdoa node application"
-pkg.author: "Niklas Casaril <niklas@>"
+pkg.author: "UWB Core <uwbcore@gmail.com>"
 pkg.homepage: "https://decawave.com/"
 pkg.keywords:
   - dw1000

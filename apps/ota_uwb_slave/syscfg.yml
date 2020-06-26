@@ -31,4 +31,3 @@ syscfg.vals:
     CONFIG_NEWTMGR: 1
 
     DW_DEVICE_ID_0: 0x1234
-

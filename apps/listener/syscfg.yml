@@ -16,7 +16,7 @@ syscfg.defs:
         value: 1
         restrictions:
           - '!CIR_ENABLED'
-        
+
 syscfg.vals:
     LOG_LEVEL: 2
 
@@ -28,7 +28,7 @@ syscfg.vals:
     CONSOLE_UART_TX_BUF_SIZE: 1024
     CONSOLE_UART_RX_BUF_SIZE: 256
     CONSOLE_HISTORY_SIZE: 8
-    
+
     # Shell
     SHELL_TASK: 1
     SHELL_PROMPT_MODULE: 1
@@ -38,7 +38,7 @@ syscfg.vals:
     DW1000_CLI: 1
     STATS_NAMES: 1
     STATS_CLI: 1
-    
+
     # Enable DW1000
     UWB_DEVICE_0: 1
     UWBCFG_APPLY_AT_INIT: 1
@@ -49,16 +49,16 @@ syscfg.vals:
     UWB_CLI:  1
     UWB_CLI_BACKTRACE: 0
 
-    ## Where to store config 
+    ## Where to store config
     CONFIG_FCB: 1
     CONFIG_NEWTMGR: 1
     CONFIG_FCB_FLASH_AREA: FLASH_AREA_NFFS
-    
+
     # BLE Disable central and observer roles.
     BLE_ROLE_BROADCASTER: 1
     BLE_ROLE_CENTRAL: 0
     BLE_ROLE_OBSERVER: 0
     BLE_ROLE_PERIPHERAL: 1
-    
+
     MSYS_1_BLOCK_COUNT: 24
     MSYS_1_BLOCK_SIZE: 512

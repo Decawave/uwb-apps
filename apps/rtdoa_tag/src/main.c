@@ -1,6 +1,4 @@
 /**
- * Copyright (C) 2017-2018, Decawave Limited, All Rights Reserved
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -45,13 +43,13 @@
 #include <config/config.h>
 
 #if MYNEWT_VAL(NMGR_UWB_ENABLED)
-#include <nmgr_uwb/nmgr_uwb.h> 
+#include <nmgr_uwb/nmgr_uwb.h>
 #endif
 
 #include <tdma/tdma.h>
 #include <uwb_ccp/uwb_ccp.h>
 #include <uwb_wcs/uwb_wcs.h>
-#include <timescale/timescale.h> 
+#include <timescale/timescale.h>
 #if MYNEWT_VAL(UWB_RNG_ENABLED)
 #include <uwb_rng/uwb_rng.h>
 #endif
@@ -206,7 +204,7 @@ struct uwbcfg_cbs uwb_cb = {
  * @brief RTDoA Subscription slot
  *
  */
-static void 
+static void
 rtdoa_slot_timer_cb(struct dpl_event *ev)
 {
     assert(ev);
@@ -217,7 +215,7 @@ rtdoa_slot_timer_cb(struct dpl_event *ev)
     uint16_t idx = slot->idx;
     struct rtdoa_instance * rtdoa = (struct rtdoa_instance*)slot->arg;
     //printf("idx%d\n", idx);
-    
+
     /* Avoid colliding with the ccp */
     if (dpl_sem_get_count(&ccp->sem) == 0) {
         return;
@@ -238,7 +236,7 @@ rtdoa_slot_timer_cb(struct dpl_event *ev)
     //printf("idx%de\n", idx);
 }
 
-static void 
+static void
 nmgr_slot_timer_cb(struct dpl_event * ev)
 {
     assert(ev);
@@ -400,4 +398,3 @@ main(int argc, char **argv)
     assert(0);
     return rc;
 }
-
