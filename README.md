@@ -51,7 +51,7 @@ You will need to download the Apache Newt tool, as documented in the [Getting St
 
 Prerequisites: You should follow the generic tutorials at http://mynewt.apache.org/latest/tutorials/tutorials.html, particularly the basic Blinky example that will guide you through the basic setup.
 
-2. Download the DW1000 Mynewt apps.
+2. Download the UWB apps repository.
 
 ```no-highlight
     git clone git@github.com:Decawave/uwb-apps.git
@@ -70,8 +70,16 @@ script under repos/decawave-uwb-core like so:
 
 ```
 repos/decawave-uwb-core/setup.sh
-# Rerun newt upgrade
-newt upgrade
+# Rerun newt install
+newt install
+```
+
+Apply any patches to apache-mynewt-core:
+
+```
+cd repos/apache-mynewt-core/
+git apply ../decawave-uwb-core/patches/apache-mynewt-core/mynewt_1_7_0_*
+cd -
 ```
 
 4. To erase the default flash image that shipped with the DWM1001.
