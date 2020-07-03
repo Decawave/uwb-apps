@@ -37,8 +37,11 @@
 #include "host/util/util.h"
 #include "services/gap/ble_svc_gap.h"
 
-struct log bleprph_log;
+#if MYNEWT_VAL(BLESHELL_MAX_INPUT)
+#include "bleshell/bleshell.h"
+#endif
 
+struct log bleprph_log;
 
 struct ble_hs_cfg;
 struct ble_gatt_register_ctxt;
@@ -53,9 +56,6 @@ struct ble_gatt_register_ctxt;
 #define GATT_SVR_CHR_SUP_UNR_ALERT_CAT_UUID   0x2A48
 #define GATT_SVR_CHR_UNR_ALERT_STAT_UUID      0x2A45
 #define GATT_SVR_CHR_ALERT_NOT_CTRL_PT        0x2A44
-
-void gatt_svr_register_cb(struct ble_gatt_register_ctxt *ctxt, void *arg);
-int gatt_svr_init(void);
 
 static int bleprph_gap_event(struct ble_gap_event *event, void *arg);
 static uint8_t g_bleprph_connected = 0;
@@ -77,7 +77,7 @@ bleprph_advertise(void)
     /* Figure out address to use while advertising (no privacy for now) */
     rc = ble_hs_id_infer_auto(0, &own_addr_type);
     if (rc != 0) {
-        BLEPRPH_LOG(ERROR, "error determining address type; rc=%d\n", rc);
+        BLEPRPH_LOG(ERROR, "error det addrt;%d\n", rc);
         return;
     }
 
@@ -88,7 +88,6 @@ bleprph_advertise(void)
      *     o Device name.
      *     o 16-bit service UUIDs (alert notifications).
      */
-
     memset(&fields, 0, sizeof fields);
 
     /* Advertise two flags:
@@ -105,6 +104,19 @@ bleprph_advertise(void)
     fields.tx_pwr_lvl_is_present = 1;
     fields.tx_pwr_lvl = BLE_HS_ADV_TX_PWR_LVL_AUTO;
 
+#if MYNEWT_VAL(BLESHELL_MAX_INPUT)
+    fields.uuids128 = BLE_UUID128(&gatt_svr_svc_shell_uuid.u);
+    fields.num_uuids128 = 1;
+    fields.uuids128_is_complete = 1;
+#endif
+
+    rc = ble_gap_adv_set_fields(&fields);
+    if (rc != 0) {
+        BLEPRPH_LOG(ERROR, "error set advd;%d\n", rc);
+        return;
+    }
+
+    memset(&fields, 0, sizeof fields);
     name = ble_svc_gap_device_name();
     fields.name = (uint8_t *)name;
     fields.name_len = strlen(name);
@@ -118,7 +130,7 @@ bleprph_advertise(void)
 
     rc = ble_gap_adv_set_fields(&fields);
     if (rc != 0) {
-        BLEPRPH_LOG(ERROR, "error setting advertisement data; rc=%d\n", rc);
+        BLEPRPH_LOG(ERROR, "error set advd;%d\n", rc);
         return;
     }
 
@@ -129,7 +141,7 @@ bleprph_advertise(void)
     rc = ble_gap_adv_start(own_addr_type, NULL, BLE_HS_FOREVER,
                            &adv_params, bleprph_gap_event, NULL);
     if (rc != 0) {
-        BLEPRPH_LOG(ERROR, "error enabling advertisement; rc=%d\n", rc);
+        BLEPRPH_LOG(ERROR, "error en adv;%d\n", rc);
         return;
     }
 }
@@ -158,28 +170,24 @@ bleprph_gap_event(struct ble_gap_event *event, void *arg)
     switch (event->type) {
     case BLE_GAP_EVENT_CONNECT:
         /* A new connection was established or a connection attempt failed. */
-        BLEPRPH_LOG(INFO, "connection %s; status=%d ",
-                       event->connect.status == 0 ? "established" : "failed",
-                       event->connect.status);
         if (event->connect.status == 0) {
             rc = ble_gap_conn_find(event->connect.conn_handle, &desc);
             assert(rc == 0);
 
         }
-        BLEPRPH_LOG(INFO, "\n");
 
         if (event->connect.status != 0) {
             /* Connection failed; resume advertising. */
             bleprph_advertise();
         } else {
             g_bleprph_connected=1;
+#if MYNEWT_VAL(BLESHELL_MAX_INPUT)
+            bleshell_set_conn_handle(event->connect.conn_handle);
+#endif
         }
         return 0;
 
     case BLE_GAP_EVENT_DISCONNECT:
-        BLEPRPH_LOG(INFO, "disconnect; reason=%d ", event->disconnect.reason);
-        BLEPRPH_LOG(INFO, "\n");
-
         /* Connection terminated; resume advertising. */
         bleprph_advertise();
         g_bleprph_connected=0;
@@ -187,46 +195,31 @@ bleprph_gap_event(struct ble_gap_event *event, void *arg)
 
     case BLE_GAP_EVENT_CONN_UPDATE:
         /* The central has updated the connection parameters. */
-        BLEPRPH_LOG(INFO, "connection updated; status=%d ",
-                    event->conn_update.status);
-        rc = ble_gap_conn_find(event->connect.conn_handle, &desc);
-        assert(rc == 0);
-        BLEPRPH_LOG(INFO, "\n");
         return 0;
 
     case BLE_GAP_EVENT_ADV_COMPLETE:
-        BLEPRPH_LOG(INFO, "advertise complete; reason=%d",
-                    event->adv_complete.reason);
         bleprph_advertise();
         return 0;
 
     case BLE_GAP_EVENT_ENC_CHANGE:
         /* Encryption has been enabled or disabled for this connection. */
-        BLEPRPH_LOG(INFO, "encryption change event; status=%d ",
-                    event->enc_change.status);
-        rc = ble_gap_conn_find(event->connect.conn_handle, &desc);
-        assert(rc == 0);
-        BLEPRPH_LOG(INFO, "\n");
         return 0;
 
     case BLE_GAP_EVENT_SUBSCRIBE:
-        BLEPRPH_LOG(INFO, "subscribe event; conn_handle=%d attr_handle=%d "
-                          "reason=%d prevn=%d curn=%d previ=%d curi=%d\n",
-                    event->subscribe.conn_handle,
-                    event->subscribe.attr_handle,
-                    event->subscribe.reason,
-                    event->subscribe.prev_notify,
-                    event->subscribe.cur_notify,
-                    event->subscribe.prev_indicate,
-                    event->subscribe.cur_indicate);
         return 0;
 
     case BLE_GAP_EVENT_MTU:
-        BLEPRPH_LOG(INFO, "mtu update event; conn_handle=%d cid=%d mtu=%d\n",
-                    event->mtu.conn_handle,
-                    event->mtu.channel_id,
-                    event->mtu.value);
         return 0;
+    case BLE_GAP_EVENT_REPEAT_PAIRING:
+        /* Delete the old bond. */
+        rc = ble_gap_conn_find(event->repeat_pairing.conn_handle, &desc);
+        assert(rc == 0);
+        ble_store_util_delete_peer(&desc.peer_id_addr);
+
+        /* Return BLE_GAP_REPEAT_PAIRING_RETRY to indicate that the host should
+         * continue with the pairing operation.
+         */
+        return BLE_GAP_REPEAT_PAIRING_RETRY;
     }
 
     return 0;
@@ -235,7 +228,7 @@ bleprph_gap_event(struct ble_gap_event *event, void *arg)
 static void
 bleprph_on_reset(int reason)
 {
-    BLEPRPH_LOG(ERROR, "Resetting state; reason=%d\n", reason);
+    BLEPRPH_LOG(ERROR, "Rst;%d\n", reason);
 }
 
 static void
@@ -268,11 +261,12 @@ ble_init(uint64_t ble_id)
 
     ble_hs_cfg.reset_cb = bleprph_on_reset;
     ble_hs_cfg.sync_cb = bleprph_on_sync;
-    ble_hs_cfg.gatts_register_cb = gatt_svr_register_cb;
     ble_hs_cfg.store_status_cb = ble_store_util_status_rr;
 
-    rc = gatt_svr_init();
+#if MYNEWT_VAL(BLESHELL_MAX_INPUT)
+    rc = bleshell_gatt_svr_init();
     assert(rc == 0);
+#endif
 
     /* Set the default device name. */
     char ble_name[32];
