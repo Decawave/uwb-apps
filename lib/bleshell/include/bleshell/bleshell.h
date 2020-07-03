@@ -17,56 +17,26 @@
  * under the License.
  */
 
+#ifndef _BLESHELL_H_
+#define _BLESHELL_H_
 
-#include <assert.h>
-#include <stdio.h>
-#include <string.h>
-#include "bsp/bsp.h"
-
-#include "host/ble_hs.h"
-#include "host/ble_uuid.h"
-#include "ble_priv.h"
-
-
-static const struct ble_gatt_svc_def gatt_svr_svcs[] = {
-    {
-        0, /* No more services. */
-    },
-};
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void
-gatt_svr_register_cb(struct ble_gatt_register_ctxt *ctxt, void *arg)
-{
-    switch (ctxt->op) {
-    case BLE_GATT_REGISTER_OP_SVC:
-        break;
-
-    case BLE_GATT_REGISTER_OP_CHR:
-        break;
-
-    case BLE_GATT_REGISTER_OP_DSC:
-        break;
-
-    default:
-        assert(0);
-        break;
-    }
-}
-
+bleshell_init(void);
 int
-gatt_svr_init(void)
-{
-    int rc;
+bleshell_svc_register(void);
+int
+bleshell_gatt_svr_init(void);
+void
+bleshell_set_conn_handle(uint16_t conn_handle);
 
-    rc = ble_gatts_count_cfg(gatt_svr_svcs);
-    if (rc != 0) {
-        return rc;
-    }
+extern const ble_uuid128_t gatt_svr_svc_shell_uuid;
 
-    rc = ble_gatts_add_svcs(gatt_svr_svcs);
-    if (rc != 0) {
-        return rc;
-    }
-
-    return 0;
+#ifdef __cplusplus
 }
+#endif
+
+#endif /* _BLESHELL_H */
