@@ -23,8 +23,9 @@ repo.versions:
     "0.0.1": "uwb_apps_0_0_1_tag"
     "0.0.2": "uwb_apps_0_0_2_tag"
     "0.0.3": "uwb_apps_0_0_3_tag"
+    "0.1.0": "uwb_apps_0_1_0_tag"
 
-    "0-latest": "0.0.3"
+    "0-latest": "0.1.0"
     "0-dev": "0.0.0"       # master
 
 repo.newt_compatibility:
@@ -50,6 +51,7 @@ repo.deps:
             uwb_apps_0_0_1_tag: 1.7.0
             uwb_apps_0_0_2_tag: 1.7.0
             uwb_apps_0_0_3_tag: 1.7.0
+            uwb_apps_0_1_0_tag: 1.7.0
     decawave-uwb-core:
         type: github
         user: decawave
@@ -59,3 +61,4 @@ repo.deps:
             uwb_apps_0_0_1_tag: 0.0.1
             uwb_apps_0_0_2_tag: 0.0.2
             uwb_apps_0_0_3_tag: 0.0.3
+            uwb_apps_0_1_0_tag: 0.1.0

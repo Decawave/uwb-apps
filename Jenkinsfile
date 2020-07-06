@@ -30,6 +30,8 @@ pipeline {
                         newt upgrade;
                     fi
                 '''
+                echo 'Test for dw3000 access'
+                sh 'bash repos/decawave-uwb-core/setup.sh'
                 sh '${JENKINS_CI}/jenkins/uwb-apps-setup.sh'
             }
         }
