@@ -24,26 +24,16 @@
 
 ## Overview
 
-This distribution contains the example applications for the DW1000 IR-UWB transceiver within the mynewt-OS. The dw1000 device driver model is integrated into the mynewt-OS (https://github.com/decawave/uwb-core). This driver includes native support for a 6lowPAN stack, Ranging Services, and Location Services, etc. Mynewt and its build environment tool newt and management tool newtmgt creates a powerful environment for deploying large-scale distributions within IoT.
-
-For these examples, we leverage the Decawave dwm1001 module and dwm1001-dev kit. The DWM1001 includes a nrf52832 and the DW1000 transceiver. The DWM1001-DEV is a breakout board that supports a Seggar OB-JLink interface with RTT support. The mynewt build environment provides a clean interface for maintaining platform agnostic distributions. The DWM1001-DEV and the examples contained herein provide a clean out-of-the-box experience for UWB Location Based Services.
-
-Warning: The DWM1001 comes flashed with a UWB Location Based Services stack. This distribution repurposes the hardware and is not intended to replace the functionality of the shipped stack. This distribution is intended to be a starting point for evaluating and developing one's own stacks. 
-
-## Getting support
-
-Project discussion board, http://decawave.slack.com
+This distribution contains the example applications for the DW1000 UWB transceiver.
 
 ## Getting hardware
 
 * DWM1001   from https://www.decawave.com/products/dwm1001-module
-* DWM1002   from https://decawave.com (coming soon)
-* DWM1003   from https://decawave.com (coming soon)
 * lps2mini  from https://lohmega.com
 
 ## Getting started
 
-The remainder of this README.md shows how to bring up the elementary twr_node/twr_tag examples for the DWM1001_DEV kit.
+The remainder of this README.md shows how to bring up the elementary twr_node/twr_tag examples.
 
 1. Download and install Apache Newt.
 
@@ -58,8 +48,7 @@ Prerequisites: You should follow the generic tutorials at http://mynewt.apache.o
     cd uwb-apps
 ```
 
-3. Running the ```newt upgrade``` command downloads the apache-mynewt-core, decawave-uwb-core, decawave-uwb-dwXXXX driver(s) repo, and mynewt-timescale-lib packages,
-these are dependent repos of the decawave-uwb-apps project and are automatically checked-out by the newt tools.
+3. Running the ```newt upgrade``` command downloads the apache-mynewt-core, decawave-uwb-core, decawave-uwb-dwXXXX driver(s) repo, and mynewt-timescale-lib packages, these are dependent repos of the decawave-uwb-apps project and are automatically checked-out by the newt tools.
 
 ```no-highlight
     $ newt upgrade
@@ -88,7 +77,7 @@ cd -
 $ JLinkExe -device nRF52 -speed 4000 -if SWD
 J-Link>erase
 J-Link>exit
-$ 
+$
 ```
 
 or if you have nrfjprog ([Nordic Cmd Tools](https://www.nordicsemi.com/Software-and-tools/Development-Tools/nRF-Command-Line-Tools/Download)) installed:

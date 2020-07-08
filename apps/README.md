@@ -19,26 +19,25 @@
 #
 -->
 
+# UWB APPs
+
 ## Overview
 
+This repo contains a series of examples for studying UWB networks and discover the uwb-core APIs. Collectivly uwb-app and uwb-core contain the essential building blocksfor a UWB enabled system. The examples use a device independent APIs and run out-of-the-box an all of Decawave products. The example are also platform independent and run out-of-the-box on a host of hardware platform. See respective example directories for usage.
+
 ```
-├── README.md                // This file
-├── depreciated              // Legacy apps
+├── desense                  // Desense testing app
 ├── listener                 // Sniffer app
-├── loopback                 // Loopback app to test dwm1002 board with 2 DW radios
-├── lwip_ping_rx             // LWIP Read/Write example
-├── lwip_ping_tx             // ~
-├── matlab                   // Realtime Matlab visualisation utilities
-├── node_mesh                // BLE mesh demo apps with TWR ranging
-├── tag_mesh                 // ~
+├── ota_uwb_master           // OTA over UWB demonstration
+├── ota_uwb_slave            // ~
+├── rtdoa_node               // Reverse Time Differene of Arrival node example
+├── rtdoa_tag                // ~
+├── streaming                // Streaming example
 ├── tdoa_tag                 // Blink service app intended for TDOA ranging scheme
 ├── twr_aloha                // Two-Way-Ranging without TDMA, Aloha-style
-├── twr_nranges_tdma         // 2n+2 example with TDMA scheme
+├── twr_nrng_tdma            // n ranges with n+2 messages, using with TDMA scheme
 ├── twr_node_tdma            // Two-Way-Ranging example with TDMA scheme
 ├── twr_tag_tdma             // ~
-├── twr_node_tdma_ota_ble    // OTA over BLE demonstration with Two way ranging
-├── twr_tag_tdma_ota_ble     // ~
-├── ota_uwb_master           // OTA over UWB demonstration
-└── ota_uwb_slave            // ~
+└── README.md                // This file
 
 ```
