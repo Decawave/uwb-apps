@@ -34,11 +34,11 @@ repo.newt_compatibility:
     0.0.0:
         0.0.0: good
     0.0.3:
-        1.7.0: good
+        1.8.0: good
     0.0.2:
-        1.7.0: good
+        1.8.0: good
     0.0.1:
-        1.7.0: good
+        1.8.0: good
 
 repo.deps:
     apache-mynewt-core:
@@ -47,9 +47,9 @@ repo.deps:
         repo: mynewt-core
         vers:
             #master: 0-dev
-            uwb_apps_0_0_1_tag: 1.7.0
-            uwb_apps_0_0_2_tag: 1.7.0
-            uwb_apps_0_0_3_tag: 1.7.0
+            uwb_apps_0_0_1_tag: 1.8.0
+            uwb_apps_0_0_2_tag: 1.8.0
+            uwb_apps_0_0_3_tag: 1.8.0
     decawave-uwb-core:
         type: github
         user: decawave
