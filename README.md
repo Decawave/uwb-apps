@@ -20,7 +20,7 @@
 -->
 
 # Decawave UWB Applications
-[![Build Status](https://travis-ci.com/Decawave/uwb-apps.svg?token=Qc1ARRCEWyUvYoAtFTkY&branch=master)](https://travis-ci.com/Decawave/uwb-apps)
+[![Build Status](https://travis-ci.org/Decawave/uwb-apps.svg?branch=master)](https://travis-ci.org/Decawave/uwb-apps)
 
 ## Overview
 
@@ -51,7 +51,13 @@ Prerequisites: You should follow the generic tutorials at http://mynewt.apache.o
 3. Running the ```newt upgrade``` command downloads the apache-mynewt-core, decawave-uwb-core, decawave-uwb-dwXXXX driver(s) repo, and mynewt-timescale-lib packages, these are dependent repos of the decawave-uwb-apps project and are automatically checked-out by the newt tools.
 
 ```no-highlight
-    $ newt upgrade
+$ newt upgrade
+# Depending on what version of the newt tool you use you
+# may have to manually remove git-but artifacts and then rerun
+# upgrade. I.e. only if you see an error like:
+# "Error: Error updating "mcuboot"..." do:
+rm repos/mcuboot/ext/mbedtls/include/mbedtls/ -rf
+newt upgrade
 ```
 
 To see if you have access to other driver repos, run the setup.sh

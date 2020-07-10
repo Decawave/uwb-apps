@@ -92,8 +92,6 @@ before_script:
   - cp -R $HOME/ci/uwb-apps-project.yml project.yml
   - cp -R $HOME/ci/uwb-apps-targets targets
   - newt upgrade
-    # Test for 3000 access
-  - bash repos/decawave-uwb-core/setup.sh
     # Try to sync branches between core and apps
   - $HOME/ci/uwb-apps-setup.sh
     # pass in the number of target sets
