@@ -39,6 +39,8 @@ uint16_t g_bleshell_attr_write_handle;
 
 /* Pointer to a console buffer */
 static char *console_buf = 0;
+static char *ble_buf = 0;
+static int ble_buf_idx = 0;
 
 static int streamer_ble_write(struct streamer *streamer, const void *src, size_t len);
 static int streamer_ble_vprintf(struct streamer *streamer, const char *fmt, va_list ap);
@@ -112,30 +114,46 @@ static const struct ble_gatt_svc_def gatt_svr_svcs[] = {
 
 static int
 gatt_svr_chr_access_shell_write(uint16_t conn_handle, uint16_t attr_handle,
-                               struct ble_gatt_access_ctxt *ctxt, void *arg)
+                                struct ble_gatt_access_ctxt *ctxt, void *arg)
 {
-    int i, j;
+    int i;
     struct os_mbuf *om = ctxt->om;
-    char buf[MYNEWT_VAL(BLESHELL_MAX_INPUT)] = {0};
-    char *bufp = buf;
+    char *bufp = ble_buf + ble_buf_idx;
     switch (ctxt->op) {
         case BLE_GATT_ACCESS_OP_WRITE_CHR:
-            j = 0;
             while(om) {
-                for (i=0;i<om->om_len && j<sizeof(buf);i++,j++) {
+                for (i=0;i < om->om_len &&
+                         ble_buf_idx < MYNEWT_VAL(BLESHELL_MAX_INPUT);
+                     i++, ble_buf_idx++) {
                     *(bufp++) = (((char *)om->om_data)[i]);
                 }
                 om = SLIST_NEXT(om, om_next);
             }
-            j--;
-            while (buf[j] == '\n') buf[j--] = 0;
-            printf("from ble: '%s'\n", buf);
-            shell_process_command(buf, &ble_streamer);
+            /*  */
+            if (ble_buf_idx >= MYNEWT_VAL(BLESHELL_MAX_INPUT)) {
+                memset(ble_buf, 0, MYNEWT_VAL(BLESHELL_MAX_INPUT));
+                ble_buf_idx = 0;
+                return -1;
+            }
+            /* Only process command if it ends with newline  */
+            if (ble_buf[ble_buf_idx-1] != '\n') {
+                break;
+            }
+            ble_buf_idx--;
+            /* Cull newline and white-space */
+            while (ble_buf[ble_buf_idx] == '\n' && ble_buf_idx) {
+                ble_buf[ble_buf_idx--] = 0;
+            }
+
+            shell_process_command(ble_buf, &ble_streamer);
+            memset(ble_buf, 0, MYNEWT_VAL(BLESHELL_MAX_INPUT));
+            ble_buf_idx = 0;
             return 0;
         default:
             assert(0);
             return BLE_ATT_ERR_UNLIKELY;
     }
+    return 0;
 }
 
 /**
@@ -164,9 +182,8 @@ err:
 }
 
 /**
- * Reads console and sends data over BLE
+ * Sends console response over BLE
  */
-
 void
 bleshell_shell_write(const char *str, int cnt)
 {
@@ -177,8 +194,6 @@ bleshell_shell_write(const char *str, int cnt)
     if (!cnt) return;
     if (!console_buf) return;
     if (!g_console_conn_handle) return;
-
-    printf("to ble: '%s'\n", str);
 
     off = 0;
     while (1) {
@@ -214,14 +229,12 @@ streamer_ble_vprintf(struct streamer *streamer,
     int num_bytes = vsnprintf(console_buf, MYNEWT_VAL(BLESHELL_MAX_INPUT),
                               fmt, ap);
 
-    printf("to ble: '%s'\n", console_buf);
     om = ble_hs_mbuf_from_flat(console_buf, num_bytes);
     if (!om) {
         return 0;
     }
     rc = ble_gattc_notify_custom(g_console_conn_handle,
                             g_bleshell_attr_read_handle, om);
-    printf("notify rc: %d\n", rc);
     assert(rc == 0);
 
     return num_bytes;
@@ -254,4 +267,6 @@ bleshell_init(void)
 
     console_buf = malloc(MYNEWT_VAL(BLESHELL_MAX_INPUT));
     SYSINIT_PANIC_ASSERT(console_buf != NULL);
+    ble_buf = malloc(MYNEWT_VAL(BLESHELL_MAX_INPUT));
+    SYSINIT_PANIC_ASSERT(ble_buf != NULL);
 }
