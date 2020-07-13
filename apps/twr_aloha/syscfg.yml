@@ -4,8 +4,6 @@ syscfg.vals:
     CONSOLE_UART_BAUD: '115200'
     CONSOLE_UART_TX_BUF_SIZE: '1024'
     CONSOLE_RTT: 0
-    CONSOLE_HISTORY_SIZE: 8
-
     CONFIG_FCB: 1
 
     UWB_DEVICE_0: 1
@@ -22,9 +20,9 @@ syscfg.vals:
     SHELL_TASK: 1
 
     # Enable newtmgr commands.
-    STATS_NEWTMGR: 1
-    LOG_NEWTMGR: 1
-    CONFIG_NEWTMGR: 1
+    STATS_MGMT: 1
+    LOG_MGMT: 1
+    CONFIG_MGMT: 1
 
 syscfg.defs:
     ANCHOR_ADDRESS:

@@ -36,7 +36,7 @@ pkg.deps:
     - "@apache-mynewt-core/sys/stats/full"
     - "@apache-mynewt-core/sys/console/full"
     - "@apache-mynewt-core/mgmt/imgmgr"
-    - "@apache-mynewt-core/mgmt/newtmgr"
+    - "@apache-mynewt-core/mgmt/mgmt"
     - "@decawave-uwb-core/lib/dsp"
     - "@decawave-uwb-core/lib/tdma"
     - "@decawave-uwb-core/lib/uwb_ccp"

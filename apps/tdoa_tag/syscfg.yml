@@ -23,7 +23,7 @@ syscfg.vals:
     CONFIG_CLI: 1
     STATS_CLI: 1
     STATS_NAMES: 1
-    STATS_NEWTMGR: 1
+    STATS_MGMT: 1
     UWB_CLI: 1
     UWB_CLI_BACKTRACE: 0
 
@@ -40,7 +40,7 @@ syscfg.vals:
 
     ## Where to store config
     CONFIG_FCB: 1
-    CONFIG_NEWTMGR: 1
+    CONFIG_MGMT: 1
     CONFIG_FCB_FLASH_AREA: FLASH_AREA_NFFS
 
     # BLE Disable central and observer roles.

@@ -22,7 +22,7 @@ syscfg.vals:
     IMGMGR_CLI: 1
     STATS_CLI: 1
     STATS_NAMES: 1
-    STATS_NEWTMGR: 1
+    STATS_MGMT: 1
     DW1000_CLI: 1
     BCAST_OTA_CLI: 1
 
@@ -79,7 +79,7 @@ syscfg.vals:
     # Config interface
     CONFIG_NFFS: 0
     CONFIG_FCB: 1
-    CONFIG_NEWTMGR: 1
+    CONFIG_MGMT: 1
     CONFIG_FCB_FLASH_AREA: FLASH_AREA_NFFS
 
     I2C_1: 1

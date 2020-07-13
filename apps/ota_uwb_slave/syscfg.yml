@@ -26,8 +26,8 @@ syscfg.vals:
     CONFIG_FCB: 1
 
     # Enable newtmgr commands.
-    STATS_NEWTMGR: 1
-    LOG_NEWTMGR: 1
-    CONFIG_NEWTMGR: 1
+    STATS_MGMT: 1
+    LOG_MGMT: 1
+    CONFIG_MGMT: 1
 
     DW_DEVICE_ID_0: 0x1234
