@@ -225,7 +225,7 @@ int main(int argc, char **argv){
     printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",
            utime, uwb_phy_frame_duration(udev, sizeof(twr_frame_final_t), 0));
     printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",
-           utime,uwb_phy_SHR_duration(udev), 0);
+           utime,uwb_phy_SHR_duration(udev,0 ));
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay)));
 
 #if MYNEWT_VAL(TWR_SS_ACK_ENABLED)
