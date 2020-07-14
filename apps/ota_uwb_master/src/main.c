@@ -79,7 +79,7 @@ int main(int argc, char **argv){
            utime,(uint32_t)(udev->euid&0xffffffff));
     printf("{\"utime\": %lu,\"msg\": \"lotID = 0x%lX\"}\n",
            utime,(uint32_t)(udev->euid>>32));
-    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime, uwb_phy_SHR_duration(udev));
+    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime, uwb_phy_SHR_duration(udev, 0));
 
     struct _nmgr_uwb_instance_t *nmgr = (struct _nmgr_uwb_instance_t *) uwb_mac_find_cb_inst_ptr(udev, UWBEXT_NMGR_UWB);
     os_callout_init(&uwb_callout, nmgr_cmds_get_eventq(), uwb_ev_cb, nmgr);

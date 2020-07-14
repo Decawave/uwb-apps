@@ -264,10 +264,10 @@ slot_cb(struct dpl_event * ev)
 
     /* Only recalculate timeout if needed */
     if (!timeout) {
-        timeout = uwb_usecs_to_dwt_usecs(uwb_phy_frame_duration(inst, sizeof(ieee_rng_request_frame_t)))
+        timeout = uwb_usecs_to_dwt_usecs(uwb_phy_frame_duration(inst, sizeof(ieee_rng_request_frame_t), 0))
             + rng->config.rx_timeout_delay;
         printf("# timeout set to: %d %d = %d\n",
-               uwb_phy_frame_duration(inst, sizeof(ieee_rng_request_frame_t)),
+               uwb_phy_frame_duration(inst, sizeof(ieee_rng_request_frame_t), 0),
                rng->config.rx_timeout_delay, timeout);
     }
 
@@ -361,8 +361,10 @@ int main(int argc, char **argv){
     printf(",\"addr\"=\"%X\"",udev->uid);
     printf(",\"part_id\"=\"%lX\"",(uint32_t)(udev->euid&0xffffffff));
     printf(",\"lot_id\"=\"%lX\"}\n",(uint32_t)(udev->euid>>32));
-    printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime,uwb_phy_frame_duration(udev, sizeof(twr_frame_final_t)));
-    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,uwb_phy_SHR_duration(udev));
+    printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",
+           utime, uwb_phy_frame_duration(udev, sizeof(twr_frame_final_t), 0));
+    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",
+           utime, uwb_phy_SHR_duration(udev, 0));
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay)));
 
     tdma_instance_t * tdma = (tdma_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_TDMA);

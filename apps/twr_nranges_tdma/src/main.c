@@ -169,7 +169,7 @@ slot_cb(struct dpl_event * ev){
     if (udev->role&UWB_ROLE_ANCHOR) {
         /* Listen for a ranging tag */
         uwb_set_delay_start(udev, tdma_rx_slot_start(tdma, idx));
-        uint16_t timeout = uwb_phy_frame_duration(udev, sizeof(nrng_request_frame_t))
+        uint16_t timeout = uwb_phy_frame_duration(udev, sizeof(nrng_request_frame_t), 0)
             + nrng->config.rx_timeout_delay;
 
         /* Padded timeout to allow us to receive any nmgr packets too */
@@ -309,8 +309,8 @@ int main(int argc, char **argv){
     printf(",\"addr\":\"%X\"",udev->uid);
     printf(",\"part_id\":\"%lX\"",(uint32_t)(udev->euid&0xffffffff));
     printf(",\"lot_id\":\"%lX\"}\n",(uint32_t)(udev->euid>>32));
-    printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime, uwb_phy_frame_duration(udev, sizeof(twr_frame_final_t)));
-    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime, uwb_phy_SHR_duration(udev));
+    printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime, uwb_phy_frame_duration(udev, sizeof(twr_frame_final_t), 0));
+    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime, uwb_phy_SHR_duration(udev, 0));
     printf("{\"utime\": %lu,\"msg\": \"holdoff = %d usec\"}\n",utime,(uint16_t)ceilf(uwb_dwt_usecs_to_usecs(rng->config.tx_holdoff_delay)));
 
     /* Pan is slots 1&2 */

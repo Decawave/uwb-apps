@@ -165,12 +165,11 @@ void tdoa_timer_ev_cb(struct dpl_event *ev) {
     uwb_sleep_config(udev);
     uwb_enter_sleep_after_tx(udev, g_blink_rate < 10);
 
+    uwb_write_tx(udev, tdoa_blink_frame.array, 0, sizeof(ieee_blink_frame_t));
     uwb_write_tx_fctrl(udev, sizeof(ieee_blink_frame_t), 0);
 
     if (uwb_start_tx(udev).start_tx_error){
         printf("start tx err\n");
-    } else {
-        uwb_write_tx(udev, tdoa_blink_frame.array, 0, sizeof(ieee_blink_frame_t));
     }
     hal_gpio_write(LED_BLINK_PIN, 0);
 

@@ -118,7 +118,7 @@ range_slot_cb(struct dpl_event * ev){
     if (udev->role&UWB_ROLE_ANCHOR) {
         /* Listen for a ranging tag */
         uwb_set_delay_start(udev, tdma_rx_slot_start(tdma, idx));
-        uint16_t timeout = uwb_phy_frame_duration(udev, sizeof(nrng_request_frame_t))
+        uint16_t timeout = uwb_phy_frame_duration(udev, sizeof(nrng_request_frame_t), 0)
             + nrng->config.rx_timeout_delay;
 
         /* Padded timeout to allow us to receive any nmgr packets too */
@@ -192,7 +192,7 @@ stream_slot_cb(struct dpl_event * ev)
         return;
     }
 #endif
-    preamble_duration = (uint64_t) ceilf(uwb_usecs_to_dwt_usecs(uwb_phy_SHR_duration(tdma->dev_inst)));
+    preamble_duration = (uint64_t) ceilf(uwb_usecs_to_dwt_usecs(uwb_phy_SHR_duration(tdma->dev_inst, 0)));
     dxtime = tdma_tx_slot_start(tdma, idx);
     dxtime_end = (tdma_tx_slot_start(tdma, idx+1) -
                   ((preamble_duration + MYNEWT_VAL(OS_LATENCY))<<16)) & UWB_DTU_40BMASK;
@@ -341,8 +341,9 @@ int main(int argc, char **argv){
     printf(",\"addr\"=\"%X\"",udev->uid);
     printf(",\"part_id\"=\"%lX\"",(uint32_t)(udev->euid&0xffffffff));
     printf(",\"lot_id\"=\"%lX\"}\n",(uint32_t)(udev->euid>>32));
-    printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",utime,uwb_phy_frame_duration(udev, sizeof(test) + sizeof(uwb_transport_frame_header_t)));
-    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,uwb_phy_SHR_duration(udev));
+    printf("{\"utime\": %lu,\"msg\": \"frame_duration = %d usec\"}\n",
+           utime,uwb_phy_frame_duration(udev, sizeof(test) + sizeof(uwb_transport_frame_header_t), 0));
+    printf("{\"utime\": %lu,\"msg\": \"SHR_duration = %d usec\"}\n",utime,uwb_phy_SHR_duration(udev, 0));
     printf("UWB_TRANSPORT_ROLE = %d\n",  MYNEWT_VAL(UWB_TRANSPORT_ROLE));
 
     tdma_instance_t * tdma = (tdma_instance_t*)uwb_mac_find_cb_inst_ptr(udev, UWBEXT_TDMA);

@@ -136,7 +136,7 @@ nrng_slot_timer_cb(struct dpl_event *ev)
         }
     } else {
         uwb_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
-        uint16_t timeout = uwb_phy_frame_duration(inst, sizeof(nrng_request_frame_t))
+        uint16_t timeout = uwb_phy_frame_duration(inst, sizeof(nrng_request_frame_t), 0)
             + nrng->config.rx_timeout_delay;
 
         uwb_set_rx_timeout(inst, timeout + 0x100);
