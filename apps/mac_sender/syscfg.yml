@@ -1,0 +1,49 @@
+syscfg.defs:
+    COM_UART_DEV:
+        description: 'Communication UART device'
+        value: '"uart0"'
+    COM_UART_BAUD:
+        description: 'Console UART baud rate.'
+        value: 115200
+
+syscfg.vals:
+    LOG_LEVEL: 2
+
+    UART_0: 1
+    # Route console to UART
+    CONSOLE_RTT: 1
+    CONSOLE_UART: 0
+    CONSOLE_UART_BAUD: 115200
+    CONSOLE_UART_TX_BUF_SIZE: 1024
+    CONSOLE_UART_RX_BUF_SIZE: 256
+    CONSOLE_HISTORY_SIZE: 8
+    RTT_TERMINAL_BUFFER_SIZE_UP: 1024
+    RTT_TERMINAL_BUFFER_SIZE_DOWN: 256
+
+    # Shell
+    SHELL_TASK: 1
+    SHELL_PROMPT_MODULE: 1
+    SHELL_NEWTMGR: 1
+    CONFIG_CLI: 1
+    CONFIG_CLI_DEBUG: 1
+    DW1000_CLI: 1
+    STATS_NAMES: 1
+    STATS_CLI: 1
+
+    # Enable DW1000
+    UWB_DEVICE_0: 1
+    UWBCFG_APPLY_AT_INIT: 1
+    CIR_ENABLED: 0
+    CIR_VERBOSE: 0
+    CIR_OFFSET:  4
+    CIR_SIZE:    8
+    UWB_CLI:  1
+    UWB_CLI_BACKTRACE: 0
+
+    ## Where to store config
+    CONFIG_FCB: 1
+    CONFIG_NEWTMGR: 1
+    CONFIG_FCB_FLASH_AREA: FLASH_AREA_NFFS
+
+    MSYS_1_BLOCK_COUNT: 24
+    MSYS_1_BLOCK_SIZE: 512
